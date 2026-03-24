@@ -30,7 +30,7 @@ const Footer = () => {
       <div className="border-t border-border py-6">
         <div className="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <span className="text-[11px] text-muted-foreground">
-            © 2026 axiom<span className="text-primary">_</span> all rights reserved.
+            © 2026 kuai<span className="text-primary">_</span> all rights reserved.
           </span>
           <div className="flex gap-6 text-[11px] text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">privacy</a>
