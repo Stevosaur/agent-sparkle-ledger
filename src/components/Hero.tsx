@@ -1,61 +1,96 @@
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+
+const lines = [
+  "$ axiom init --connect wallets exchanges",
+  "> scanning 47 wallets across 12 chains...",
+  "> classifying 23,841 transactions...",
+  "> reconciling DeFi positions on Aave, Curve, Uniswap...",
+  "> generating month-end close...",
+  "> ✓ books closed. 0 discrepancies. ready for review.",
+];
+
+const TerminalLine = ({ text, delay }: { text: string; delay: number }) => {
+  const [displayed, setDisplayed] = useState("");
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i <= text.length) {
+          setDisplayed(text.slice(0, i));
+          i++;
+        } else {
+          setDone(true);
+          clearInterval(interval);
+        }
+      }, 18);
+      return () => clearInterval(interval);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [text, delay]);
+
+  const isCommand = text.startsWith("$");
+  const isSuccess = text.includes("✓");
+
+  return (
+    <div className={`text-xs md:text-sm leading-relaxed ${
+      isCommand ? "text-foreground" : isSuccess ? "text-primary text-glow" : "text-muted-foreground"
+    }`}>
+      {displayed}
+      {!done && <span className="cursor-blink text-primary">▋</span>}
+    </div>
+  );
+};
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-radial-hero">
-      {/* Grid background */}
-      <div className="absolute inset-0 bg-grid opacity-30" />
-      
-      {/* Glow orb */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-primary/5 blur-[120px] animate-pulse-glow" />
-
-      <div className="relative z-10 container max-w-4xl mx-auto px-6 text-center">
+    <section className="min-h-screen flex flex-col justify-center relative scanline">
+      <div className="max-w-[1400px] mx-auto px-6 w-full pt-24">
+        {/* Main headline */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
+          transition={{ duration: 0.8 }}
         >
-          <span className="inline-block font-mono text-xs tracking-[0.2em] uppercase text-primary mb-6 border border-primary/20 rounded-full px-4 py-1.5">
-            AI-Native Crypto Accounting
-          </span>
+          <h1 className="font-display text-[clamp(3rem,8vw,8rem)] font-bold leading-[0.9] tracking-tighter mb-8">
+            your crypto
+            <br />
+            books<span className="text-primary text-glow">.</span> closed
+            <br />
+            by machines<span className="text-primary text-glow">.</span>
+          </h1>
         </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.35 }}
-          className="font-display text-5xl md:text-7xl font-bold leading-[1.05] tracking-tight mb-6"
-        >
-          Your crypto books.
-          <br />
-          <span className="text-gradient-primary">Closed by AI.</span>
-          <br />
-          Reviewed by humans.
-        </motion.h1>
-
+        {/* Sub text */}
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed mb-16"
         >
-          Axiom combines AI agents with experienced accountants to deliver accurate,
-          timely financials — 10x faster, at a fraction of the cost.
+          Axiom deploys AI agents alongside human accountants to close your
+          books faster, cheaper, and more accurately than any traditional firm.
+          From month-end close to fractional CFO — we run your entire back office.
         </motion.p>
 
+        {/* Terminal */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.65 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          transition={{ duration: 0.6, delay: 0.8 }}
+          className="border border-border bg-card p-6 max-w-2xl"
         >
-          <Button size="lg" className="font-semibold text-base px-8 glow-sm">
-            Book a Demo
-          </Button>
-          <Button variant="outline" size="lg" className="font-semibold text-base px-8 border-border hover:bg-secondary">
-            Explore Services
-          </Button>
+          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+            <div className="w-2 h-2 bg-primary/60" />
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">axiom agent v2.4</span>
+          </div>
+          <div className="space-y-2">
+            {lines.map((line, i) => (
+              <TerminalLine key={i} text={line} delay={1200 + i * 1400} />
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>

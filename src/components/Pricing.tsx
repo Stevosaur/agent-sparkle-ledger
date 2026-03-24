@@ -1,20 +1,17 @@
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
 
 const plans = [
   {
     name: "Starter",
     price: "$2,000",
-    desc: "For early-stage crypto companies getting their books in order.",
-    features: ["Month-end close", "Basic reconciliation", "1 entity", "Xero or QBO integration", "Email support"],
-    cta: "Get Started",
+    desc: "Early-stage crypto companies getting their books in order.",
+    features: ["Month-end close", "Basic reconciliation", "1 entity", "Xero / QBO integration", "Email support"],
     popular: false,
   },
   {
     name: "Growth",
     price: "$5,000",
-    desc: "For scaling protocols and funds with complex DeFi activity.",
+    desc: "Scaling protocols and funds with complex DeFi activity.",
     features: [
       "Everything in Starter",
       "DeFi position tracking",
@@ -22,95 +19,96 @@ const plans = [
       "Up to 3 entities",
       "Regulatory filing prep",
       "Dedicated accountant",
-      "Slack support channel",
+      "Slack channel",
     ],
-    cta: "Get Started",
     popular: true,
   },
   {
     name: "Enterprise",
     price: "$10,000+",
-    desc: "Full-service crypto financial ops with a dedicated team.",
+    desc: "Full-service crypto financial operations with a dedicated team.",
     features: [
       "Everything in Growth",
       "Fractional CFO",
-      "Corporate administration",
+      "Corp administration",
       "Pre-launch setup",
-      "Grants & DAO operations",
+      "Grants & DAO ops",
       "Unlimited entities",
       "Custom integrations",
-      "Dedicated team",
     ],
-    cta: "Contact Us",
     popular: false,
   },
 ];
 
 const Pricing = () => {
   return (
-    <section id="pricing" className="py-24 relative">
-      <div className="container max-w-6xl mx-auto px-6">
+    <section className="py-24">
+      <div className="max-w-[1400px] mx-auto px-6">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="mb-16"
         >
-          <h2 className="font-display text-3xl md:text-5xl font-bold tracking-tight">
-            Simple, transparent pricing
+          <span className="text-xs text-muted-foreground uppercase tracking-widest block mb-4">
+            [pricing]
+          </span>
+          <h2 className="font-display text-4xl md:text-6xl font-bold tracking-tighter">
+            fixed monthly plans<span className="text-primary">.</span>
+            <br />
+            no surprises<span className="text-primary">.</span>
           </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
-            Fixed monthly plans. No hourly billing surprises.
-          </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-px bg-border">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
-              className={`relative rounded-2xl border p-8 flex flex-col ${
-                plan.popular
-                  ? "border-primary/40 bg-card glow-md"
-                  : "border-border bg-card"
+              className={`bg-background p-8 flex flex-col ${
+                plan.popular ? "bg-card" : ""
               }`}
             >
-              {plan.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 font-mono text-xs tracking-wider uppercase bg-primary text-primary-foreground px-4 py-1 rounded-full font-semibold">
-                  Most Popular
-                </span>
-              )}
-              <h3 className="font-display text-xl font-semibold">{plan.name}</h3>
-              <p className="text-sm text-muted-foreground mt-1 mb-6">{plan.desc}</p>
-              <div className="mb-6">
-                <span className="font-display text-4xl font-bold">{plan.price}</span>
-                <span className="text-muted-foreground text-sm">/mo</span>
+              <div className="flex items-center gap-3 mb-1">
+                <h3 className="text-sm font-semibold uppercase tracking-wider">{plan.name}</h3>
+                {plan.popular && (
+                  <span className="text-[10px] text-primary border border-primary/30 px-2 py-0.5 uppercase tracking-widest">
+                    popular
+                  </span>
+                )}
               </div>
-              <ul className="space-y-3 mb-8 flex-1">
+              <p className="text-xs text-muted-foreground mb-6">{plan.desc}</p>
+              
+              <div className="mb-8">
+                <span className="font-display text-4xl font-bold">{plan.price}</span>
+                <span className="text-xs text-muted-foreground">/mo</span>
+              </div>
+
+              <ul className="space-y-2.5 mb-8 flex-1">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-secondary-foreground">
-                    <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <li key={f} className="text-xs text-secondary-foreground flex items-center gap-2">
+                    <span className="text-primary text-[10px]">→</span>
                     {f}
                   </li>
                 ))}
               </ul>
-              <Button
-                className={`w-full font-semibold ${plan.popular ? "glow-sm" : ""}`}
-                variant={plan.popular ? "default" : "outline"}
+
+              <a
+                href="#"
+                className={`block text-center text-xs uppercase tracking-widest py-3 border transition-all duration-300 ${
+                  plan.popular
+                    ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "border-border hover:border-primary hover:text-primary"
+                }`}
               >
-                {plan.cta}
-              </Button>
+                {plan.name === "Enterprise" ? "Contact Us" : "Get Started"}
+              </a>
             </motion.div>
           ))}
         </div>
-
-        <p className="text-center text-sm text-muted-foreground mt-10">
-          All plans include onboarding, data migration support, and access to our client portal.{" "}
-          <a href="#" className="text-primary hover:underline">Need something custom?</a>
-        </p>
       </div>
     </section>
   );
