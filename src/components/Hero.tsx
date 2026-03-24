@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 const lines = [
-  "$ axiom init --connect wallets exchanges",
+  "$ kuai init --connect wallets exchanges",
   "> scanning 47 wallets across 12 chains...",
   "> classifying 23,841 transactions...",
   "> reconciling DeFi positions on Aave, Curve, Uniswap...",
@@ -70,7 +70,7 @@ const Hero = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed mb-16"
         >
-          Axiom deploys AI agents alongside human accountants to close your
+          Kuai deploys AI agents alongside human accountants to close your
           books faster, cheaper, and more accurately than any traditional firm.
           From month-end close to fractional CFO — we run your entire back office.
         </motion.p>
@@ -84,7 +84,7 @@ const Hero = () => {
         >
           <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
             <div className="w-2 h-2 bg-primary/60" />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">axiom agent v2.4</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">kuai agent v2.4</span>
           </div>
           <div className="space-y-2">
             {lines.map((line, i) => (
