@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import Stats from "@/components/Stats";
 import Services from "@/components/Services";
 import Differentiator from "@/components/Differentiator";
 import Pricing from "@/components/Pricing";
@@ -11,7 +10,6 @@ const Index = () => {
     <div className="min-h-screen bg-background noise">
       <Navbar />
       <Hero />
-      <Stats />
       <Services />
       <Differentiator />
       <Pricing />
