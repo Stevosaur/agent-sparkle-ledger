@@ -70,7 +70,7 @@ const Hero = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed mb-16"
         >
-          Axiom deploys AI agents alongside human accountants to close your
+          Kuai deploys AI agents alongside human accountants to close your
           books faster, cheaper, and more accurately than any traditional firm.
           From month-end close to fractional CFO — we run your entire back office.
         </motion.p>
