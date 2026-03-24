@@ -17,7 +17,7 @@ const Footer = () => {
               your books<span className="text-primary text-glow">?</span>
             </h2>
             <a
-              href="mailto:hello@kuai.co"
+              href="mailto:hello@heshi.ai"
               className="inline-block text-sm border border-primary bg-primary text-primary-foreground px-8 py-3 uppercase tracking-widest hover:bg-primary/90 transition-colors"
             >
               Book a Demo
@@ -30,7 +30,7 @@ const Footer = () => {
       <div className="border-t border-border py-6">
         <div className="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <span className="text-[11px] text-muted-foreground">
-            © 2026 kuai<span className="text-primary">_</span> all rights reserved.
+            © 2026 heshi<span className="text-primary">_</span> all rights reserved.
           </span>
           <div className="flex gap-6 text-[11px] text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">privacy</a>
