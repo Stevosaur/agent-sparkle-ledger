@@ -17,7 +17,7 @@ const Footer = () => {
               your books<span className="text-primary text-glow">?</span>
             </h2>
             <a
-              href="mailto:hello@kuai.co"
+              href="mailto:hello@heshi.ai"
               className="inline-block text-sm border border-primary bg-primary text-primary-foreground px-8 py-3 uppercase tracking-widest hover:bg-primary/90 transition-colors"
             >
               Book a Demo
