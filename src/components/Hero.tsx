@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 const lines = [
-  "$ kuai init --connect wallets exchanges",
+  "$ heshi init --connect wallets exchanges",
   "> scanning 47 wallets across 12 chains...",
   "> classifying 23,841 transactions...",
   "> reconciling DeFi positions on Aave, Curve, Uniswap...",
