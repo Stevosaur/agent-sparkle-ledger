@@ -84,7 +84,7 @@ const Hero = () => {
         >
           <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
             <div className="w-2 h-2 bg-primary/60" />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">kuai agent v2.4</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">heshi agent v2.4</span>
           </div>
           <div className="space-y-2">
             {lines.map((line, i) => (

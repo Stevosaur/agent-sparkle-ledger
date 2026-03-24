@@ -10,13 +10,13 @@ const Navbar = () => {
     >
       <div className="flex items-center justify-between h-12 px-6 max-w-[1400px] mx-auto">
         <a href="/" className="text-sm font-semibold tracking-tight text-foreground">
-          kuai<span className="text-primary">_</span>
+          heshi<span className="text-primary">_</span>
         </a>
         <a
-          href="mailto:hello@kuai.co"
+          href="mailto:hello@heshi.ai"
           className="text-xs text-muted-foreground hover:text-primary transition-colors"
         >
-          hello@kuai.co
+          hello@heshi.ai
         </a>
       </div>
     </motion.nav>
