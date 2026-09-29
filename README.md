@@ -70,6 +70,17 @@ Without `ANTHROPIC_API_KEY` the platform runs honestly in **MOCK mode**: every a
 | `npm run test:e2e` | Playwright end-to-end (definition-of-done story) |
 | `npm run jobs:run` | Drain the domain-event outbox (cron alternative: `POST /api/jobs`) |
 
+## Testing
+
+```bash
+createdb pasarcatch_test && createdb pasarcatch_e2e   # once
+npm test                                               # 47 unit + 18 integration tests (resets pasarcatch_test)
+npx playwright install chromium                        # once, if not already available
+npm run test:e2e                                       # boots its own server on :3100 against pasarcatch_e2e
+```
+
+The E2E suite drives the whole definition-of-done story through the browser: WhatsApp message → draft lot → confirm & buy → shortage → second offer → AI recommendation → approval → phone receiving → allocation → picking → routes → dispatch → supplier invoice → three-way match exception → lot trace.
+
 ## Documentation
 
 - [Product](docs/product.md) · [Architecture](docs/architecture.md) · [Data model](docs/data-model.md) · [Agents](docs/agents.md)

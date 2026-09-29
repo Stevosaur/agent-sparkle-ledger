@@ -82,10 +82,10 @@ function DemoClock({ offsetMs, isDemo }: { offsetMs: number; isDemo: boolean }) 
     return () => clearInterval(t);
   }, [offsetMs]);
   return (
-    <div className="flex items-center gap-1.5 rounded-md border border-border bg-panel-2 px-2 py-1" title={isDemo ? "Demo clock: the DEMO workspace runs on a simulated overnight clock (Singapore time)" : "Singapore time"}>
+    <div className="flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-panel-2 px-2 py-1" title={isDemo ? "Demo clock: the DEMO workspace runs on a simulated overnight clock (Singapore time)" : "Singapore time"}>
       <span className="live-dot size-1.5 rounded-full bg-ok" />
       <span className="num text-xs font-semibold text-text">{now ? fmtTime(now) : "--:--"}</span>
-      <span className="text-[10px] text-muted">SGT{isDemo ? " · demo clock" : ""}</span>
+      <span className="hidden text-[10px] text-muted sm:inline">SGT{isDemo ? " · demo clock" : ""}</span>
     </div>
   );
 }
@@ -140,16 +140,16 @@ export function Shell({ nav, user, org, orgs, clockOffsetMs, marketDate, pending
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-bg/85 px-3 backdrop-blur sm:px-5">
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
+        <header className="sticky top-0 z-30 flex h-14 min-w-0 items-center gap-1.5 border-b border-border bg-bg/85 px-2 backdrop-blur sm:gap-2 sm:px-5">
           <button className="rounded-md p-2 text-muted hover:bg-panel-2 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu"><Icons.Menu className="size-5" /></button>
           <div className="hidden items-center gap-2 md:flex">
             <span className="text-xs text-muted">Market night</span>
             <span className="text-xs font-semibold text-text">{fmtDate(marketDate)}</span>
           </div>
-          {org.isDemo && <span className="rounded bg-surplus px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black" data-testid="demo-badge">Demo data</span>}
+          {org.isDemo && <span className="shrink-0 whitespace-nowrap rounded bg-surplus px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-black" data-testid="demo-badge">Demo<span className="hidden sm:inline"> data</span></span>}
           <DemoClock offsetMs={clockOffsetMs} isDemo={org.isDemo} />
-          <button onClick={() => setCmdOpen(true)} className="ml-auto flex h-9 min-w-0 items-center gap-2 rounded-md border border-border bg-panel px-3 text-left text-xs text-muted hover:border-border-strong sm:w-80" data-testid="command-trigger">
+          <button onClick={() => setCmdOpen(true)} className="ml-auto flex h-9 min-w-0 shrink items-center gap-2 rounded-md border border-border bg-panel px-2.5 text-left text-xs text-muted hover:border-border-strong sm:w-80 sm:px-3" data-testid="command-trigger">
             <Icons.Sparkles className="size-3.5 shrink-0 text-accent" />
             <span className="hidden truncate sm:inline">Ask AI or search — “how much batang are we short?”</span>
             <span className="sm:hidden">Ask</span>

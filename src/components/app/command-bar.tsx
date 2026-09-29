@@ -86,7 +86,7 @@ export function CommandBar({ open, onOpenChange }: { open: boolean; onOpenChange
                   }
                 }}
                 placeholder="Ask about tonight's operation, or search lots, vendors, species, invoices…"
-                className="h-12 flex-1 bg-transparent text-sm text-text placeholder:text-muted focus:outline-none"
+                className="h-12 flex-1 bg-transparent text-sm text-text placeholder:text-muted focus:outline-none focus-visible:outline-none"
                 data-testid="command-input"
               />
               {thinking && <span className="live-dot text-xs text-accent">querying…</span>}

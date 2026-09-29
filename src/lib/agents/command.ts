@@ -52,7 +52,7 @@ function makeTools(orgId: string, marketDate: string) {
         if (!row) return { summary: `No ${sp.canonicalName} supply or demand recorded tonight.`, links: [{ label: sp.canonicalName, href: `/market/${sp.speciesId}` }] };
         const verdict = row.balance === "SHORTAGE" ? `We are ${Math.abs(Math.round(row.gapKg))} kg short` : row.balance === "SURPLUS" ? `We have ${Math.round(row.gapKg)} kg surplus` : "Supply and demand are balanced";
         return {
-          summary: `${verdict} of ${sp.canonicalName.toLowerCase()} tonight: demand ${row.demandKg} kg vs committed supply ${row.supplyKg} kg (${row.expectedKg} expected + ${row.landedKg} landed)${row.offeredKg ? `; ${row.offeredKg} kg more is offered by suppliers but not yet bought` : ""}.`,
+          summary: `${verdict} of ${sp.canonicalName} tonight: demand ${row.demandKg} kg vs committed supply ${row.supplyKg} kg (${row.expectedKg} expected + ${row.landedKg} landed)${row.offeredKg ? `; ${row.offeredKg} kg more is offered by suppliers but not yet bought` : ""}.`,
           links: [{ label: `${sp.canonicalName} position`, href: `/market/${sp.speciesId}` }, { label: "Recommendations", href: "/procurement/recommendations" }],
           data: row,
         };
