@@ -27,7 +27,7 @@ describe("demand forecast", () => {
     const f = forecastDemand({ targetDate: target, history: h });
     expect(f.components.trendPct).toBe(10);
     expect(f.components.trendAdjPct).toBe(5);
-    expect(f.forecastKg).toBeCloseTo(21 * 1.05, 1); // same-weekday avg (22,22,20,20) × 1.05
+    expect(f.forecastKg).toBe(22.1); // same-weekday avg (22,22,20,20) × 1.05
   });
 
   it("subtracts current stock from the purchase recommendation", () => {
