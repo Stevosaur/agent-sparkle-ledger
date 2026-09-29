@@ -36,6 +36,7 @@ export async function traceLot(orgId: string, ref: string) {
   if (!lot) return null;
   const family = await lotFamily(orgId, lot.id);
   const ids = family.map((f) => f.id);
+  if (!ids.length) return null;
   const lots = await db.select().from(catchLot).where(inArray(catchLot.id, ids));
   const root = lots.find((l) => !l.parentLotId) ?? lot;
   const [v] = root.vendorId ? await db.select().from(vendor).where(eq(vendor.id, root.vendorId)) : [];

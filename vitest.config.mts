@@ -10,6 +10,7 @@ export default defineConfig({
   },
   test: {
     include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
+    env: { NODE_ENV: "test" },
     environment: "node",
     setupFiles: ["tests/setup.ts"],
     fileParallelism: false,

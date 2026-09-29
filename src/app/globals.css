@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens. Dark is the primary theme (overnight operations); light is fully supported. */
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --panel-2: #f1f3f6;
+  --panel-3: #e8ebf0;
+  --border: #e2e6ec;
+  --border-strong: #cfd5de;
+  --text: #0b1220;
+  --text-2: #3b4656;
+  --muted: #6b7788;
+  --accent: #0891b2;
+  --accent-fg: #ffffff;
+  --accent-soft: #ecfeff;
+  --short: #e11d48;
+  --short-soft: #fff1f2;
+  --ok: #059669;
+  --ok-soft: #ecfdf5;
+  --surplus: #d97706;
+  --surplus-soft: #fffbeb;
+  --late: #ea580c;
+  --late-soft: #fff7ed;
+  --spike: #7c3aed;
+  --spike-soft: #f5f3ff;
+  --info: #2563eb;
+  --info-soft: #eff6ff;
+  --ai: #0891b2;
+  --ring: #06b6d4;
+}
+.dark {
+  --bg: #07090d;
+  --panel: #0c1016;
+  --panel-2: #11161e;
+  --panel-3: #171e28;
+  --border: #1b232e;
+  --border-strong: #273241;
+  --text: #e6edf3;
+  --text-2: #b8c3cf;
+  --muted: #7d8a9a;
+  --accent: #22d3ee;
+  --accent-fg: #041016;
+  --accent-soft: rgba(34, 211, 238, 0.1);
+  --short: #fb7185;
+  --short-soft: rgba(251, 113, 133, 0.12);
+  --ok: #34d399;
+  --ok-soft: rgba(52, 211, 153, 0.1);
+  --surplus: #fbbf24;
+  --surplus-soft: rgba(251, 191, 36, 0.12);
+  --late: #fb923c;
+  --late-soft: rgba(251, 146, 60, 0.12);
+  --spike: #a78bfa;
+  --spike-soft: rgba(167, 139, 250, 0.14);
+  --info: #60a5fa;
+  --info-soft: rgba(96, 165, 250, 0.12);
+  --ai: #22d3ee;
+  --ring: #22d3ee;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-panel-3: var(--panel-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-short: var(--short);
+  --color-short-soft: var(--short-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-surplus: var(--surplus);
+  --color-surplus-soft: var(--surplus-soft);
+  --color-late: var(--late);
+  --color-late-soft: var(--late-soft);
+  --color-spike: var(--spike);
+  --color-spike-soft: var(--spike-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-ai: var(--ai);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+body {
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+}
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+::selection {
+  background: var(--accent-soft);
+}
+/* Thin scrollbars for dense operational tables */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.live-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; }
+}

@@ -2,7 +2,7 @@
  * Catch lots: creation from declarations, confirmation (with alias learning), ETA changes, transformations
  * with full parent → child genealogy, and inventory movements.
  */
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, type Executor } from "@/lib/db/client";
 import { catchLot, inventoryMovement, lotTransformation, species, speciesAlias, vendor, vessel, farm } from "@/lib/db/schema";
 import { D, toKgStr, toPriceStr } from "@/lib/domain/decimal";
@@ -334,10 +334,12 @@ function pickInherit(p: Lot) {
 export async function findLotByNumberOrId(orgId: string, ref: string) {
   const r = ref.trim();
   const isUuid = /^[0-9a-f-]{36}$/i.test(r);
+  // NOTE: the OR is parenthesised so it can never escape the tenant filter.
   const rows = await db
     .select()
     .from(catchLot)
-    .where(and(eq(catchLot.orgId, orgId), isUuid ? eq(catchLot.id, r) : sql`upper(${catchLot.lotNumber}) = upper(${r}) OR upper(${catchLot.lotNumber}) LIKE upper(${"%" + r.replace(/^LOT-?/i, "")})`))
+    .where(and(eq(catchLot.orgId, orgId), isUuid ? eq(catchLot.id, r) : sql`(upper(${catchLot.lotNumber}) = upper(${r}) OR upper(${catchLot.lotNumber}) LIKE upper(${"%" + r.replace(/^LOT-?/i, "").replace(/[%_]/g, "")}))`))
+    .orderBy(sql`(upper(${catchLot.lotNumber}) = upper(${r})) DESC`, desc(catchLot.marketDate), asc(catchLot.lotNumber))
     .limit(1);
   return rows[0] ?? null;
 }

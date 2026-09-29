@@ -9,6 +9,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  agentRules: false,
   serverExternalPackages: ["pg"],
   experimental: { serverActions: { bodySizeLimit: "8mb" } },
   async headers() {
