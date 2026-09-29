@@ -106,7 +106,8 @@ describe("routing, pricing, time, money", () => {
     expect(atMarketTime("2026-09-29", "23:15").toISOString()).toBe("2026-09-29T15:15:00.000Z");
     expect(marketDateFor(new Date("2026-09-29T17:30:00Z"))).toBe("2026-09-29");
     expect(marketDateFor(new Date("2026-09-29T06:00:00Z"))).toBe("2026-09-29");
-    expect(marketDateFor(new Date("2026-09-29T02:00:00Z"))).toBe("2026-09-28");
+    expect(marketDateFor(new Date("2026-09-29T02:00:00Z"))).toBe("2026-09-29"); // 10:00 SGT → upcoming night
+    expect(marketDateFor(new Date("2026-09-28T21:30:00Z"))).toBe("2026-09-28"); // 05:30 SGT → still last night
   });
   it("rounds GST half-up on decimals", () => {
     expect(gst("400.00", "9").toFixed(2)).toBe("36.00");

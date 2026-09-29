@@ -124,8 +124,8 @@ export function parseCatchMessage(
   let etaConfidence = 0;
   const timeRes: { re: RegExp; conf: number }[] = [
     { re: /\b(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)\b/g, conf: 0.95 },
-    { re: /\b(?:reach|reaching|arrive|arriving|arrival|eta|land|landing|dock|docking|come|coming|by|at|around)\s+(?:about\s+|around\s+|maybe\s+)?(\d{1,2})[:.](\d{2})\b/g, conf: 0.88 },
-    { re: /\b(?:reach|reaching|arrive|arriving|arrival|eta|land|landing|dock|docking)\s+(?:about\s+|around\s+|maybe\s+)?(\d{1,2})\b(?![.:\d]|\s*(?:kg|g|kati))/g, conf: 0.7 },
+    { re: /\b(?:reach|reaching|arrive|arriving|arrival|eta|land|landing|dock|docking|come|coming|by|at|around|sampai|tiba|deliver|delivery)\s+(?:about\s+|around\s+|maybe\s+)?(\d{1,2})[:.](\d{2})\b/g, conf: 0.88 },
+    { re: /\b(?:reach|reaching|arrive|arriving|arrival|eta|land|landing|dock|docking|sampai|tiba)\s+(?:about\s+|around\s+|maybe\s+)?(\d{1,2})\b(?![.:\d]|\s*(?:kg|g|kati))/g, conf: 0.7 },
     { re: /\b(\d{1,2})[:](\d{2})\b/g, conf: 0.7 },
     { re: /(\d{1,2})\s*[点點](半|\d{1,2}分?)?/g, conf: 0.85 },
   ];
@@ -221,6 +221,18 @@ export function parseCatchMessage(
     consumed.push(span);
   }
 
+  // ---- bare decimal prices ("Batang 8.60, merah 11.20") once times, sizes and quantities are consumed ----
+  {
+    const re = /(?<![\d.:])(\d{1,3}\.\d{2})(?!\d|[.:]\d|\s*(?:kg|g|gm|am|pm|kati))/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(lower))) {
+      const span = { start: m.index, end: m.index + m[0].length };
+      if (overlaps(span, consumed)) continue;
+      prices.push({ ...span, price: Number(m[1]), currency: /\brm\b|myr/.test(lower) ? "MYR" : "SGD", explicit: false });
+      consumed.push(span);
+    }
+  }
+
   // ---- species mentions (words not consumed by numbers/units) ----
   const words = wordsIn(text).filter((w) => !overlaps(w, consumed) && !STOP.has(w.w));
   const sent = sentenceIndex(text);
@@ -257,27 +269,41 @@ export function parseCatchMessage(
     bySentence.set(sent[w.start], arr);
   }
   for (const [s, ws] of bySentence) {
-    for (const w of ws) {
-      const m = findSpeciesInWords([w.w], opts.species);
-      if (m?.best && m.best.confidence >= 0.85) speciesOnlyMentions.push({ speciesId: m.best.speciesId, sentence: s, start: w.start });
+    // n-gram windows so multi-word names ("ngoh her", "ang go li") are recognised without a quantity
+    const taken = new Set<number>();
+    for (let n = Math.min(3, ws.length); n >= 1; n--) {
+      for (let i = 0; i + n <= ws.length; i++) {
+        if ([...Array(n).keys()].some((k) => taken.has(i + k))) continue;
+        const win = ws.slice(i, i + n);
+        if (win.some((w, k) => k > 0 && w.start - win[k - 1].end > 2)) continue;
+        const m = findSpeciesInWords([win.map((w) => w.w).join(" ")], opts.species);
+        if (m?.best && m.best.confidence >= 0.85) {
+          speciesOnlyMentions.push({ speciesId: m.best.speciesId, sentence: s, start: win[0].start });
+          for (let k = 0; k < n; k++) taken.add(i + k);
+        }
+      }
     }
   }
 
-  function lineFor(pos: number, sentence: number): number {
-    const mention = speciesOnlyMentions.filter((m) => m.sentence === sentence).sort((a, b) => Math.abs(a.start - pos) - Math.abs(b.start - pos))[0];
-    if (mention) {
-      const idx = lines.findIndex((l) => l.match?.best?.speciesId === mention.speciesId);
+  function lineFor(pos: number, sentence: number, isFree: (i: number) => boolean = () => true): number {
+    // 1) a species named in the same sentence, preferring the closest mention BEFORE the value
+    const mentions = speciesOnlyMentions
+      .filter((m) => m.sentence === sentence)
+      .sort((a, b) => {
+        const da = a.start <= pos ? pos - a.start : 10000 + a.start - pos;
+        const dbb = b.start <= pos ? pos - b.start : 10000 + b.start - pos;
+        return da - dbb;
+      });
+    for (const mention of mentions) {
+      const idx = lines.findIndex((l, i) => l.match?.best?.speciesId === mention.speciesId && isFree(i));
       if (idx >= 0) return idx;
     }
-    // nearest preceding line in the same sentence, else nearest preceding overall, else first following
-    let best = -1;
-    for (let i = 0; i < lines.length; i++) if (lines[i].q.start <= pos && lines[i].sentence === sentence) best = i;
-    if (best >= 0) return best;
-    if (lines.length === 1) return 0;
-    for (let i = 0; i < lines.length; i++) if (lines[i].q.start <= pos) best = i;
-    if (best >= 0 && lines[best].sentence === sentence - 1) return best;
-    const following = lines.findIndex((l) => l.q.start > pos && l.sentence === sentence);
-    return following;
+    // 2) nearest preceding line in the same sentence
+    for (let i = lines.length - 1; i >= 0; i--) if (lines[i].q.start <= pos && lines[i].sentence === sentence && isFree(i)) return i;
+    if (lines.length === 1) return isFree(0) ? 0 : -1;
+    // 3) last line of the previous sentence, else first following line in this sentence
+    for (let i = lines.length - 1; i >= 0; i--) if (lines[i].q.start <= pos && lines[i].sentence === sentence - 1 && isFree(i)) return i;
+    return lines.findIndex((l, i) => l.q.start > pos && l.sentence === sentence && isFree(i));
   }
 
   const out: ParsedCatchLine[] = lines.map((l) => {
@@ -300,8 +326,8 @@ export function parseCatchMessage(
   });
 
   for (const s of sizes) {
-    const i = lineFor(s.start, sent[s.start]);
-    if (i < 0 || !out[i] || out[i].sizeMinKg !== null) continue;
+    const i = lineFor(s.start, sent[s.start], (k) => out[k]?.sizeMinKg === null);
+    if (i < 0 || !out[i]) continue;
     out[i].sizeMinKg = s.minKg;
     out[i].sizeMaxKg = s.maxKg;
     out[i].confidence.size = s.exact ? 0.9 : 0.8;
@@ -309,12 +335,11 @@ export function parseCatchMessage(
 
   const unassignedPrices: PriceMention[] = [];
   for (const p of prices) {
-    const i = lineFor(p.start, sent[p.start]);
+    const i = lineFor(p.start, sent[p.start], (k) => out[k]?.askingPricePerKg === null);
     if (i < 0 || !out[i]) {
       unassignedPrices.push(p);
       continue;
     }
-    if (out[i].askingPricePerKg !== null) continue;
     out[i].askingPricePerKg = p.price;
     out[i].currency = p.currency;
     out[i].priceCondition = p.condition;

@@ -99,7 +99,7 @@ export const SPECIES_CATALOGUE: CatalogueSpecies[] = [
   },
   {
     code: "TPR", canonicalName: "Tiger prawn", chineseName: "老虎虾", malayName: "Udang harimau", localNames: [],
-    aliases: [{ text: "tiger prawn", language: "EN" }, { text: "black tiger", language: "EN" }, { text: "udang harimau", language: "MS" }, { text: "lao hu xia", language: "PINYIN" }],
+    aliases: [{ text: "tiger prawn", language: "EN" }, { text: "tiger", language: "EN" }, { text: "black tiger", language: "EN" }, { text: "udang harimau", language: "MS" }, { text: "lao hu xia", language: "PINYIN" }],
     scientificName: "Penaeus monodon", category: "CRUSTACEAN", sizeKg: [0.03, 0.08], yieldPct: 60, storage: "CHILLED", freshnessHours: 36,
     substitutes: ["PRW"], demoCost: [22.0, 28.0], markupPct: 22,
   },

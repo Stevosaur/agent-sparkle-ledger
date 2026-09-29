@@ -200,6 +200,8 @@ export type OrgSettings = {
   weightVarianceAlertPct?: number;
   receivingTempMaxC?: number;
   surplusDiscountFloorPct?: number;
+  /** DEMO workspaces only: offset applied to wall-clock time so the seeded overnight scenario and live actions share one timeline. */
+  demoClockOffsetMs?: number;
 };
 
 export const role = pgTable("role", {

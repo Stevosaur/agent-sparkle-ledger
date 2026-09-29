@@ -40,11 +40,14 @@ export function isoWeekday(dateStr: string): number {
   return ((new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7) + 1;
 }
 
-/** The market night an instant belongs to: from noon SGT onwards it's that date's night, before noon it's the previous night. */
+/**
+ * The market night an instant belongs to. Trading runs overnight; after 07:00 SGT the operational focus moves
+ * to the coming night, before 07:00 we are still inside the previous night.
+ */
 export function marketDateFor(d: Date = new Date()): string {
   const p = sgtParts(d);
   const today = `${p.year}-${pad(p.month)}-${pad(p.day)}`;
-  return p.hour >= 12 ? today : addDays(today, -1);
+  return p.hour >= 7 ? today : addDays(today, -1);
 }
 
 /** The delivery (morning) date for a market night. */
