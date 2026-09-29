@@ -33,7 +33,7 @@ export function ReceiveFlow({ lots, initialLotId, tempMax }: { lots: Lot[]; init
   const [reason, setReason] = useState<(typeof REASONS)[number] | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [started, setStarted] = useState<number | null>(initialLotId ? Date.now() : null);
+  const [started, setStarted] = useState<number | null>(() => (initialLotId ? Date.now() : null));
   const [done, setDone] = useState<{ lotNumber: string; secs: number; variance: string } | null>(null);
   const [queued, setQueued] = useState(0);
   const [scanning, setScanning] = useState(false);
@@ -41,9 +41,9 @@ export function ReceiveFlow({ lots, initialLotId, tempMax }: { lots: Lot[]; init
 
   // Offline outbox: replay queued receipts when connectivity returns.
   useEffect(() => {
-    setQueued(readQueue().length);
     const flush = async () => {
       const qd = readQueue();
+      setQueued(qd.length);
       if (!qd.length || !navigator.onLine) return;
       const left: Payload[] = [];
       for (const p of qd) {

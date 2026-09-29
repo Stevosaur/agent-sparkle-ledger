@@ -97,6 +97,8 @@ export async function receiveLot(ctx: Ctx, input: ReceiveInput) {
     if (input.photoKey) await x.insert(catchLotPhoto).values({ orgId: ctx.orgId, lotId: lot.id, fileKey: input.photoKey, stage: "RECEIVING", takenBy: ctx.actor.label });
 
     const status = accepted.isZero() ? "REJECTED" : "AVAILABLE";
+    // Accepted stock goes into the chiller (or the first location configured) unless already placed.
+    const loc = lot.locationId ?? ((await x.execute<{ id: string }>(sql`SELECT id FROM warehouse_location WHERE org_id = ${ctx.orgId} ORDER BY (type = 'CHILLER') DESC, code LIMIT 1`)).rows[0]?.id ?? null);
     const [updated] = await x
       .update(catchLot)
       .set({
@@ -107,12 +109,13 @@ export async function receiveLot(ctx: Ctx, input: ReceiveInput) {
         quantityRejectedKg: toKgStr(rej),
         quantityAvailableKg: toKgStr(accepted),
         qualityGrade: grade,
+        locationId: loc,
         temperatureAtReceivingC: input.temperatureC === null || input.temperatureC === undefined ? null : String(input.temperatureC),
       })
       .where(eq(catchLot.id, lot.id))
       .returning();
 
-    await x.insert(inventoryMovement).values({ orgId: ctx.orgId, lotId: lot.id, type: "RECEIPT", quantityKg: toKgStr(received), availableAfterKg: toKgStr(received), refType: "goods_receipt", refId: grn.id, actor: ctx.actor.label, at });
+    await x.insert(inventoryMovement).values({ orgId: ctx.orgId, lotId: lot.id, type: "RECEIPT", quantityKg: toKgStr(received), availableAfterKg: toKgStr(received), refType: "goods_receipt", refId: grn.id, locationId: loc, actor: ctx.actor.label, at });
     if (rej.gt(0))
       await x.insert(inventoryMovement).values({ orgId: ctx.orgId, lotId: lot.id, type: "REJECT", quantityKg: toKgStr(rej.neg()), availableAfterKg: toKgStr(accepted), refType: "goods_receipt", refId: grn.id, actor: ctx.actor.label, at });
 

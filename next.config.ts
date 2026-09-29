@@ -10,6 +10,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   agentRules: false,
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   serverExternalPackages: ["pg"],
   experimental: { serverActions: { bodySizeLimit: "8mb" } },
   async headers() {

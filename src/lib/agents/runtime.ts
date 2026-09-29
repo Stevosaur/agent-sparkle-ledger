@@ -172,10 +172,13 @@ export async function supersedePending(x: Executor, orgId: string, kind: string,
   return rows.rows.length;
 }
 
-/** Event-triggered agents debounce: skip if the same agent ran for this org very recently (per scope key). */
-export async function recentlyRan(orgId: string, agent: AgentKey, at: Date, scope: Record<string, unknown>, seconds = 90) {
+/**
+ * Event-triggered agents coalesce bursts: skip only if a run for the same scope already started at or after
+ * this event occurred (so it has already seen this state). Later events always get a fresh run.
+ */
+export async function recentlyRan(orgId: string, agent: AgentKey, at: Date, scope: Record<string, unknown>) {
   const r = await db.execute(sql`
-    SELECT 1 FROM agent_run WHERE org_id = ${orgId} AND agent = ${agent} AND trigger = 'EVENT'
-      AND started_at > ${new Date(at.getTime() - seconds * 1000)} AND started_at <= ${at} AND input_ref @> ${JSON.stringify(scope)}::jsonb LIMIT 1`);
+    SELECT 1 FROM agent_run WHERE org_id = ${orgId} AND agent = ${agent}
+      AND started_at >= ${at} AND started_at < ${new Date(at.getTime() + 10 * 60000)} AND input_ref @> ${JSON.stringify(scope)}::jsonb LIMIT 1`);
   return r.rows.length > 0;
 }

@@ -207,8 +207,9 @@ export async function seedDemo(opts: { realNow?: Date; historyNights?: number; l
   log(`scenario: tonight ${tonight} (in progress)`);
   await runNight({ orgId, night: tonight, full: false, sp, vendorByCode, custByCode, people });
 
-  // Demo clock: "now" for this workspace = 01:00 SGT on tonight's market night, then ticks in real time.
-  const demoNow = atMarketTime(tonight, "01:00");
+  // Demo clock: "now" for this workspace = 01:10 SGT on tonight's market night (just after the last seeded
+  // event), then ticks in real time.
+  const demoNow = atMarketTime(tonight, "01:10");
   const realNow = opts.realNow ?? new Date();
   await db.update(S.organization).set({ settings: { ...(org.settings ?? {}), demoClockOffsetMs: demoNow.getTime() - realNow.getTime() } }).where(eq(S.organization.id, orgId));
 
@@ -429,7 +430,7 @@ async function runNight(a: NightArgs) {
       .filter(() => R() > 0.08)
       .map(([code, base]) => {
         let kg = r1(Math.max(3, base * (weekend ? c.demo.weekendFactor : 1) * normal(1.05, 0.08)));
-        if (!full && code === "SPM") kg = r1(kg * 1.25); // tonight: strong batang demand
+        if (!full && (code === "SPM" || code === "THF")) kg = r1(kg * 1.25); // tonight: strong batang & threadfin demand
         demand[code] = (demand[code] ?? 0) + kg;
         const cost = (cat[code].demoCost[0] + cat[code].demoCost[1]) / 2;
         return { speciesId: sp[code].id, requestedKg: kg, pricePerKg: r2(cost * (1 + cat[code].markupPct / 100)) };

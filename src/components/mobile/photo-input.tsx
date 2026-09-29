@@ -36,6 +36,7 @@ export function PhotoInput({ onUploaded, folder, label = "Photo" }: { onUploaded
         }}
       />
       <button type="button" onClick={() => ref.current?.click()} className="flex h-16 w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-border bg-panel-2 text-sm text-text-2 active:bg-panel-3">
+        {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview, not an optimisable asset */}
         {preview ? <img src={preview} alt="" className="h-12 w-12 rounded object-cover" /> : <Camera className="size-5" />}
         {state === "uploading" ? "Uploading…" : state === "done" ? <span className="flex items-center gap-1 text-ok"><Check className="size-4" /> {label} attached</span> : state === "error" ? <span className="text-short">Upload failed — tap to retry</span> : label}
       </button>

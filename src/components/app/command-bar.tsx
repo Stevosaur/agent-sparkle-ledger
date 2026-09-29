@@ -29,26 +29,25 @@ export function CommandBar({ open, onOpenChange }: { open: boolean; onOpenChange
   const [thinking, start] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (!open) {
+  const close = (o: boolean) => {
+    if (!o) {
       setQ("");
       setHits([]);
       setAnswer(null);
       setError(null);
     }
-  }, [open]);
+    onOpenChange(o);
+  };
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
-    if (q.trim().length < 2) {
-      setHits([]);
-      return;
-    }
+    if (q.trim().length < 2) return;
     timer.current = setTimeout(async () => {
       const r = await searchAction(q);
       if (r.ok) setHits((r.data as Hit[]) ?? []);
     }, 180);
   }, [q]);
+  const shownHits = q.trim().length < 2 ? [] : hits;
 
   function ask(question: string) {
     setAnswer(null);
@@ -61,12 +60,12 @@ export function CommandBar({ open, onOpenChange }: { open: boolean; onOpenChange
     });
   }
   const go = (href: string) => {
-    onOpenChange(false);
+    close(false);
     router.push(href);
   };
 
   return (
-    <D.Root open={open} onOpenChange={onOpenChange}>
+    <D.Root open={open} onOpenChange={close}>
       <D.Portal>
         <D.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px]" />
         <D.Content className="fixed left-1/2 top-[10vh] z-50 w-[calc(100vw-20px)] max-w-2xl -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-panel shadow-2xl" aria-describedby={undefined}>
@@ -81,7 +80,7 @@ export function CommandBar({ open, onOpenChange }: { open: boolean; onOpenChange
                   setAnswer(null);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && q.trim().length > 2 && (e.metaKey || e.ctrlKey || !hits.length || /\?|how|who|what|which|show|allocate|trace|are|is /i.test(q))) {
+                  if (e.key === "Enter" && q.trim().length > 2 && (e.metaKey || e.ctrlKey || !shownHits.length || /\?|how|who|what|which|show|allocate|trace|are|is /i.test(q))) {
                     e.preventDefault();
                     ask(q.trim());
                   }
@@ -118,9 +117,9 @@ export function CommandBar({ open, onOpenChange }: { open: boolean; onOpenChange
                   <span className="ml-auto text-[10px] text-muted">Enter</span>
                 </Command.Item>
               )}
-              {hits.length > 0 && (
+              {shownHits.length > 0 && (
                 <Command.Group heading="Records" className="mt-1 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:text-muted">
-                  {hits.map((h) => (
+                  {shownHits.map((h) => (
                     <Command.Item key={h.type + h.id + h.title} value={h.type + h.id + h.title} onSelect={() => go(h.href)} className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 data-[selected=true]:bg-panel-3">
                       <span className="w-24 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted">{h.type}</span>
                       <span className="num truncate text-text">{h.title}</span>

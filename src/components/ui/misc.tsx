@@ -20,7 +20,7 @@ export function Stat({ label, value, sub, tone, href, className }: { label: stri
   const inner = (
     <div className={cn("group rounded-xl border border-border bg-panel p-4 transition-colors", href && "hover:border-border-strong hover:bg-panel-2", className)}>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</div>
-      <div className={cn("num mt-1.5 text-2xl font-semibold sm:text-[28px]", color)}>{value}</div>
+      <div className={cn("num mt-1.5 break-words text-xl font-semibold sm:text-2xl xl:text-[26px]", color)}>{value}</div>
       {sub && <div className="mt-1 text-xs text-muted">{sub}</div>}
     </div>
   );

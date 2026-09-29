@@ -49,7 +49,7 @@ export default async function DemoGuide() {
   });
   return (
     <div>
-      <PageHeader eyebrow="DEMO DATA — fictional workspace" title="Demo guide" subtitle="The workspace runs on a labelled demo clock that starts at 01:00 on tonight's market night. Last night's full overnight story is already recorded; tonight is in progress so you can drive the core flow live." />
+      <PageHeader eyebrow="DEMO DATA — fictional workspace" title="Demo guide" subtitle="The workspace runs on a labelled demo clock that starts at 01:10 on tonight's market night. Last night's full overnight story is already recorded; tonight is in progress so you can drive the core flow live." />
       <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
         <Card>
           <CardHeader title="Live script — the definition-of-done story" subtitle={`Tonight · ${date(app.marketDate)}`} />

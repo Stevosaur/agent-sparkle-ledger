@@ -99,7 +99,7 @@ export async function packOrder(ctx: Ctx, salesOrderId: string) {
     if (!so) throw new DomainError("Order not found", "NOT_FOUND", 404);
     const pending = await x.execute(sql`SELECT COUNT(*)::int AS n FROM pick_list_line pll JOIN sales_order_line sol ON sol.id = pll.sales_order_line_id WHERE sol.sales_order_id = ${so.id} AND pll.status = 'PENDING'`);
     if (Number((pending.rows[0] as { n: number }).n) > 0) throw new DomainError("Some lines are not picked yet.");
-    await x.execute(sql`UPDATE pick_list_line SET status = 'PACKED', packed_at = now() WHERE sales_order_line_id IN (SELECT id FROM sales_order_line WHERE sales_order_id = ${so.id}) AND status = 'PICKED'`);
+    await x.execute(sql`UPDATE pick_list_line SET status = 'PACKED', packed_at = ${nowOf(ctx)} WHERE sales_order_line_id IN (SELECT id FROM sales_order_line WHERE sales_order_id = ${so.id}) AND status = 'PICKED'`);
     await x.update(salesOrder).set({ status: "PACKED" }).where(eq(salesOrder.id, so.id));
     await audit(x, ctx, { action: "ORDER_PACKED", entityType: "sales_order", entityId: so.id, summary: `${so.soNumber} packed and ready for dispatch.` });
     await emit(x, ctx.orgId, "ORDER_READY", { salesOrderId: so.id }, { at: nowOf(ctx) });

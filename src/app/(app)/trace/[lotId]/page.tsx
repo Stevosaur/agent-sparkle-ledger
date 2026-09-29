@@ -10,6 +10,18 @@ import { Timeline } from "@/components/app/timeline";
 import { RecallButton } from "./recall-button";
 import { date, kg, perKg, sgd, time, titleCase } from "@/lib/format";
 
+function Stage({ n, title, children: c, empty }: { n: number; title: string; children?: React.ReactNode; empty?: boolean }) {
+return (
+  <div className="relative min-w-[210px] flex-1">
+    <div className="mb-2 flex items-center gap-2">
+      <span className={`num flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${empty ? "bg-panel-3 text-muted" : "bg-accent text-accent-fg"}`}>{n}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{title}</span>
+    </div>
+    <div className={`space-y-2 rounded-xl border p-3 text-sm ${empty ? "border-dashed border-border text-muted" : "border-border bg-panel"}`}>{c}</div>
+  </div>
+);
+}
+
 export default async function TraceLot({ params }: { params: Promise<{ lotId: string }> }) {
   const app = await requireApp("trace.view");
   const { lotId } = await params;
@@ -19,16 +31,6 @@ export default async function TraceLot({ params }: { params: Promise<{ lotId: st
   const complete = t.completeness.filter((c) => c.ok).length;
   const children = t.lots.filter((l) => l.id !== root.id);
   const shipments = [...new Map(t.deliveries.map((d) => [d.sh.id, d])).values()];
-
-  const Stage = ({ n, title, children: c, empty }: { n: number; title: string; children?: React.ReactNode; empty?: boolean }) => (
-    <div className="relative min-w-[210px] flex-1">
-      <div className="mb-2 flex items-center gap-2">
-        <span className={`num flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${empty ? "bg-panel-3 text-muted" : "bg-accent text-accent-fg"}`}>{n}</span>
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{title}</span>
-      </div>
-      <div className={`space-y-2 rounded-xl border p-3 text-sm ${empty ? "border-dashed border-border text-muted" : "border-border bg-panel"}`}>{c}</div>
-    </div>
-  );
 
   return (
     <div>

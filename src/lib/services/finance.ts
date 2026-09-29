@@ -111,7 +111,7 @@ export async function approveInvoiceException(ctx: Ctx, supplierInvoiceId: strin
     const [si] = await x.select().from(supplierInvoice).where(and(eq(supplierInvoice.id, supplierInvoiceId), eq(supplierInvoice.orgId, ctx.orgId)));
     if (!si) throw new DomainError("Invoice not found", "NOT_FOUND", 404);
     await x.update(supplierInvoice).set({ matchStatus: "APPROVED_EXCEPTION", approvedBy: ctx.actor.label }).where(eq(supplierInvoice.id, si.id));
-    await x.execute(sql`UPDATE ops_exception SET status = 'RESOLVED', resolved_at = now(), resolved_by = ${ctx.actor.label}, resolution_note = ${note} WHERE org_id = ${ctx.orgId} AND entity_id = ${si.id} AND status <> 'RESOLVED'`);
+    await x.execute(sql`UPDATE ops_exception SET status = 'RESOLVED', resolved_at = ${nowOf(ctx)}, resolved_by = ${ctx.actor.label}, resolution_note = ${note} WHERE org_id = ${ctx.orgId} AND entity_id = ${si.id} AND status <> 'RESOLVED'`);
     await audit(x, ctx, { action: "INVOICE_EXCEPTION_APPROVED", entityType: "supplier_invoice", entityId: si.id, summary: `Exception approved: ${note}`, before: { matchStatus: si.matchStatus }, after: { matchStatus: "APPROVED_EXCEPTION" } });
   };
   return x0 ? run(x0) : db.transaction(run);

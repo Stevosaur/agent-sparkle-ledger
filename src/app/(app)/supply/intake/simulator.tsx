@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, Send, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Select, Textarea } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAction } from "@/components/app/action-button";
@@ -37,6 +36,7 @@ export function Simulator({ vendors, defaultVendorId }: { vendors: { id: string;
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [parsed, setParsed] = useState<Parsed | null>(null);
   const [mode, setMode] = useState<string | null>(null);
+  const [created, setCreated] = useState<{ ids: string[]; numbers: string[] }>({ ids: [], numbers: [] });
   const [listening, setListening] = useState(false);
   const [voice, setVoice] = useState(false);
   const recRef = useRef<SR | null>(null);
@@ -81,8 +81,9 @@ export function Simulator({ vendors, defaultVendorId }: { vendors: { id: string;
       () => simulateMessageAction({ vendorId: vendorId || null, body, channel: voice ? "VOICE" : "WHATSAPP_SIMULATOR", transcription: voice ? body : null }),
       {
         onOk: (r) => {
-          const d = r.data as { confirmation: string; parsed: Parsed; mode: string };
+          const d = r.data as { confirmation: string; parsed: Parsed; mode: string; lotIds: string[]; lotNumbers: string[] };
           setParsed(d.parsed);
+          setCreated({ ids: d.lotIds, numbers: d.lotNumbers });
           setMode(d.mode);
           setBubbles((b) => [...b, { dir: "out", text: d.confirmation, at: new Date().toISOString() }]);
           setVoice(false);
@@ -175,6 +176,12 @@ export function Simulator({ vendors, defaultVendorId }: { vendors: { id: string;
               <p className="rounded-md border border-ok/30 bg-ok-soft px-3 py-2 text-xs text-ok">No ambiguous fields. A procurement manager just needs to confirm.</p>
             )}
             {parsed.notes.length > 0 && <ul className="list-disc pl-5 text-xs text-muted">{parsed.notes.map((n) => <li key={n}>{n}</li>)}</ul>}
+            {created.numbers.length > 0 && (
+              <p className="text-xs text-muted" data-testid="created-lots">
+                Draft lot{created.numbers.length > 1 ? "s" : ""} created:{" "}
+                {created.numbers.map((n, i) => <a key={n} href={`/supply/lots/${created.ids[i]}`} className="num mr-2 text-accent" data-testid="created-lot">{n}</a>)}
+              </p>
+            )}
           </div>
         )}
       </div>
