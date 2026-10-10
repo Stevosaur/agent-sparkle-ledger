@@ -39,7 +39,8 @@ export function nearestStations(
 
 export function schoolsWithin(from: LatLng, radiusM: number, level?: string): (School & { distanceM: number })[] {
   return getSchools()
-    .filter((s) => !level || s.level === level)
+    // "PRIMARY" also matches mixed-level schools with a Primary 1 intake, e.g. "MIXED LEVEL (P1-S4)"
+    .filter((s) => !level || s.level === level || (level === "PRIMARY" && /P1/.test(s.level)))
     .map((s) => ({ ...s, distanceM: Math.round(haversineM(from, s)) }))
     .filter((s) => s.distanceM <= radiusM)
     .sort((a, b) => a.distanceM - b.distanceM);

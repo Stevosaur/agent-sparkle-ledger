@@ -1,0 +1,3 @@
+data/** linguist-generated=true -diff
+ingest-cache/** linguist-generated=true -diff
+tests/fixtures/data/** linguist-generated=true
