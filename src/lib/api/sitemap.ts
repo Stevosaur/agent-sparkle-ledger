@@ -4,6 +4,7 @@ import { getHdbBlocks, getTowns } from "@/lib/data/hdb";
 import { getLandedAddresses, getLandedStreets, getLaunches, getProjects } from "@/lib/data/private";
 import { getMeta } from "@/lib/data/meta";
 import { getArticles } from "@/lib/news";
+import { LIST_IDS } from "@/lib/rankings";
 import { absoluteUrl } from "@/lib/seo";
 
 /**
@@ -21,13 +22,15 @@ export const STATIC_PATHS = [
   "/affordability/",
   "/mortgage-rates/",
   "/listings/",
-  "/new-launch/",
   "/hdb/",
   "/lists/",
   "/insights/",
+  "/trendmaker/",
   "/compare/",
+  "/compare-units/",
   "/map/",
   "/homes/",
+  "/homes/fit/",
   "/news/",
   "/services/",
   "/plus/",
@@ -46,12 +49,13 @@ export interface SitemapPath {
   lastModified?: string;
 }
 
-/** Every indexable path: static pages, then each property family, towns and news articles. */
+/** Every indexable path: static pages and rankings, then each property family, towns and news articles. */
 export function collectSitemapPaths(extra: SitemapPath[] = []): SitemapPath[] {
   const meta = getMeta();
   const lastModified = meta.generatedAt || undefined;
   const data = (path: string): SitemapPath => (lastModified ? { path, lastModified } : { path });
   const out: SitemapPath[] = STATIC_PATHS.map((path) => ({ path }));
+  for (const id of LIST_IDS) out.push({ path: `/lists/${id}/` });
   for (const b of getHdbBlocks()) out.push(data(`/hdb/${b.slug}/`));
   for (const p of getProjects()) if (!p.isLanded) out.push(data(`/condo/${p.slug}/`));
   for (const s of getLandedStreets()) out.push(data(`/landed-street/${s.slug}/`));

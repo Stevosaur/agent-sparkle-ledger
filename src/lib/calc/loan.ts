@@ -1,6 +1,7 @@
 import { monthlyPayment, principalFromPayment } from "./mortgage";
 import {
   BANK_LTV,
+  BANK_LTV_NON_INDIVIDUAL,
   BANK_MAX_TENURE,
   BANK_STRESS_RATE_PCT,
   CPF_LEASE_COVER_AGE,
@@ -37,8 +38,14 @@ const isHdbFlat = (c: PropertyClass) => c === "hdb";
  * (25 years for HDB flats, 30 years otherwise) OR the loan runs past age 65 (age + tenure > 65; ending exactly at 65
  * is not "past" — loan-rules.md Example D). `borrowerAge` is the income-weighted average age of the borrowers;
  * `outstandingLoans` is the count of the borrower with the most outstanding housing loans (2+ share a row).
+ *
+ * `opts.nonIndividual` (a company or other non-individual borrower): flat 15% LTV (BANK_LTV_NON_INDIVIDUAL, since
+ * 6 Jul 2018, UNVERIFIED — loan-rules.md §2.1). The research gives no reduced column and no minimum-cash rule for
+ * non-individuals ("n/a"), so `reduced` is false and `minCashPct` is 0; the caller must treat the whole down payment as
+ * the company's own money (CPF belongs to individual members).
  */
-export function bankLtv(propertyClass: PropertyClass, outstandingLoans: number, tenureYears: number, borrowerAge: number): LtvResult {
+export function bankLtv(propertyClass: PropertyClass, outstandingLoans: number, tenureYears: number, borrowerAge: number, opts: { nonIndividual?: boolean } = {}): LtvResult {
+  if (opts.nonIndividual) return { ltv: BANK_LTV_NON_INDIVIDUAL, minCashPct: 0, reduced: false };
   const row = BANK_LTV[Math.min(Math.max(0, Math.floor(outstandingLoans) || 0), 2)];
   const threshold = isHdbFlat(propertyClass) ? LTV_TENURE_THRESHOLD.hdb : LTV_TENURE_THRESHOLD.private;
   const reduced = tenureYears > threshold || borrowerAge + tenureYears > LTV_AGE_LIMIT;
@@ -187,6 +194,8 @@ export interface BankLoanInput {
   monthlyPropertyLoanInstalments?: number;
   thereafterRatePct?: number;
   stressRatePct?: number;
+  /** borrower is a company / non-individual: 15% LTV (see `bankLtv`) */
+  nonIndividual?: boolean;
 }
 
 /**
@@ -196,7 +205,7 @@ export interface BankLoanInput {
 export function bankLoanEligibility(input: BankLoanInput) {
   const tenureYears = Math.max(0, Math.min(input.tenureYears, maxBankTenure(input.propertyClass)));
   const ltvBase = Math.min(input.price, input.valuation ?? input.price);
-  const ltv = bankLtv(input.propertyClass, input.outstandingLoans, tenureYears, input.borrowerAge);
+  const ltv = bankLtv(input.propertyClass, input.outstandingLoans, tenureYears, input.borrowerAge, { nonIndividual: input.nonIndividual });
   const servicing = maxServiceableLoan(
     {
       monthlyIncome: input.monthlyIncome,
