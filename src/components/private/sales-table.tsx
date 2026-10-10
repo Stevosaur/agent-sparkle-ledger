@@ -2,8 +2,7 @@ import Link from "next/link";
 import { DataTable, type Column } from "@/components/ui/table";
 import { T } from "@/components/i18n/t";
 import { formatInt, formatMonth, formatPsf, formatSgd } from "@/lib/format";
-import { titleCase } from "@/lib/slug";
-import type { SaleRow } from "@/lib/private-insights";
+import { displayAddress, type SaleRow } from "@/lib/private-insights";
 
 const SALE_TYPE_KEYS: Record<SaleRow["typeOfSale"], string> = {
   "New Sale": "private.sales.typeNew",
@@ -53,10 +52,10 @@ export function SalesTable({ rows, variant, showAddress = true }: { rows: SaleRo
         r.address ? (
           r.addressSlug ? (
             <Link href={`/landed/${r.addressSlug}/`} className="text-brand-700 hover:underline">
-              {titleCase(r.address)}
+              {displayAddress(r.address)}
             </Link>
           ) : (
-            titleCase(r.address)
+            displayAddress(r.address)
           )
         ) : (
           <span className="text-muted">

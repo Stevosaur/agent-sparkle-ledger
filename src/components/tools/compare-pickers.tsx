@@ -4,12 +4,11 @@ import { useRouter } from "next/navigation";
 import { SearchBox } from "@/components/search/search-box";
 import { useT } from "@/lib/i18n/provider";
 import { formatPropertyRef } from "@/lib/property-ref";
-import { refFromHref } from "@/lib/tools/refs";
+import { MAX_COMPARE, refFromHref } from "@/lib/tools/refs";
 import type { SearchEntry, SearchKind } from "@/lib/data/types";
 
 /** Stable identity: SearchBox refetches whenever the kinds array changes. */
 const PROPERTY_KINDS: SearchKind[] = ["hdb", "condo", "landed", "landed-street", "launch"];
-export const MAX_COMPARE = 4;
 
 /** Adds a property to /compare/?ids= (max 4). */
 export function ComparePicker({ ids }: { ids: string[] }) {

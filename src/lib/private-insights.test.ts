@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   SIZE_BANDS,
   angleBetween,
+  displayAddress,
   enblocStartYear,
   floorRangeSortKey,
   floorSizeGrid,
@@ -69,6 +70,12 @@ describe("formatting helpers", () => {
     expect(formatDistrict(5)).toBe("D05");
     expect(formatDistrict(18)).toBe("D18");
     expect(formatDistrict(null)).toBe("—");
+  });
+
+  it("keeps house numbers upper-case in addresses", () => {
+    expect(displayAddress("17A SAMPLE LANE")).toBe("17A Sample Lane");
+    expect(displayAddress("13 HAIG LANE")).toBe("13 Haig Lane");
+    expect(displayAddress("  2 JALAN  BUKIT ")).toBe("2 Jalan Bukit");
   });
 
   it("summarises tenure with years left", () => {

@@ -12,17 +12,7 @@ import {
 } from "@/lib/data/private";
 import { getSeries } from "@/lib/data/stats";
 import { monthLabel } from "@/lib/data/months";
-import {
-  formatDistrict,
-  latestFirst,
-  priceRangeSummary,
-  salesScatter,
-  seriesPsfPoints,
-  tenureSummary,
-  tenureText,
-  timeAdjustedEstimate,
-  toSaleRow,
-} from "@/lib/private-insights";
+import { displayAddress, formatDistrict, latestFirst, priceRangeSummary, salesScatter, seriesPsfPoints, tenureSummary, tenureText, timeAdjustedEstimate, toSaleRow } from "@/lib/private-insights";
 import { formatArea, formatInt, formatMonth, formatPctSigned, formatPsf, formatSgd, sqmToSqft } from "@/lib/format";
 import { titleCase } from "@/lib/slug";
 import { absoluteUrl, pageMetadata } from "@/lib/seo";
@@ -66,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const a = getLandedAddress(slug);
   if (!a) return { title: "Address not found", robots: { index: false, follow: true } };
-  const name = titleCase(a.address);
+  const name = displayAddress(a.address);
   const facts = [
     `${name}${a.propertyType ? `, a ${a.propertyType.toLowerCase()} house` : ""}${a.district != null ? ` in District ${a.district}` : ""}.`,
     a.landAreaSqm != null ? `Land area ${formatArea(a.landAreaSqm)}.` : null,
@@ -95,7 +85,7 @@ export default async function LandedAddressPage({ params }: Props) {
   if (!a) notFound();
 
   const currentYear = new Date().getFullYear();
-  const name = titleCase(a.address);
+  const name = displayAddress(a.address);
   const streetName = titleCase(a.street);
   const street = getLandedStreet(a.streetSlug);
   const own = latestFirst(getLandedAddressTransactions(a.slug));

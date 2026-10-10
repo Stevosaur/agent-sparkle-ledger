@@ -5,7 +5,7 @@ import { getLandedStreet, getLandedStreets, getLandedStreetTransactions } from "
 import { getSeries } from "@/lib/data/stats";
 import { getCoverage } from "@/lib/data/meta";
 import { monthIndex } from "@/lib/data/months";
-import { formatDistrict, latestFirst, salesScatter, seriesPsfPoints, timeAdjustedEstimate, toSaleRow, type TimeAdjustedEstimate } from "@/lib/private-insights";
+import { displayAddress, formatDistrict, latestFirst, salesScatter, seriesPsfPoints, timeAdjustedEstimate, type TimeAdjustedEstimate, toSaleRow } from "@/lib/private-insights";
 import { formatArea, formatInt, formatMonth, formatPsf, formatSgd } from "@/lib/format";
 import { titleCase } from "@/lib/slug";
 import { absoluteUrl, pageMetadata } from "@/lib/seo";
@@ -115,7 +115,7 @@ export default async function LandedStreetPage({ params }: Props) {
       header: <T k="private.sales.address" fallback="Address" />,
       cell: (r) => (
         <Link href={`/landed/${r.a.slug}/`} className="font-medium text-brand-700 hover:underline">
-          {titleCase(r.a.address)}
+          {displayAddress(r.a.address)}
         </Link>
       ),
     },

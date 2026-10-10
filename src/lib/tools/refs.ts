@@ -1,5 +1,8 @@
 import { formatPropertyRef, parsePropertyRef, type PropertyRef } from "@/lib/property-ref";
 
+/** Maximum number of properties on /compare/. */
+export const MAX_COMPARE = 4;
+
 /**
  * Property-reference helpers shared by the compare and valuation pickers (client-safe: no data imports).
  */
@@ -18,7 +21,7 @@ export function refFromHref(href: string): PropertyRef | null {
  * Parse a comma-separated list of property refs ("hdb:blk-1-x,condo:foo"), dropping duplicates and
  * keeping at most `max`. Unparseable entries are returned in `invalid` so the page can say so.
  */
-export function parseRefList(raw: string | string[] | undefined | null, max = 4): { refs: PropertyRef[]; invalid: string[] } {
+export function parseRefList(raw: string | string[] | undefined | null, max = MAX_COMPARE): { refs: PropertyRef[]; invalid: string[] } {
   const joined = Array.isArray(raw) ? raw.join(",") : (raw ?? "");
   const refs: PropertyRef[] = [];
   const invalid: string[] = [];

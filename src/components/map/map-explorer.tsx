@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
@@ -29,40 +29,45 @@ function Swatch({ style }: { style: MarkerStyle }) {
 }
 
 /**
- * /map/ explorer: layer toggles above a map that fills the viewport below the sticky site header
- * (and above the mobile tab bar). Layers come from GET /api/map/layers/.
+ * /map/ explorer: layer toggles above a map that fills the rest of the viewport (below the site
+ * header, above the mobile tab bar). Layers come from GET /api/map/layers/.
  */
 export function MapExplorer({ heading }: { heading: ReactNode }) {
   const t = useT();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [chrome, setChrome] = useState<{ top: number; bottom: number } | null>(null);
   const [visible, setVisible] = useState<ExplorerVisibility>(DEFAULT_VISIBLE);
   const [payload, setPayload] = useState<MapLayersPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  // Height = viewport minus the sticky header and the mobile tab bar, measured so banners and the
-  // two-row mobile header are accounted for.
+  // Height = viewport minus everything above the map at scroll 0 (banners + sticky header) and the
+  // mobile tab bar, so the whole map, including the basemap attribution, is visible on load.
   useEffect(() => {
-    const header = document.querySelector<HTMLElement>("header.sticky");
+    const root = rootRef.current;
     const tabs = document.querySelector<HTMLElement>('nav[aria-label="Tabs"]');
     const measure = () => {
-      const top = header ? header.getBoundingClientRect().height : 0;
-      const bottom = tabs && tabs.offsetParent !== null ? tabs.getBoundingClientRect().height : 0;
+      if (!root) return;
+      const top = Math.max(0, Math.round(root.getBoundingClientRect().top + window.scrollY));
+      const bottom = tabs && tabs.offsetParent !== null ? Math.round(tabs.getBoundingClientRect().height) : 0;
       setChrome((prev) => (prev && prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
     };
+    window.addEventListener("resize", measure);
     if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", measure);
       const id = window.requestAnimationFrame(measure);
       return () => {
         window.removeEventListener("resize", measure);
         window.cancelAnimationFrame(id);
       };
     }
+    // banners and the header can change height after hydration; the document grows when they do
     const ro = new ResizeObserver(measure);
-    if (header) ro.observe(header);
-    if (tabs) ro.observe(tabs);
     ro.observe(document.documentElement);
-    return () => ro.disconnect();
+    if (tabs) ro.observe(tabs);
+    return () => {
+      window.removeEventListener("resize", measure);
+      ro.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -115,19 +120,20 @@ export function MapExplorer({ heading }: { heading: ReactNode }) {
 
   return (
     <div
+      ref={rootRef}
       className={cn("flex flex-col", !chrome && "h-[max(360px,calc(100dvh-10.5rem))] md:h-[max(360px,calc(100dvh-6.6rem))]")}
       style={style}
     >
       <div className="shrink-0 border-b border-line bg-surface px-4 py-2 sm:px-6">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {heading}
-          <fieldset className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5">
+          <fieldset className="relative flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5">
             <legend className="sr-only">{t("launches.map.layers", "Map layers")}</legend>
             {toggles.map((tg) => (
               <label
                 key={tg.key}
                 className={cn(
-                  "flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand-500",
+                  "relative flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand-500",
                   visible[tg.key] ? "border-brand-200 bg-brand-50 text-brand-900" : "border-line bg-surface text-muted",
                 )}
               >

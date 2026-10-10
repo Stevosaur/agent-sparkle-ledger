@@ -6,6 +6,7 @@ import { compass, sunPathForDay } from "@/lib/calc/sun";
 import { repeatSalePairs } from "@/lib/calc/returns";
 import { median } from "@/lib/stats-math";
 import { monthLabel } from "@/lib/data/months";
+import { titleCase } from "@/lib/slug";
 import type { MonthlyStat, PrivateRental, PrivateTransaction, Tenure } from "@/lib/data/types";
 
 /* ------------------------------------------------------------------ */
@@ -39,6 +40,18 @@ export function tenureText(tenure: Tenure | null | undefined, currentYear: numbe
   const from = t.startYear != null ? ` from ${t.startYear}` : "";
   const left = t.yearsLeft != null ? ` (~${t.yearsLeft} years left)` : "";
   return `${head}${from}${left}`;
+}
+
+/**
+ * Title-case an upper-case address while keeping house-number tokens as published:
+ * "17A SAMPLE LANE" -> "17A Sample Lane" (titleCase alone would give "17a").
+ */
+export function displayAddress(address: string): string {
+  return address
+    .trim()
+    .split(/\s+/)
+    .map((w) => (/\d/.test(w) ? w.toUpperCase() : titleCase(w)))
+    .join(" ");
 }
 
 /* ------------------------------------------------------------------ */
