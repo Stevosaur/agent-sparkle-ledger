@@ -1,53 +1,44 @@
-import * as React from "react";
-import * as TabsPrimitive from "@radix-ui/react-tabs";
+"use client";
 
-import { cn } from "@/lib/utils";
+import { useId, useState, type ReactNode } from "react";
+import { cn } from "@/lib/cn";
 
-const Tabs = TabsPrimitive.Root;
+export interface TabItem {
+  id: string;
+  label: ReactNode;
+  content: ReactNode;
+}
 
-const TabsList = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn(
-      "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
-      className,
-    )}
-    {...props}
-  />
-));
-TabsList.displayName = TabsPrimitive.List.displayName;
-
-const TabsTrigger = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-      className,
-    )}
-    {...props}
-  />
-));
-TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
-
-const TabsContent = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn(
-      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      className,
-    )}
-    {...props}
-  />
-));
-TabsContent.displayName = TabsPrimitive.Content.displayName;
-
-export { Tabs, TabsList, TabsTrigger, TabsContent };
+/** Accessible client-side tabs. All panels are rendered (hidden when inactive) so server content stays in the HTML. */
+export function Tabs({ items, defaultTab, className }: { items: TabItem[]; defaultTab?: string; className?: string }) {
+  const [active, setActive] = useState(defaultTab ?? items[0]?.id);
+  const base = useId();
+  return (
+    <div className={className}>
+      <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-line">
+        {items.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            type="button"
+            id={`${base}-tab-${t.id}`}
+            aria-selected={active === t.id}
+            aria-controls={`${base}-panel-${t.id}`}
+            onClick={() => setActive(t.id)}
+            className={cn(
+              "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              active === t.id ? "border-brand-600 text-brand-800" : "border-transparent text-muted hover:text-ink",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {items.map((t) => (
+        <div key={t.id} role="tabpanel" id={`${base}-panel-${t.id}`} aria-labelledby={`${base}-tab-${t.id}`} hidden={active !== t.id} className="pt-4">
+          {t.content}
+        </div>
+      ))}
+    </div>
+  );
+}
