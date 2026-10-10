@@ -83,7 +83,7 @@ Historical MOP before 30 Aug 2010 (UNVERIFIED):
    - The resale dataset has no key-collection or completion date.
    - `lease_commence_date` is a **year only**.
 2. **Block-level heuristic** (label it "estimate"). *Corrected 10 Oct 2026 from the data; the earlier `lease_commence_date + 5` rule was wrong.*
-   - **`lease_commence_date` is usually 1 to 2 years *after* the first buyers' key collection, not "close to" it.** [DATA, Feb 2023 export] For blocks with `lease_commence_date` 2008–2017, the first resale in the data falls in calendar year lcd+4 for 686 of 1,065 blocks (64%). The full spread is lcd+3 (89 blocks), lcd+5 (200), lcd+6 (50), and a few at lcd+1 or lcd+2. Measured from the month-exact lease start implied by `remaining_lease`, first resales typically come **3.2 to 4.2 years** after lease start. A 5-year MOP counted from key collection therefore implies keys were collected about 1 to 2 years before the recorded lease start. Example: The Pinnacle@Duxton (`Type S1`/`Type S2`, blocks 1A–1G CANTONMENT RD) has `lease_commence_date = 2011`, and its first resale is registered in **2014-12**.
+   - **`lease_commence_date` is usually 1 to 2 years *after* the first buyers' key collection, not "close to" it.** [DATA, Feb 2023 export] For blocks with `lease_commence_date` 2008–2017, the first resale in the data falls in calendar year **lcd+4 for 627 of 1,065 blocks (59%)** and **lcd+3 for 283 (27%)**. The rest are lcd+5 (71 blocks), lcd+2 (52), lcd+6 (16), lcd+1 (14), and one block each at lcd+0 and lcd−1. Measured from the month-exact lease start implied by `remaining_lease`, first resales typically come **3.2 to 4.2 years** after lease start. A 5-year MOP counted from key collection therefore implies keys were collected about 1 to 2 years before the recorded lease start. Example: The Pinnacle@Duxton (`Type S1`/`Type S2`, blocks 1A–1G CANTONMENT RD) has `lease_commence_date = 2011`, and its first resale is registered in **2014-12**.
    - Use **earliest open-market resale ≈ `lease_commence_date + 3` to `+ 4` years** as the estimate, and never present it as an exact MOP date.
    - Outliers exist. Blocks 440A–C CLEMENTI AVE 3 (lcd 2018) and 95A–96C HENDERSON RD (lcd 2019) resold from **2020-07 / 2020-08**, under 2 years after lcd. These are probably SERS replacement blocks; the reason is UNVERIFIED.
    - Example: a block with lease commencement 2019 should first appear in resale data around **2022–2023**, not 2024.
@@ -200,6 +200,7 @@ All of §2.3 is UNVERIFIED this session; search budget ran out. Show it as "indi
 - **Who pays:** second-timer households who **previously bought a subsidised flat** and now buy **another subsidised flat**.
   - A subsidised flat here means a BTO/SBF/open-booking flat from HDB, a resale flat bought with a CPF housing grant, or an EC from a developer.
   - They pay the levy to reduce the subsidy on the second flat.
+  - Fact-check flag (prior knowledge, UNVERIFIED): the levy is normally triggered by a second-timer buying a **new** flat from HDB (BTO/SBF) or a new EC. Whether a resale purchase with a second-timer grant (e.g. the Proximity or Step-Up grant) triggers it is unconfirmed. Do not charge a levy on resale purchases in calculators without confirming on HDB's page.
 - **Who does not pay:** buyers of a **non-subsidised** resale flat on the open market without grants.
 - **First subsidised flat sold on or after 3 Mar 2006:** a fixed amount by type of the first flat.
 
@@ -226,7 +227,7 @@ All UNVERIFIED this session; well-known rules.
   - Effective **9 May 2023**.
   - Sellers must register an Intent to Sell and wait 7 days before granting the OTP.
 - **Loan-to-value:**
-  - HDB housing loan LTV is **75%**, lowered from 80% on **20 Aug 2024**.
+  - HDB housing loan LTV is **75%**, lowered from 80% on **20 Aug 2024**. This is [PRIMARY] in `loan-rules.md` §3: it applies to complete resale applications received on or after 20 Aug 2024 and to new-flat applications from the Oct 2024 BTO/SBF exercise. That file found no 2025–2026 change.
   - Bank loan LTV for a first housing loan is 75%.
   - MSR is 30% and TDSR 55%. Use the MAS research file for these.
 - **Lease and CPF/loan usage** (from **10 May 2019**):
@@ -239,51 +240,59 @@ All UNVERIFIED this session; well-known rules.
 
 ## 3. `flat_type` and `flat_model` values in the resale dataset
 
-Exact column names (from `datagov-api.md` §5.1, [PRIMARY/CORROBORATED] there): `month, town, flat_type, block, street_name, storey_range, floor_area_sqm, flat_model, lease_commence_date, remaining_lease, resale_price`.
+Exact column names (from `datagov-api.md` §5.1, [PRIMARY/CORROBORATED] there): `month, town, flat_type, block, street_name, storey_range, floor_area_sqm, flat_model, lease_commence_date, remaining_lease, resale_price`. **Confirmed [DATA, Feb 2023 export]**: this is the exact header of the 2015–2016 and 2017+ files. The three earlier files have the same header without `remaining_lease`.
 
 ### 3.1 `flat_type` (exact strings)
 
+All seven values confirmed [DATA, Feb 2023 export]; no other `flat_type` value occurs in any era.
+
 | Raw value | Notes |
 |---|---|
-| `1 ROOM` | |
-| `2 ROOM` | Includes 2-room Flexi flats. Short-lease 2-room Flexi flats cannot be sold on the open market (they go back to HDB), so resale rows are 99-year flats (UNVERIFIED) |
-| `3 ROOM` | Includes **Terrace** model rows with very large areas (see §6) |
-| `4 ROOM` | |
-| `5 ROOM` | 3Gen flats are probably recorded as `5 ROOM` with `flat_model = 3Gen` (UNVERIFIED) |
-| `EXECUTIVE` | Executive Apartment / Maisonette (`flat_model` `Apartment`, `Maisonette`, `Premium Apartment`, `Premium Maisonette`, `Adjoined flat`, …) |
-| `MULTI-GENERATION` | Spelling in the 2017+ file |
-| `MULTI GENERATION` | Spelling in older files. **Normalise to `MULTI-GENERATION`.** |
+| `1 ROOM` | Only lcd 1969, 1975 and 1977 [DATA]. Since Mar 2012, every `1 ROOM` row is in BUKIT MERAH and is 31 sqm [DATA] |
+| `2 ROOM` | Includes 2-room Flexi flats. Short-lease 2-room Flexi flats cannot be sold on the open market (they go back to HDB), so resale rows are 99-year flats. The policy is UNVERIFIED, but the data is consistent with it [DATA]: every 2017+ `2 ROOM` row with lcd ≥ 2010 has a remaining lease of 87.7–96.8 years (1,351 rows). |
+| `3 ROOM` | Includes **Terrace** model rows with large areas (see §6) |
+| `4 ROOM` | Also includes **Terrace** rows (68 rows) [DATA] |
+| `5 ROOM` | **3Gen flats are recorded as `5 ROOM` with `flat_model = 3Gen`**: confirmed [DATA], 7 rows from 2022-06, all 120 sqm, lcd 2018 |
+| `EXECUTIVE` | Executive Apartment / Maisonette. `flat_model` is exactly one of `Apartment`, `Maisonette`, `Premium Apartment`, `Premium Maisonette`, `Adjoined flat` [DATA] |
+| `MULTI-GENERATION` | Hyphenated spelling, used in **every file from 2000 onward** (2000–Feb 2012, Mar 2012–2014, 2015–2016, 2017+) [DATA] |
+| `MULTI GENERATION` | Unhyphenated spelling, found **only in the 1990–1999 file** (279 rows) [DATA]. **Normalise to `MULTI-GENERATION`.** |
 
-- Corroborated by `datagov-api.md` §5.1. The `MULTI GENERATION` / `MULTI-GENERATION` split is corroborated by two open-source codebases there.
+- Corroborated by `datagov-api.md` §5.1. The `MULTI GENERATION` / `MULTI-GENERATION` split is corroborated by two open-source codebases there and by the data itself.
 - Other HDB datasets (rental, Property Information) use **hyphens** (`4-ROOM`). Normalise to one enum.
 
 ### 3.2 `flat_model` (exact strings as they appear in the 2017+ file)
 
-UNVERIFIED verbatim, but widely reproduced; 21 distinct values. **Compare case-insensitively.** Older eras (1990–Feb 2012) are **UPPERCASE** (e.g. `IMPROVED`, `NEW GENERATION`, `MODEL A-MAISONETTE`, `2-ROOM`, `3GEN`). The 34 raw values across all eras collapse to about 21 after case-folding (per `datagov-api.md`).
+**Confirmed [DATA, Feb 2023 export]:** the 2017+ file has exactly these **21** distinct values. Across all five era files there are **34** raw values, which collapse to the same **21** after case-folding. **Compare case-insensitively.**
 
-| Raw value (2017+) | Meaning / typical flat types | Notes |
+*Corrected 10 Oct 2026:* only the **1990–1999** file is UPPERCASE (13 values: `IMPROVED`, `NEW GENERATION`, `MODEL A`, `STANDARD`, `SIMPLIFIED`, `MODEL A-MAISONETTE`, `APARTMENT`, `MAISONETTE`, `TERRACE`, `2-ROOM`, `IMPROVED-MAISONETTE`, `MULTI GENERATION`, `PREMIUM APARTMENT`). The earlier text said "1990–Feb 2012", but the **2000–Feb 2012 file is already Title case** (`Improved`, `Model A2`, `Adjoined flat`, …). There is **no `3GEN`** in any file: `3Gen` exists only in the 2017+ file, from 2022-06.
+
+In the table below, the flat types and lease years come from the data (all eras, Feb 2023 export) unless marked otherwise. "lcd" means `lease_commence_date`.
+
+| Raw value (2017+) | Meaning / flat types seen in data | Notes |
 |---|---|---|
-| `Improved` | 1970s–80s design. 1–5 room. Also old 5-room "Improved". | |
-| `New Generation` | Late-1970s–80s 3- and 4-room | |
-| `Model A` | 1980s–2000s 3-, 4- and 5-room | |
-| `Model A2` | Smaller 4-room variant (about 85–90 sqm) | |
-| `Simplified` | 1980s–90s 3- and 4-room | |
-| `Standard` | 1960s–80s 1-, 2-, 3- and 5-room | Unrelated to the 2024 "Standard" classification. Do not confuse them. |
-| `Apartment` | Executive Apartment | |
-| `Maisonette` | Executive Maisonette | |
-| `Model A-Maisonette` | 5-room / Executive maisonette | |
-| `Improved-Maisonette` | 5-room / Executive maisonette | |
-| `Premium Apartment` | 1990s–2000s 3-room to Executive | |
-| `Premium Maisonette` | Executive | |
-| `Premium Apartment Loft` | Loft units, 5-room / Executive | |
-| `DBSS` | Design, Build and Sell Scheme, 3-room to 5-room | |
-| `Type S1` | The Pinnacle@Duxton, 4-room (UNVERIFIED) | |
-| `Type S2` | The Pinnacle@Duxton, 5-room (UNVERIFIED) | |
-| `Adjoined flat` | Two flats combined. Large area. | |
-| `Terrace` | 1960s–70s HDB terrace units. Recorded as `3 ROOM`/`4 ROOM` with very large `floor_area_sqm`. | |
-| `Multi Generation` | Pairs with `flat_type` `MULTI-GENERATION` | |
-| `3Gen` | 2013+ 3-Generation flats | |
-| `2-room` | 2-room / 2-room Flexi | Lowercase "room" |
+| `Improved` | `1 ROOM` to `5 ROOM`. lcd 1966–2019 (median 1986), so this is a broad label, not only a 1970s–80s design. | *Corrected* (was "1970s–80s") |
+| `New Generation` | `3 ROOM`, `4 ROOM`. lcd 1976–1999 (99% ≤ 1988). | Confirmed |
+| `Model A` | **`2 ROOM`** to `5 ROOM`. lcd 1978–2019 (median 1990). | *Corrected* (was "1980s–2000s, 3- to 5-room") |
+| `Model A2` | `4 ROOM` only. **85–100 sqm** (p5–p95; median 90). lcd 1997–2004. | *Corrected* (was "about 85–90 sqm") |
+| `Simplified` | `3 ROOM`, `4 ROOM`. lcd 1984–2000. | Confirmed |
+| `Standard` | **`2 ROOM`, `3 ROOM`, `4 ROOM`, `5 ROOM`**; no `1 ROOM` rows. lcd 1967–1986. | *Corrected* (was "1-, 2-, 3- and 5-room"). Unrelated to the 2024 "Standard" classification. Do not confuse them. |
+| `Apartment` | `EXECUTIVE` only (Executive Apartment). lcd 1984–2003. | Confirmed |
+| `Maisonette` | `EXECUTIVE` only (Executive Maisonette). lcd 1984–2000. | Confirmed |
+| `Model A-Maisonette` | **`5 ROOM` only**. lcd 1983–1985. | *Corrected* (was "5-room / Executive") |
+| `Improved-Maisonette` | **`5 ROOM` only**. lcd 1983–1997. | *Corrected* (was "5-room / Executive") |
+| `Premium Apartment` | **`2 ROOM`** to `EXECUTIVE`. lcd 1996–2018. | *Corrected* (was "1990s–2000s, 3-room to Executive") |
+| `Premium Maisonette` | `EXECUTIVE` only. lcd 1997–1998. | Confirmed |
+| `Premium Apartment Loft` | **`4 ROOM`, `5 ROOM`**. lcd 2012–2016. | *Corrected* (was "5-room / Executive") |
+| `DBSS` | `3 ROOM` to `5 ROOM`, plus 1 `2 ROOM` row. lcd 2008–2015. | Confirmed, with the one exception noted |
+| `Type S1` | `4 ROOM` only, blocks 1A–1G CANTONMENT RD (CENTRAL AREA), lcd 2011. That address is The Pinnacle@Duxton (prior knowledge). | Confirmed by data |
+| `Type S2` | `5 ROOM` only, same blocks and lcd. | Confirmed by data |
+| `Adjoined flat` | Two flats combined. `3 ROOM`, `4 ROOM`, `5 ROOM`, `EXECUTIVE`. lcd 1967–1989. 107–164 sqm (p5–p95). | |
+| `Terrace` | HDB terrace units with lcd **1968 or 1972**, only in QUEENSTOWN and KALLANG/WHAMPOA. Recorded as `3 ROOM` (615 rows) or `4 ROOM` (68). Area 78–307 sqm. **Median is only ~100 sqm**; only some `3 ROOM` rows are very large (p95 241). | *Refined* |
+| `Multi Generation` | Pairs with `flat_type` `MULTI-GENERATION` / `MULTI GENERATION`. lcd 1987–1988. | Confirmed |
+| `3Gen` | `5 ROOM`, 120 sqm, lcd 2018 (7 rows). The scheme's 2013 start is UNVERIFIED. | Confirmed flat type |
+| `2-room` | `2 ROOM` only. lcd 1967–2018. | Lowercase "room" |
+
+These values are as of the Feb 2023 export. Values added after that are UNVERIFIED, so keep the "unknown: keep, log" branch below.
 
 ```ts
 // Canonical keys: case-fold and trim; keep the raw string for display.
@@ -308,22 +317,26 @@ export const canonFlatType = (s: string) =>
   - Exceptions not in the resale data: short-lease 2-room Flexi (15–45 years, seniors 55+, cannot be resold on the open market), and Community Care Apartments (UNVERIFIED).
   - Lease length is UNVERIFIED this session but is the well-known HDB rule. Cite https://www.hdb.gov.sg/residential/buying-a-flat/finding-a-flat/types-of-flats (path UNVERIFIED).
 - **`lease_commence_date`** is a 4-digit **year** (e.g. `"1979"`). There is no month. [CORROBORATED, datagov-api.md]
-- **`remaining_lease` format by era** [CORROBORATED, datagov-api.md §5.1]:
+- **`remaining_lease` format by era** [CORROBORATED, datagov-api.md §5.1; checked against DATA, Feb 2023 export]:
 
   | Era | Format | Example |
   |---|---|---|
   | Before 2015 | Column absent | n/a |
-  | Jan 2015–Dec 2016 | Integer years as text | `"70"` |
-  | Jan 2017 onwards | `"NN years MM months"` with zero-padded months; may be `"NN years"` when months are 0 | `"61 years 04 months"` |
+  | Jan 2015–Dec 2016 | Integer years as text (all 37,153 rows) | `"70"` |
+  | Jan 2017 onwards | Mostly `"NN years MM months"` with zero-padded months. *Corrected:* there are three other forms. **`"NN years 01 month"`** (singular "month") appears in 11,973 rows. **`"NN years"`** with no month part appears in 12,061 rows. Three rows from 2019 have an unpadded zero, e.g. `"95 years 0 months"`. | `"61 years 04 months"`, `"95 years 01 month"`, `"62 years"`, `"66 years 0 months"` |
+
+  Parse with `/(\d+)\s*years?/` and `/(\d+)\s*months?/`. The `parseRemainingLease` function in `datagov-api.md` §5.1 already handles all four forms.
 
 - **How HDB computes it:** (exact lease start + 99 years) − the reference date.
-  - The reference date is UNVERIFIED. It is most likely the transaction/registration date.
-  - Worked check: the widely reproduced first 2017 row is `2017-01, ANG MO KIO, 2 ROOM, 406, ANG MO KIO AVE 10, 10 TO 12, 44, Improved, 1979, "61 years 04 months", 232000`. The lease ends around May 2078, which means a lease start around May 1979. This is consistent with `lease_commence_date = 1979`.
+  - **The reference date is the resale application date, not the registration month.** *Corrected; was UNVERIFIED.* The HDB note on the data.gov.sg 2015–2016 resource reads: *"'Remaining lease' is the number of years left before the lease ends. This information is computed as at the resale flat application."* [PRIMARY, dataset metadata in the Feb 2023 export]. The 2017+ resource carried no note in that export, so assume the same basis. The application date falls on or before the registration `month`.
+  - Worked check: the first 2017 row is `2017-01, ANG MO KIO, 2 ROOM, 406, ANG MO KIO AVE 10, 10 TO 12, 44, Improved, 1979, "61 years 04 months", 232000`. It was confirmed verbatim [DATA, Feb 2023 export]. Recomputed: Jan 2017 + 61 y 4 m = **May 2078** lease end, so the lease start is ≈ **May 1979**. Because the reference date is the application date, which can be slightly before Jan 2017, both dates are upper bounds. This is consistent with `lease_commence_date = 1979`.
 - **Derived remaining lease** (pre-2015 rows, or projections):
   - `remainingYears ≈ 99 − (txnYear + (txnMonth−1)/12 − lease_commence_date)`
-  - The error is up to ±1 year, because the commencement month is unknown.
+  - *Corrected error statement* [DATA, Jan 2017–Feb 2023, 146,965 rows]: the formula is **biased low**, not ±1 year symmetric. The actual value minus the formula has a mean of **+0.49 years**. 99.6% of rows fall in **[0, +1.0]** years, and the full range is −0.92 to +1.50 years. The bias is expected: the lease starts somewhere inside the commencement year, and the reference date is before the registration month.
+  - Better estimate: **`99.5 − (txnYear + (txnMonth−1)/12 − lease_commence_date)`**, with an error of about ±0.5 years for 99.6% of rows.
+  - For the 2015–2016 integer values, `remaining_lease − (99 − (txnYear − lcd))` is −1 (48.6% of rows), 0 (51.3%) or +1 (20 rows).
   - Label it **"estimated"** in the UI. Prefer the dataset value when present.
-- **Projecting "remaining lease today"** from a dataset row: `parsed_remaining − months elapsed since row.month`.
+- **Projecting "remaining lease today"** from a dataset row: `parsed_remaining − months elapsed since row.month`. This slightly *overstates* the result, by the gap between the application date and the registration month (UNVERIFIED size, probably 0–2 months).
 - Lease is 99 years for every row. **Do not** assume any other length.
 
 ---
@@ -336,10 +349,12 @@ export const canonFlatType = (s: string) =>
 
 - **26 towns in the 2017+ data:**
   `ANG MO KIO, BEDOK, BISHAN, BUKIT BATOK, BUKIT MERAH, BUKIT PANJANG, BUKIT TIMAH, CENTRAL AREA, CHOA CHU KANG, CLEMENTI, GEYLANG, HOUGANG, JURONG EAST, JURONG WEST, KALLANG/WHAMPOA, MARINE PARADE, PASIR RIS, PUNGGOL, QUEENSTOWN, SEMBAWANG, SENGKANG, SERANGOON, TAMPINES, TOA PAYOH, WOODLANDS, YISHUN`
+- **Confirmed [DATA, Feb 2023 export]:** the 2017+ file has exactly these 26 strings. The 2000–Feb 2012, Mar 2012–2014 and 2015–2016 files have the same 26.
 - **`TENGAH`**: HDB's newest town.
-  - It is in HDB Property Information (code `TG`) but **not yet in resale data**. The first flats were completed around 2023, so the earliest MOP is around 2028.
+  - It is in HDB Property Information (code `TG`) but **not yet in resale data**. Confirmed absent up to Feb 2023 [DATA]; Feb 2023 to Oct 2026 is UNVERIFIED. The first flats were completed around 2023, so the earliest MOP is around 2028. The key-collection date is UNVERIFIED.
   - Add it to the enum now.
-- **`LIM CHU KANG`**: appears only in **1990s** resale records (27th historic value; UNVERIFIED). Accept it, but do not list it as a current town.
+- **`LIM CHU KANG`**: appears only in the **1990–1999** file. Confirmed [DATA]: it is the 27th all-era value and is absent from every later file. Accept it, but do not list it as a current town.
+  - The 1990–1999 file also has **no `PUNGGOL`** rows; Punggol first appears in the 2000–Feb 2012 file [DATA]. So that file also has 26 towns, but a different set.
 - **Count note.** HDB describes its estates as **24 towns + 3 estates** (UNVERIFIED wording).
   - The 3 estates are **Bukit Timah, Central Area, Marine Parade**.
   - So with Tengah there are 27 current values. 26 appear in resale data today.
@@ -387,19 +402,20 @@ This classification applied to BTO flats **before Oct 2024** and still appears i
 
 ## 6. Typical floor areas (`floor_area_sqm`), for sanity checks
 
-UNVERIFIED approximate ranges from prior knowledge. **Compute real per-type percentiles at ingest and use those.** Per the dataset notes, `floor_area_sqm` includes recess area purchased, upgrading space-adding items and roof terraces, so values can exceed the original design.
+*Revised 10 Oct 2026.* The "observed" columns are **[DATA, Feb 2023 export]**: p5–p95 and min–max for Mar 2012–Feb 2023, plus the all-era min–max. The "current design" column is still UNVERIFIED prior knowledge. **Still compute real per-type percentiles at ingest and use those.** Per the dataset notes, `floor_area_sqm` *"includes any recess area purchased, space adding item under HDB's upgrading programmes, roof terrace, etc."* [PRIMARY, dataset metadata], so values can exceed the original design.
 
-| flat_type | Current BTO design (approx.) | Typical resale range | Soft bounds (warn outside) |
-|---|---|---|---|
-| 1 ROOM | ~31–33 | 28–35 | 20–45 |
-| 2 ROOM | 2-room Flexi ~36–47 | 35–50 (older 2-room ~42–50) | 30–75 |
-| 3 ROOM | ~60–68 | 55–75; New Generation up to ~82 | 45–100 (**Terrace rows can be ~200–300; exempt `flat_model = Terrace`**) |
-| 4 ROOM | ~90–93 | 82–105 | 65–150 (exempt Terrace / Adjoined) |
-| 5 ROOM | ~110–113; 3Gen ~115 | 110–135 | 95–170 (exempt Adjoined) |
-| EXECUTIVE | none built since the mid-2000s | 130–160 | 115–260 |
-| MULTI-GENERATION | none built since the 1990s | ~160–170 | 140–200 |
+| flat_type | Current design (approx., UNVERIFIED) | Observed p5–p95 (median), 2012-03 to 2023-02 | Observed min–max, all eras | Soft bounds (warn outside) |
+|---|---|---|---|---|
+| 1 ROOM | Not sold new by HDB today (1-room flats are rental), UNVERIFIED. The earlier "~31–33 BTO design" was misleading. | 31–31 (31) | 28–31 | 20–45 |
+| 2 ROOM | 2-room Flexi ~36–47 | 40–51 (46) | 34–67 (`Standard` up to 67; `Premium Apartment` up to 60) | 30–75 |
+| 3 ROOM | ~60–68 | 59–81 (67) | 46–307 | **45–140**, exempt `Terrace`. *Corrected* from 45–100: non-Terrace rows legitimately reach 137 (`Improved` 137, `Model A` 104/115, `New Generation` 103/107). |
+| 4 ROOM | ~90–93 | 84–107 (93) | 70–149 | 65–150 (exempt Terrace / Adjoined) |
+| 5 ROOM | ~110–113; 3Gen rows are **120** in the data (not ~115) | 110–133 (118) | 99–210 (only `Adjoined flat` exceeds 167) | 95–170 (exempt Adjoined) |
+| EXECUTIVE | None in the data with lcd after **2004** | 128–163 (146) | 124–243 | 115–260 |
+| MULTI-GENERATION | None in the data with lcd after **1988** (was "1990s") | 132–179 (164) | 132–179 | **125–200**. *Corrected* from 140–200, which flagged the real 132/134 sqm rows. |
 
-- **Hard reject:** `floor_area_sqm <= 0`, or `> 400`. Log and skip.
+- *Corrected:* "New Generation up to ~82" was wrong. `New Generation` `3 ROOM` rows reach **103–107** sqm [DATA].
+- **Hard reject:** `floor_area_sqm <= 0`, or `> 400`. Log and skip. The all-era maximum is 307 (a `3 ROOM` Terrace), so 400 is safe [DATA].
 - **Soft-out-of-range rows:** keep, and log them.
 
 ---
@@ -443,15 +459,18 @@ UNVERIFIED approximate ranges from prior knowledge. **Compute real per-type perc
 1. **CHANGED 2026:** the 15-month PPO wait-out for non-subsidised resale without an HDB loan was **removed on 28 Jul 2026**.
    - The effective date is [SECONDARY]; the "immediate effect" wording is [PRIMARY].
    - The remaining conditions (no HDB loan; dispose of private property within 6 months; 30-month rules unchanged) are SECONDARY/UNVERIFIED.
+   - The 10 Oct 2026 fact-check could not re-open any source for this; it is still UNVERIFIED against a full primary page.
 2. Plus/Prime subsidy-recovery rates are **per project**. None are confirmed here.
 3. Plus/Prime/PLH resale-buyer criteria (SC, income ceiling, 30-month wait-out) are UNVERIFIED.
 4. Resale levy amounts (§2.3) are UNVERIFIED.
-5. The exact reference date of `remaining_lease` is UNVERIFIED. The worked example is consistent with a lease-start-month approach.
-6. `flat_model` verbatim list and casing by era: case-fold.
-7. Whether 3Gen is recorded as `5 ROOM`.
+5. ~~The exact reference date of `remaining_lease` is UNVERIFIED.~~ **Resolved:** it is computed as at the resale application date (HDB dataset note, §4).
+6. ~~`flat_model` verbatim list and casing by era.~~ **Resolved [DATA]:** 21 values; only the 1990–1999 file is UPPERCASE (§3.2).
+7. ~~Whether 3Gen is recorded as `5 ROOM`.~~ **Resolved [DATA]:** yes, at 120 sqm.
 8. Region mapping per URA (UNVERIFIED this session, but standard).
 9. Recent SERS site list, and VERS launch status.
-10. The HDB income ceiling as of Oct 2026.
+10. The HDB income ceiling as of Oct 2026 (conflicting claims, see `loan-rules.md` §3.4).
+11. **New:** `lease_commence_date` usually lags key collection by about 1–2 years (§1.2). Do not derive MOP dates from it.
+12. **New:** the bedroom-rental mechanism (approval vs registration) is UNVERIFIED (§1.3).
 
 ---
 
@@ -476,9 +495,69 @@ Primary, read via search-index extracts:
 - https://www.hdb.gov.sg/-/media/hdb-pulse/news/2022/hdb-offers-two-additional-rehousing-options-for-flat-owners-under-ser/Annex_B.pdf
 - https://www.mas.gov.sg/news/media-releases/2010/measures-to-ensure-a-stable-and-sustainable-property-market
 
+Primary data, HDB's own data.gov.sg export (collection metadata `Last Updated: 2023-02-17`), read from a public GitHub mirror on 10 Oct 2026. These are the sources for all [DATA] labels:
+- https://github.com/JosiahMendes/HDB-Resale-Price-Prediction/tree/main/data (commit 45472e2, 16 Jun 2023): the 5 era CSVs plus `metadata-resale-flat-prices.txt`
+- The original resource URLs named in that metadata, e.g. `https://storage.data.gov.sg/resale-flat-prices/resources/resale-flat-prices-based-on-registration-date-from-jan-2017-onwards-2023-02-17T05-33-07Z.csv` (legacy host; current dataset ID `d_8b84c4ee58e3cfc0ece0d773c8ca6abc` per `datagov-api.md`)
+
 Secondary (used only for the 28 Jul 2026 effective date and the remaining conditions):
 - https://propseller.com/blog/housing-news/15-month-hdb-wait-out-period-removed/
 - https://darrenong.sg/blog/15-month-hdb-wait-out-period-removed/
 - https://youhome.sg/hdb-15-month-wait-out-period/
 - https://www.thefinancialcoconut.com/blog/hdb-15-month-wait-out-period-removed-2026
 - https://tribesg.com/insights/wait-out-removal-price-held-volume-moved
+
+---
+
+## Verification log
+
+Adversarial fact-check, **10 Oct 2026**.
+
+**Method.**
+- **Live web was unavailable.** WebFetch returned `getaddrinfo ENOTFOUND` for hdb.gov.sg, gov.sg, mas.gov.sg, propseller.com and example.com. The shared WebSearch budget was already exhausted. `curl` to data.gov.sg got proxy 403.
+- **Policy claims** therefore could not be re-checked against primary pages. They are marked *unverifiable*, and their existing labels are kept.
+- **Dataset claims** were tested against HDB's own data.gov.sg export (Feb 2023, 893,168 rows; see §9), using local Python over the 5 CSVs. "PK" means prior knowledge.
+
+| # | Claim (section) | Verdict | Source / evidence |
+|---|---|---|---|
+| 1 | Column list `month … resale_price` (§3) | confirmed | CSV headers, Feb 2023 export |
+| 2 | `month` = approval month to Feb 2012, registration month from Mar 2012 (§1.2) | confirmed | dataset metadata Description |
+| 3 | 7 `flat_type` values (§3.1) | confirmed | all 5 files |
+| 4 | `MULTI GENERATION` in "older files", hyphen in "2017+" (§3.1) | corrected: no hyphen **only in 1990–1999**; hyphen from 2000 on | per-file counts |
+| 5 | 3Gen recorded as `5 ROOM` (§3.1) | confirmed (was UNVERIFIED): 7 rows, 120 sqm, lcd 2018 | 2017+ file |
+| 6 | Resale `2 ROOM` rows are 99-year flats (§3.1) | consistent with data: lcd ≥ 2010 rows have 87.7–96.8 years remaining; policy itself unverifiable | 2017+ file |
+| 7 | 21 `flat_model` values; 34 raw values → 21 case-folded (§3.2) | confirmed | all files |
+| 8 | UPPERCASE `flat_model` in 1990–Feb 2012; `3GEN` exists (§3.2) | corrected: only 1990–1999 is UPPERCASE; no `3GEN` anywhere | per-file values |
+| 9 | Per-model flat types and eras: Model A, Standard, Model A-Maisonette, Improved-Maisonette, Premium Apartment, Premium Apartment Loft, Model A2 area, Improved era (§3.2) | corrected (8 rows of the table) | model × flat_type cross-tab; lcd and area percentiles |
+| 10 | Type S1 = Pinnacle@Duxton 4-room, Type S2 = 5-room (§3.2) | confirmed by data (blocks 1A–1G CANTONMENT RD, lcd 2011); the "Pinnacle" name is PK | 2012+ files |
+| 11 | Terrace: 1960s–70s, `3 ROOM`/`4 ROOM`, very large area (§3.2, §6) | refined: lcd 1968/1972, Queenstown and Kallang/Whampoa only, 78–307 sqm, median ~100 | all files |
+| 12 | `remaining_lease` 2015–16 integer; 2017+ zero-padded "NN years MM months" or "NN years" (§4) | corrected: also `"NN years 01 month"` (11,973 rows) and unpadded `"0 months"` (3 rows) | 2015–16 and 2017+ files |
+| 13 | `remaining_lease` reference date (§4) | corrected (was UNVERIFIED): "computed as at the resale flat application" | HDB note on the 2015–2016 resource, dataset metadata |
+| 14 | Worked check: first 2017 row → lease end May 2078, start ≈ May 1979 (§4) | confirmed: row verbatim, arithmetic recomputed (Jan 2017 + 61 y 4 m = May 2078; − 99 y = May 1979) | 2017+ file, first row |
+| 15 | Derived-lease formula error "up to ±1 year" (§4) | corrected: biased low, mean +0.49 y, 99.6% within [0, +1.0], range −0.92 to +1.50. Use 99.5 − … (±0.5) | 146,965 rows, 2017-01 to 2023-02 |
+| 16 | Earliest resale ≈ `lease_commence_date + 5`; key collection ≈ lcd; "lcd 2019 → resale ~2024" (§1.2) | **corrected**: in the 1,065 blocks with lcd 2008–17, the first resale's calendar year is lcd+4 for 59% and lcd+3 for 27%; that is 3.2–4.2 y after the implied lease start; lcd lags key collection by ~1–2 y; lcd 2019 blocks resold from 2020-08 | first-resale month per block |
+| 17 | 26 towns in the 2017+ data (§5.1) | confirmed (to Feb 2023) | 2017+ file |
+| 18 | `LIM CHU KANG` only in 1990s, 27th historic value (§5.1) | confirmed (was UNVERIFIED); also noted no PUNGGOL in the 1990s file | all files |
+| 19 | `TENGAH` not in resale data (§5.1) | confirmed to Feb 2023; Feb 2023–Oct 2026 unverifiable | all files |
+| 20 | Floor-area ranges and soft bounds (§6) | corrected: 3 ROOM soft upper 100 → 140; MULTI-GEN lower 140 → 125; New Generation 3 ROOM up to 107 (not ~82); 3Gen 120 (not ~115); 1 ROOM "BTO design" removed; MULTI-GEN latest lcd 1988; EXECUTIVE latest lcd 2004 | area percentiles by type and model |
+| 21 | Hard reject `> 400` sqm (§6) | confirmed safe: all-era max 307 | all files |
+| 22 | PLH launched "Nov 2021 to Aug 2024" (§1.1) | corrected (PK, UNVERIFIED): 2024 BTO exercises were Feb/Jun/Oct, so the last pre-framework exercise is Jun 2024 | PK |
+| 23 | "No Plus/Prime MOP before 2038" (§1.3) | arithmetic confirmed (2028 + 10 = 2038); reworded to "late 2030s", completion year UNVERIFIED | recomputed |
+| 24 | HDB page "about 75 days before 2026-10-10" matches 28 Jul 2026 (§2.2) | corrected precision: 10 Oct 2026 − 75 d = 27 Jul 2026, one day before the coded effective date | recomputed |
+| 25 | Bedroom rental "with HDB approval" (§1.3) | flagged, unverifiable: PK says bedroom rental is registered within 7 days, not pre-approved | PK |
+| 26 | Resale levy "who pays" includes resale-with-grant (§2.3) | flagged, unverifiable: PK says the levy is triggered by buying a new HDB flat or EC | PK |
+| 27 | HDB LTV 75% from 20 Aug 2024 (§2.4) | confirmed by cross-reference (PRIMARY in `loan-rules.md` §3) | loan-rules.md |
+| 28 | BTO income ceiling $14,000 (§1.3) | unverifiable; conflicting 2026 claim of $16,000 noted from `loan-rules.md` §3.4 | loan-rules.md |
+| 29 | SC 2nd-property ABSD 20% since 27 Apr 2023 (§2.1) | consistent with `stamp-duty.md` §2.2 (no 2025–26 ABSD rate change found there) | stamp-duty.md |
+| 30 | MOP values: Standard/pre-2024/resale 5 y; Plus/Prime/PLH 10 y; Fresh Start 20 y; 1-room none; DBSS/EC 5 y (§1.1) | unverifiable this pass; consistent with PK. Labels unchanged | none reachable |
+| 31 | MOP from key collection or resale completion; whole-flat rental periods excluded (§1.2) | unverifiable; consistent with PK | none reachable |
+| 32 | Oct 2024 framework start; NDR Aug 2023 announcement; Plus/Prime no whole-flat rental; subsidy recovery per project (§1.3) | unverifiable; consistent with PK | none reachable |
+| 33 | PLH: Rochor Riverfront first, 6% recovery (§1.4) | unverifiable; consistent with PK | none reachable |
+| 34 | No private purchase during MOP, for flats bought from 30 Aug 2010 (§2.1); historical 1 y / 3 y resale MOP (§1.1) | unverifiable; consistent with PK | none reachable |
+| 35 | 15-month wait-out from 30 Sep 2022 with senior 55+ / ≤4-room exemption (§2.2) | unverifiable this pass; consistent with PK | none reachable |
+| 36 | 15-month wait-out removed 28 Jul 2026; no-HDB-loan and 6-month disposal conditions (§2.2) | **UNVERIFIED**: after the PK cutoff, no source reachable; labels unchanged | none reachable |
+| 37 | Resale levy table $15k / $30k / $40k / $45k / $50k / $50k / $55k; singles half (§2.3) | unverifiable; amounts consistent with PK | none reachable |
+| 38 | HFE letter from 9 May 2023; 7-day Intent to Sell (§2.4) | unverifiable; consistent with PK and `loan-rules.md` §3.5 | loan-rules.md |
+| 39 | CPF and lease-to-95 rules from 10 May 2019; no CPF under 20 years remaining (§2.4) | unverifiable; consistent with PK and `loan-rules.md` §4 | loan-rules.md |
+| 40 | 24 towns + 3 estates; region mapping; 15 mature / 12 non-mature (§5) | unverifiable; consistent with PK; arithmetic 24 + 3 = 27 = 15 + 12 confirmed | PK |
+| 41 | SERS from 1995, ~5% of flats, 2022 two extra rehousing options (§7.1) | unverifiable; consistent with PK | none reachable |
+| 42 | VERS at NDR 19 Aug 2018, ~70 years, ~20 years later; HIP II (§7.2) | unverifiable; consistent with PK. Any 2025–26 VERS update is unknown | none reachable |

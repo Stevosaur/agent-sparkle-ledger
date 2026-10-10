@@ -38,7 +38,7 @@ Research date: **2026-10-10**. Scope:
 | Docs + sign-up page (current) | `https://eservice.ura.gov.sg/maps/api/` | [OFFICIAL-SNIPPET] [LIVE-2026] (sgprop `config.py`: "A URA key is free: https://eservice.ura.gov.sg/maps/api/") |
 | Registration form | Legacy form: `https://www.ura.gov.sg/maps/api/reg.html` (Caisho README, ura_api). The current form is reached from the docs page above. The exact new path, possibly `https://eservice.ura.gov.sg/maps/api/reg.html`, is **UNVERIFIED**. | [CORROBORATED] for the legacy path |
 | Flow | Sign up for an account. After registering, you get an **email with an Access Key**. The Access Key is used to **generate a daily Token**. | [OFFICIAL-SNIPPET] GovTech portal: "After registering, you will receive an email with an access key that allows you to generate tokens for accessing URA's data services." |
-| Cost | Free | [CORROBORATED] (sgprop README: "a free access key") |
+| Cost | Free | Single secondary source: sgprop (README: "Get a free URA access key"; `ura.py`: "a permanent AccessKey (free signup)"). Official wording UNVERIFIED. |
 | Access key expiry or quota | Not documented in anything I could see. | UNVERIFIED |
 
 ### 1.2 Base URL in use in 2026, and the migration
@@ -73,7 +73,7 @@ Response [LIVE-2026] (sgprop checks `Status == "Success"` and reads `Result`; pr
 - **HTTP method:** use `GET`. Both 2026 clients use GET. The 2020 `ura_api` wrapper used POST, which also worked at the time. [CORROBORATED]
 - **Lifetime:** valid for **one day**. The legacy manual calls it the token "valid for the day's access"; sgprop describes "a Token that lasts one day". [CORROBORATED] Whether "a day" means 24 hours from issue or a calendar day in SGT is **UNVERIFIED**.
 - **Recommended handling:**
-  - Request a fresh token at the start of each ingestion run. A full run needs about 20 calls.
+  - Request a fresh token at the start of each ingestion run. A full run needs about 27 calls: 1 token, 4 transaction batches, about 21 rental quarters, the rental median and the pipeline. Optional developer sales add 36 more.
   - Never ship the token or the key to the browser.
   - If a service call returns `Status != "Success"` and `Message` mentions the token, request a new token once and retry. sgprop does exactly this.
 - Whether there is a limit on how many tokens a key can request per day is **UNVERIFIED**.
@@ -88,7 +88,7 @@ Headers:
   User-Agent: Mozilla/5.0 (compatible; <YourApp>/1.0; +https://<your-site>)
 ```
 
-- The header names are exactly `AccessKey` and `Token`, case as shown. [OFFICIAL-SNIPPET] [LIVE-2026]
+- The header names are `AccessKey` and `Token`. [OFFICIAL-SNIPPET] [LIVE-2026] Send them with the casing shown. (HTTP header names are case-insensitive, and the `ura_api` wrapper sent a lower-case `token` header. Casing is therefore not a known failure cause, but keep the documented form.)
 - Query parameters: `service` (required), plus `batch` or `refPeriod` depending on the service (see §2).
 
 ### 1.5 User-Agent requirement
@@ -114,9 +114,11 @@ Headers:
   2. Try `new TextDecoder("utf-8", { fatal: true })`.
   3. On a throw, fall back to `new TextDecoder("windows-1252")`.
   4. Then `JSON.parse`.
-- **Numbers arrive as strings** in transactions, for example `"area": "143"`, `"price": "2268888"`, `"x": "40560.2"`. Rental `rent` has been seen as a JSON number. Parse every numeric field with a tolerant `Number(String(v).replace(/,/g, ""))`. Treat `""`, `"-"`, `"NA"` and `null` as missing. [LIVE-2026] (sgprop `_num`)
-- **Timeouts:** responses are large. sgprop uses a 120 s timeout per call, and a full sync of 4 transaction batches plus 12 rental quarters takes about 40 s. Run ingestion **offline (cron or GitHub Actions)**, not inside a Vercel request. Payload sizes are **UNVERIFIED**.
-- **Where to call from:** URA asks that calls come from your own server, not from your app's end users. sgprop: "URA asks that calls come from your own machine or server, not from an app's end users, so don't ship a key inside a client-side product." [CORROBORATED from a secondary source; official wording UNVERIFIED]
+- **Numbers arrive as strings** in transactions, for example `"area": "143"`, `"price": "2268888"`, `"x": "40560.2"`. In sgprop's test fixture, rental `rent` is a JSON number. Parse every numeric field with a tolerant `Number(String(v).replace(/,/g, ""))`. Treat `""`, `"-"`, `"NA"` and `null` as missing (sgprop `_num` also treats lower-case `"na"` as missing). [FIXTURE + PARSER] These example values come from sgprop's **test fixture** (`tests/test_sgprop.py`), not from a captured live response. Both 2026 parsers accept either strings or numbers, so the exact JSON type of each field is UNVERIFIED.
+- **Timeouts:** responses are large. sgprop uses a 120 s timeout per call, and a full sync of 4 transaction batches plus 12 rental quarters takes about 40 s. Run ingestion **offline (cron or GitHub Actions)**, not inside a Vercel request. Payload sizes in bytes are **UNVERIFIED**. Record counts from a live capture on **2026-10-05** [LIVE-2026] (property-intelligence-SG `audit/2026-10-05/phase2-source-reconciliation.json`):
+  - Transactions: **132,246** rows in total. Batch 1: 292 projects, 19,889 rows. Batch 2: 1,524 projects, 29,178 rows. Batch 3: 1,642 projects, 53,974 rows. Batch 4: 387 projects, 29,205 rows.
+  - Rentals: **451,165** contracts across `21q3`–`26q3`. Each full quarter has about 19,000–28,000 contracts.
+- **Where to call from:** URA asks that calls come from your own server, not from your app's end users. sgprop: "URA asks that calls come from your own machine or server, not from an app's end users, so don't ship a key inside a client-side product." [Single secondary source: sgprop `ura.py` and README. Official wording UNVERIFIED]
 - Whether `eservice.ura.gov.sg` is reachable from GitHub-hosted runners or Vercel (non-Singapore IPs) is **UNVERIFIED**. The 2026 clients ran from a laptop and a droplet. Add a clear failure message and keep the last good snapshot.
 
 ---
@@ -127,14 +129,14 @@ Headers:
 
 | `service` | Params | What it returns | Data window | Update schedule | Confidence |
 |---|---|---|---|---|---|
-| `PMI_Resi_Transaction` | `batch=1..4` (required) | Private residential sale transactions (incl. ECs), grouped by project | **Past 5 years** | **Every Tuesday and Friday**, end of day (next working day if public holiday) | Window: [OFFICIAL-SNIPPET] "To get a list of private property transactions for the past 5 years". Schedule: [CORROBORATED] (sgprop; official wording UNVERIFIED). |
-| `PMI_Resi_Rental` | `refPeriod=YYqN`, e.g. `24q1` (required) | Private residential rental contracts for one quarter, grouped by project | About the past 3 years (sgprop default: 12 quarters) | **15th of each month**, end of day | [CORROBORATED] format. Window and schedule from sgprop; official wording UNVERIFIED. |
+| `PMI_Resi_Transaction` | `batch=1..4` (required) | Private residential sale transactions (incl. ECs), grouped by project | **Past 5 years** | **Every Tuesday and Friday**, end of day (next working day if public holiday) | Window: [OFFICIAL-SNIPPET] "To get a list of private property transactions for the past 5 years". Schedule: single secondary source, sgprop ("Tue & Fri"). The public-holiday rule and the official wording are UNVERIFIED. |
+| `PMI_Resi_Rental` | `refPeriod=YYqN`, e.g. `24q1` (required) | Private residential rental contracts for one quarter, grouped by project | **About the past 5 years (~60 months)**. Live capture on 2026-10-05: `21q1` and `21q2` were empty, `21q3` was partial (3,942 contracts, against about 20,000 for a full quarter; the audit's sample rows from it are dated 2021-09), and `21q4`–`26q3` were full. sgprop's 12-quarter default is that tool's own choice, not the API limit. | **15th of each month**, end of day | Format [CORROBORATED]. Window [LIVE-2026] (property-intelligence-SG audit, see §2.2). Schedule: single secondary source (sgprop); official wording UNVERIFIED. |
 | `PMI_Resi_Rental_Median` | none | Median rental $psf per month for private **non-landed** projects (with ≥ 10 contracts), by quarter | About the past 3 years | Quarterly (UNVERIFIED: 4th Friday of Jan/Apr/Jul/Oct) | Service name [CORROBORATED]. Fields and schedule UNVERIFIED. |
-| `PMI_Resi_Developer_Sales` | `refPeriod=MMYY`, e.g. `0926` = Sep 2026 (required) | Developer (new launch) sales by project for one month | "past 3 years" | "End of day of every 15th of the month. If it is a public holiday, the data will be updated on the following working day." | Format and schedule [CORROBORATED] (ura_api docstring copied from the URA docs; sgprop: `'0926' (MMYY)`). Fields UNVERIFIED. |
-| `PMI_Resi_Pipeline` | none | Private residential projects in the pipeline, latest quarter | Latest quarter only | "End of day of every 4th Friday of January, April, July and October. If it is a public holiday, the data will be updated on the following working day." | Schedule [CORROBORATED] (ura_api docstring). Fields UNVERIFIED. |
-| `Planning_Decision` | `year=YYYY` **or** `last_dnload_date=dd/mm/yyyy` (not both) | Written planning decisions | n/a | n/a | Params [CORROBORATED] (ura_api). Fields UNVERIFIED. Not needed for this app. |
+| `PMI_Resi_Developer_Sales` | `refPeriod=MMYY`, e.g. `0926` = Sep 2026 (required) | Developer (new launch) sales by project for one month | "past 3 years" (2020-era docstring; may have changed, UNVERIFIED for 2026) | "End of day of every 15th of the month. If it is a public holiday, the data will be updated on the following working day." | Format [CORROBORATED] (ura_api docstring copied from the URA docs; sgprop: `'0926' (MMYY)`). Window and schedule: single source (the ura_api docstring, copied from the URA docs around 2020). Fields UNVERIFIED. |
+| `PMI_Resi_Pipeline` | none | Private residential projects in the pipeline, latest quarter | Latest quarter only | "End of day of every 4th Friday of January, April, July and October. If it is a public holiday, the data will be updated on the following working day." | Schedule: single source (ura_api docstring, around 2020). Fields UNVERIFIED. |
+| `Planning_Decision` | `year=YYYY` **or** `last_dnload_date=dd/mm/yyyy` (not both) | Written planning decisions | n/a | n/a | Params: single source (ura_api code and tests). Fields UNVERIFIED. Not needed for this app. |
 
-Other services on the same gateway, listed for completeness [CORROBORATED, ura_api]:
+Other services on the same gateway, listed for completeness. Single source (ura_api, 2020–2023); current availability is UNVERIFIED.
 
 - `Car_Park_Availability`
 - `Car_Park_Details`
@@ -153,8 +155,10 @@ GET {URA_BASE}/invokeUraDS/v1?service=PMI_Resi_Transaction&batch=1
 |---|---|---|
 | 1 | D01–D07 | [OFFICIAL-SNIPPET] "Batch 1 covers postal districts 01 to 07, batch 2 covers 08 to 14, and so on." ura_api README: "batch 1 is for postal district 01 to 07, batch 2 is for postal district 08 to 14 etc." |
 | 2 | D08–D14 | same |
-| 3 | D15–D20 | UNVERIFIED (my memory of the official doc). Each row carries `district`, so code must not depend on the boundaries. |
+| 3 | D15–D20 | UNVERIFIED (my memory of the official doc; the 2026-10-10 reviewer remembers the same split but could not reach a primary source). Each row carries `district`, so code must not depend on the boundaries. |
 | 4 | D21–D28 | UNVERIFIED (as above) |
+
+All 4 batches returned data in a live capture on 2026-10-05: 19,889, 29,178, 53,974 and 29,205 rows, totalling 132,246 [LIVE-2026]. Those counts do not reveal which districts each batch holds.
 
 - Always fetch **all 4 batches** and replace the whole snapshot.
 - URA **revises older records**. sgprop: "URA revises older records, so each sync replaces what it fetched instead of appending."
@@ -231,8 +235,8 @@ GET {URA_BASE}/invokeUraDS/v1?service=PMI_Resi_Transaction&batch=1
 
 **Derived values (to match URA's own e-service figures):**
 
-- **sqft = sqm × 10.764.** URA's eservice uses **10.764**, not 10.7639. sgprop verified this on 9,997 D19 rows: "every 'Area (SQFT)' and 'Unit Price ($ PSF)' matches 10.764 exactly". [LIVE-2026]
-- **psf = price / (sqm × 10.764)**, computed from the unrounded area and rounded half-up only for display. This matched all 9,997 single-unit rows. [LIVE-2026]
+- **sqft = sqm × 10.764.** URA's eservice uses **10.764**, not the exact 10.7639104 (1 sqft = 0.09290304 m²). sgprop `schema.py`: "checked on 3,000 D19 rows, every 'Area (SQFT)' and 'Unit Price ($ PSF)' matches 10.764 exactly". The sgprop README separately says its export matched URA's eservice download for D19 (**9,997 single-unit sales**) on every row for price, sqft, psf, psm, date, floor and sale type. [LIVE-2026, single source: sgprop]
+- **psf = price / (sqm × 10.764)**, computed from the unrounded area and rounded half-up only for display. sgprop: this "matches all 9,997 single-unit D19 eservice rows (dividing by the 2-dp sqft matched 9,946)". [LIVE-2026, single source: sgprop] Worked example from the fixture: 2,268,888 / (143 × 10.764 = 1,539.252 sqft) = **$1,474.02 psf**, displayed as $1,474.
 - **psm = price / sqm.**
 
 **Typescript types:**
@@ -262,7 +266,13 @@ GET {URA_BASE}/invokeUraDS/v1?service=PMI_Resi_Rental&refPeriod=26q2
   - property-intelligence-SG validates `/^(\d{2})q([1-4])$/i`.
   - [CORROBORATED]
 - One call per quarter. The current, partly published quarter can return partial or empty data.
-- **Window:** about the last 3 years (sgprop fetches 12 quarters). Quarters outside the window return an empty `Result`. Exact window UNVERIFIED.
+- **Window: about the last 5 years, not 3 (corrected 2026-10-10).** A live capture on 2026-10-05 (property-intelligence-SG, `audit/2026-10-05/phase2-source-reconciliation.json`) requested `21q1`–`26q3`:
+  - `21q1` and `21q2` returned an empty `Result`.
+  - `21q3` was partial, with 3,942 contracts.
+  - `21q4`–`26q3` were full, with 19,460–27,881 contracts each and 451,165 contracts in total.
+  - sgprop fetches only 12 quarters (3 years) by its own default.
+  - Quarters outside the window return an empty `Result` with `Status: "Success"`.
+  - The exact rule (60 rolling months, or something else) is UNVERIFIED. To get full coverage, request about 21 quarters and tolerate empty ones.
 
 **Response shape** [LIVE-2026: sgprop fixture and parser, property-intelligence-SG parser]:
 
@@ -287,14 +297,14 @@ GET {URA_BASE}/invokeUraDS/v1?service=PMI_Resi_Rental&refPeriod=26q2
 
 | Field | Type | Meaning | Notes |
 |---|---|---|---|
-| `project`, `street`, `x`, `y` | as in §2.1 | | **There is no `marketSegment` on rental projects** (none of the parsers reads one). Join to transaction projects by `project` + `street` to get the segment. |
+| `project`, `street`, `x`, `y` | as in §2.1 | | **Do not expect `marketSegment` on rental projects.** Whether it is present is UNVERIFIED. sgprop's rental parser does not read it. property-intelligence-SG uses one project upsert for both payloads, and it reads `marketSegment` but **defaults to `'OCR'` when the field is absent**. Do not copy that default. Join to transaction projects by `project` + `street` to get the segment. |
 | `rental[]` | array | Contracts for the quarter | |
 | `leaseDate` | string `MMYY` | Lease commencement month | |
 | `rent` | number or numeric string | Monthly rent, S$ | Parse tolerantly. |
 | `areaSqm` | string band | Floor-area band in sqm, e.g. `"140-150"` | **Band, not an exact area.** |
 | `areaSqft` | string band | Floor-area band in sqft, e.g. `"1500-1600"` | sgprop: the API and eservice sometimes disagree on the **sqm** band at boundaries (700–800 sqft shows as 60–70 sqm in the API but 70–80 on eservice). The **sqft band always matches**, so prefer `areaSqft`. Open-ended bands such as `"<400"` or `">3000"` may occur (property-intelligence-SG guards for them; UNVERIFIED). |
 | `noOfBedRoom` | string | Bedroom count, e.g. `"4"`. `"NA"` for landed. | **The field is `noOfBedRoom`.** There is **no** `bedrooms` field. |
-| `propertyType` | string | Values seen: `Non-landed Properties`, `Executive Condominium`, `Terrace House`, `Semi-Detached House`, `Detached House` | [CORROBORATED] (property-intelligence-SG). Treat as an open set. |
+| `propertyType` | string | Values seen: `Non-landed Properties`, `Executive Condominium`, `Terrace House`, `Semi-Detached House`, `Detached House`. property-intelligence-SG's rental filter also accepts `Landed Properties`. | Single secondary source: property-intelligence-SG filters and tests (`Non-landed Properties` also appears in the sgprop fixture). Treat as an open set. |
 | `district` | string, 2 digits | Postal district | |
 
 - **Rent psf is approximate** because area is a band. Use the band midpoint, e.g. `(1500 + 1600) / 2`, and label it "approx."
@@ -385,20 +395,20 @@ URA does not state the hour of day it publishes. sgprop treats a publish day's d
 
 ## 3. SVY21 (EPSG:3414) to WGS84
 
-URA `x` = **Easting**, `y` = **Northing**, both in **SVY21 metres**. [VERIFIED-BY-TEST] sgprop's LIVIA fixture `x=40560.2, y=39055.1` converts to 1.36947 N, 103.94618 E. That point is Pasir Ris Grove, which is correct.
+URA `x` = **Easting**, `y` = **Northing**, both in **SVY21 metres**. [VERIFIED-BY-TEST] sgprop's LIVIA fixture `x=40560.2, y=39055.1` converts to 1.36947 N, 103.94618 E, which is in the Pasir Ris area. The conversion maths is re-checked against PROJ 9.8.1. Whether the fixture coordinates are LIVIA's real URA coordinates is UNVERIFIED, because the fixture may be hand-made.
 
 ### 3.1 Parameters
 
 | Parameter | Value |
 |---|---|
 | Projection | Transverse Mercator |
-| Datum / ellipsoid | WGS84: a = 6378137 m, 1/f = 298.257223563 (SVY21 is realised on WGS84, so no datum shift: `towgs84=0,0,0,0,0,0,0`) |
+| Datum / ellipsoid | **Datum: SVY21** (EPSG datum 6757, geographic CRS EPSG:4757). **Ellipsoid: WGS 84**, a = 6378137 m, 1/f = 298.257223563. EPSG's "SVY21 to WGS 84 (1)" is a **null (zero-shift) transformation with a stated accuracy of 1 m**, so `towgs84=0,0,0,0,0,0,0` is the standard practice. The datums are not identical; they are treated as coincident to about 1 m. [VERIFIED: PROJ 9.8.1 EPSG database via pyproj 3.8.0] |
 | Latitude of origin | **1°22′00″ N = 1.366666666…°** (code commonly uses `1.366666`) |
 | Central meridian (longitude of origin) | **103°50′00″ E = 103.833333333…°** (code commonly uses `103.833333`) |
 | Scale factor | **1.0** |
 | False Easting | **28001.642 m** |
 | False Northing | **38744.572 m** |
-| EPSG | **3414** ("SVY21 / Singapore TM") |
+| EPSG | **3414** ("SVY21 / Singapore TM"). EPSG area of use: lat 1.13–1.47, lng 103.59–104.07, "Singapore - onshore and offshore". |
 
 proj4 definition (EPSG:3414):
 
@@ -409,7 +419,17 @@ proj4 definition (EPSG:3414):
 Sources:
 
 - SLA publishes the SVY21 projection parameters. The SLA page could not be fetched (**UNVERIFIED URL**), so the parameters are cited by reference.
+- **Confirmed against the EPSG registry, 2026-10-10.** PROJ 9.8.1 (`pyproj` 3.8.0) `CRS.from_epsg(3414)` gives:
+  - Latitude of natural origin 1.36666666666667.
+  - Longitude of natural origin 103.833333333333.
+  - Scale factor 1.
+  - False easting 28001.642.
+  - False northing 38744.572.
+  - Ellipsoid WGS 84.
+  - PROJ string `+proj=tmerc +lat_0=1.36666666666667 +lon_0=103.833333333333 +k=1 +x_0=28001.642 +y_0=38744.572 +ellps=WGS84 +units=m +no_defs`.
 - The reference implementation is https://github.com/cgcai/SVY21 (`Javascript/svy21.js`), which uses `oLat=1.366666`, `oLon=103.833333`, `oN=38744.572`, `oE=28001.642`, `k=1`, WGS84 a and f, and the LINZ TM formulae.
+  - **Licence: the cgcai/SVY21 repository has no LICENSE file.** I checked a clone of its last commit, 2020-07-21. Its README only says "Feel free to port the code to other languages".
+  - Its README also argues that the truncated origin "give[s] accurate results" when compared with a Google Maps satellite image. The difference is about 7 cm (see below), which is below what satellite imagery can resolve, so this does not contradict using the exact EPSG values.
 - sgprop `svy21.py` (2026) uses the same constants.
 
 **[VERIFIED-BY-TEST]** checks against `proj4@2.12.1` with the definition above:
@@ -419,12 +439,13 @@ Sources:
 - Test vectors (exact origin):
   - `N=38744.572, E=28001.642` → `lat 1.3666666667, lng 103.8333333333`
   - `N=39105.269, E=30629.967` (570 Ang Mo Kio Ave 10, from cgcai's README) → `lat 1.3699285644, lng 103.8569506831`. cgcai's truncated-origin value is `1.3699278978, 103.8569503498`.
-  - `N=39055.1, E=40560.2` → `lat 1.3694722980, lng 103.9461807234`
+  - `N=39055.1, E=40560.2` → `lat 1.3694722980, lng 103.9461807233`. The TypeScript below returns `103.94618072325`; proj4 and PROJ return `103.94618072338`, which rounds to `…7234`. The two agree to about 0.01 mm. **Unit tests should use a tolerance of about 1e-9° (0.1 mm), not 10-decimal equality.** A `toBeCloseTo(103.9461807234, 10)` test fails against this code.
 
 ### 3.2 Drop-in TypeScript (no dependency; tested)
 
 ```ts
-// SVY21 (EPSG:3414) -> WGS84. Port of cgcai/SVY21 (MIT, LINZ TM formulae), exact origin 1°22'N 103°50'E.
+// SVY21 (EPSG:3414) -> WGS84. LINZ Transverse Mercator inverse formulae (same structure as cgcai/SVY21,
+// which has NO licence file), exact EPSG origin 1°22'N 103°50'E. Verified against PROJ/proj4 to < 0.2 mm.
 const a = 6378137, f = 1 / 298.257223563;
 const ORIGIN_LAT = 1 + 22 / 60, ORIGIN_LON = 103 + 50 / 60;
 const FALSE_N = 38744.572, FALSE_E = 28001.642, K = 1;
@@ -468,7 +489,9 @@ export function svy21ToWgs84(northing: number, easting: number): { lat: number; 
 }
 ```
 
-Alternative: `npm i proj4@2.12.1`, published 2024-09-06; the npm `latest` tag pointed to 2.22.0 on 2026-10-10. Register the definition above with `proj4.defs("EPSG:3414", …)` and call `proj4("EPSG:3414", "EPSG:4326", [x, y])`. Note that **proj4 takes `[easting, northing]`** and returns `[lng, lat]`. Sanity-check every result against the Singapore bounding box (lat 1.15–1.48, lng 103.59–104.10), and drop coordinates outside it.
+Alternative: `npm i proj4@2.12.1`, published 2024-09-06; the npm `latest` tag pointed to 2.22.0 on 2026-10-10. Register the definition above with `proj4.defs("EPSG:3414", …)` and call `proj4("EPSG:3414", "EPSG:4326", [x, y])`. Note that **proj4 takes `[easting, northing]`** and returns `[lng, lat]`. Sanity-check every result against the Singapore bounding box (lat 1.15–1.48, lng 103.59–104.10), and drop coordinates outside it. This box is a heuristic; EPSG's area of use for 3414 is lat 1.13–1.47, lng 103.59–104.07.
+
+**Licensing note for the drop-in code.** cgcai/SVY21 has no licence file, so do not label code derived from it "MIT". The maths is the published LINZ TM formulae. If licence provenance matters, use `proj4` (MIT) instead.
 
 ---
 
@@ -476,18 +499,20 @@ Alternative: `npm i proj4@2.12.1`, published 2024-09-06; the npm `latest` tag po
 
 | Item | Value | Confidence |
 |---|---|---|
-| URA API Terms of Service page | `https://www.ura.gov.sg/eservices-info/maps/api-terms-of-service/`, titled "Acceptance of API Terms of Service". Older path: `https://www.ura.gov.sg/ms/eservices/Maps/API-terms-of-service`. | [OFFICIAL-SNIPPET] (both URLs appear in search results). Full text not fetched. |
+| URA API Terms of Service page | `https://www.ura.gov.sg/eservices-info/maps/api-terms-of-service/`, titled "Acceptance of API Terms of Service". Older path: `https://www.ura.gov.sg/ms/eservices/Maps/API-terms-of-service`. | [OFFICIAL-SNIPPET] (both URLs appear in search results). The current URL is also linked from the sgprop README (2026). Full text not fetched. |
 | Licence | Use of URA APIs is governed by the **Singapore Open Data Licence (SODL) version 1.0**, `https://data.gov.sg/open-data-licence`. **Using the API means you accept the Terms of Service.** | [OFFICIAL-SNIPPET] (search extract of the URA ToS page). sgprop README: "made available under the Singapore Open Data Licence and URA API terms". |
-| Redistribution or display on a public website | SODL v1.0 permits use, copying, distribution, adaptation and creation of derived works, **commercial or non-commercial**, worldwide and royalty-free, subject to its conditions: attribution, **no implied endorsement or official status**, and not misrepresenting the data. | UNVERIFIED (verbatim SODL text not fetched; this is my understanding of SODL v1.0) |
-| Calls must originate server-side | Do not call the API from end users' browsers or devices, and do not ship the AccessKey in client code. | [CORROBORATED] from secondary sources. Official wording UNVERIFIED. |
+| Redistribution or display on a public website | SODL v1.0 permits use, copying, distribution, adaptation and creation of derived works, **commercial or non-commercial**, worldwide and royalty-free, subject to its conditions: attribution, **no implied endorsement or official status**, and not misrepresenting the data. | Use, copying, modification and redistribution with attribution: corroborated by a third-party capture (sgSHIOK2026 P1 A3). The **commercial-use, endorsement and misrepresentation details remain UNVERIFIED**, because the verbatim SODL text was not fetched. |
+| Calls must originate server-side | Do not call the API from end users' browsers or devices, and do not ship the AccessKey in client code. | Single secondary source (sgprop). Official wording UNVERIFIED. It is good practice regardless. |
 
-**Required attribution.** The SODL v1.0 attribution statement, from memory (**UNVERIFIED verbatim**):
+**Required attribution.** The SODL v1.0 attribution template, **corrected 2026-10-10** to follow a third-party capture of the licence page: sgSHIOK2026 `qa/verification/P1-research.md` row A3, which cites https://data.gov.sg/open-data-licence and the LTA DataMall copy. Our own sibling note `onemap-api.md` §3 uses the same text. **Still UNVERIFIED verbatim**, because the primary page could not be fetched:
 
-> Contains information from {name of Dataset} accessed on {date} from {name of Website}, which is made available under the terms of the Singapore Open Data Licence version 1.0 [https://data.gov.sg/open-data-licence]
+> Contains information from {name of dataset} accessed on {date of access of dataset} from {source of data} which is made available under the terms of the Singapore Open Data Licence version 1.0 {URL link to licence}
 
-**Recommended footer or data-source text for the app.** It is safe in any case:
+The earlier from-memory version of this note said "{name of Website}" instead of "{source of data}", and added a comma before "which". Use the captured form above. The same capture summarises SODL v1.0 as allowing "use, copying, modification, redistribution, analyses, and applications, with a conspicuous notice acknowledging the source and linking to the licence".
 
-> Contains information from the Urban Redevelopment Authority (URA) Data Service: Private Residential Property Transactions and Rental Contracts, accessed on {YYYY-MM-DD}, which is made available under the terms of the Singapore Open Data Licence version 1.0 (https://data.gov.sg/open-data-licence). URA does not endorse this site. Data may be revised by URA; figures are indicative.
+**Recommended footer or data-source text for the app.** It follows the template's order: dataset, then date, then source.
+
+> Contains information from Private Residential Property Transactions and Rental Contracts accessed on {YYYY-MM-DD} from the Urban Redevelopment Authority (URA) Data Service which is made available under the terms of the Singapore Open Data Licence version 1.0 (https://data.gov.sg/open-data-licence). URA does not endorse this site. Data may be revised by URA; figures are indicative.
 
 **Do not:**
 
@@ -505,11 +530,11 @@ Alternative: `npm i proj4@2.12.1`, published 2024-09-06; the npm `latest` tag po
 - **Rest of Central Region (RCR):** the area **within the Central Region that is outside the CCR**.
 - **Outside Central Region (OCR):** the area **outside the Central Region**.
 - Source: URA's standard footnote in its quarterly private-residential releases and PMI technical notes. **UNVERIFIED verbatim** (pages not fetched), but this is the long-standing URA definition, high confidence.
-- The **Central Region** (URA Master Plan) consists of **22 planning areas**. UNVERIFIED (from memory), high confidence.
+- The **Central Region** (URA Master Plan) consists of **22 planning areas**. [VERIFIED-BY-TEST against Master Plan 2014 boundaries] A spatial join of the 55 MP2014 planning-area polygons to the 5 region polygons (https://github.com/yinshanyang/singapore `maps/2-planning-area.geojson`, `maps/1-region.geojson`) gives exactly these 22 Central Region areas. It also puts Ang Mo Kio in North-East, Clementi in West, and Queenstown and Bishan in Central. That MP2019 and MP2025 kept the same set is UNVERIFIED but expected.
   - The 11 Central Area planning areas: Downtown Core, Marina East, Marina South, Museum, Newton, Orchard, Outram, River Valley, Rochor, Singapore River, Straits View.
   - The other 11: Bishan, Bukit Merah, Bukit Timah, Geylang, Kallang, Marine Parade, Novena, Queenstown, Southern Islands, Tanglin, Toa Payoh.
 
-**Engineering rule:** market segment is defined by **planning-area boundaries, not postal districts**, so some districts straddle two segments. Illustrative examples (UNVERIFIED, from planning-area geography):
+**Engineering rule:** market segment is defined by **planning-area boundaries, not postal districts**, so some districts straddle two segments. Illustrative examples. The region of each planning area was checked against the MP2014 join above. Which postal sectors fall in which planning area is UNVERIFIED, For example, Sentosa postcodes are believed to start with 098 or 099, which would put them in sector 09 and so in D04 (UNVERIFIED).
 
 - D04: Sentosa is CCR; Telok Blangah and Harbourfront (Bukit Merah planning area) are RCR.
 - D20: Bishan is RCR; Ang Mo Kio is OCR.
@@ -591,6 +616,7 @@ export const postalToDistrict = (postal: string): string | null =>
 
 1. **Ingest offline.** Use a scheduled GitHub Action or cron with `URA_ACCESS_KEY` as a secret.
    - Run order: token → 4 transaction batches → N rental quarters → (optional) developer sales for the last 36 months → pipeline → rental median.
+   - For rentals, N is about 21 quarters to cover the observed ~5-year window (§2.2). Empty quarters at the old end are normal.
    - Write normalised JSON to the repo or blob storage. The site reads only the snapshot and never calls URA at request time.
 2. Use the headers `AccessKey`, `Token` and an explicit `User-Agent`. Set a 120 s timeout, retry 5xx and network errors 3 times with backoff, and do not retry 4xx.
 3. Decode the body as UTF-8 with a Windows-1252 fallback, then `JSON.parse`.
@@ -613,7 +639,8 @@ export const postalToDistrict = (postal: string): string | null =>
 - The official cut-over date of the `www.ura.gov.sg` → `eservice.ura.gov.sg …/v1` migration.
 - The exact registration-form URL.
 - The token lifetime semantics (24 h vs calendar day), and any per-day token or call limits.
-- The exact data windows for rentals and developer sales (believed to be about 3 years).
+- The exact data window for developer sales (about 3 years per the 2020-era docstring). Rentals were **observed live at about 5 years** (2026-10-05), not 3; the exact rule is still open.
+- Whether rental projects carry `marketSegment`.
 - The error-response strings and HTTP codes.
 - The full verbatim URA API ToS and SODL attribution wording.
 - Whether URA's gateway accepts requests from non-Singapore cloud IPs (GitHub Actions or Vercel).

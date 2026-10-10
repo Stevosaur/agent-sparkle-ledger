@@ -18,8 +18,8 @@ Research date: **2026-10-10**. Scope:
 - **Evidence actually used:**
   1. **Web-search summaries** that cite LTA newsroom pages and secondary sites (Land Transport Guru, sgtrains, Wikipedia, AsiaOne). The URLs are listed. The page bodies were *not* fetched.
   2. **Primary government datasets, read through GitHub mirrors** that hold the files byte-for-byte as downloaded:
-     - **URA "Master Plan 2019 Rail Station layer"** (data.gov.sg `d_8d886e3a83934d7447acdf5bc6959999`), mirrored at `https://raw.githubusercontent.com/cheeaun/sgraildata/master/data/raw/master-plan-2019-rail-station-layer-geojson.geojson` (257 polygons, `FMEL_UPD_D` = `20191209180316`).
-     - **LTA DataMall train-station point table** (`STN_NAME` and `STN_NO`), mirrored at `https://raw.githubusercontent.com/cheeaun/sgraildata/master/data/raw/MRTLRTStnPtt.json`. This is an older LTA export; for example, it still has `CE1`/`CE2` and lacks TEL3–4.
+     - **URA "Master Plan 2019 Rail Station layer"** (data.gov.sg `d_8d886e3a83934d7447acdf5bc6959999`), mirrored at `https://raw.githubusercontent.com/cheeaun/sgraildata/master/data/raw/master-plan-2019-rail-station-layer-geojson.geojson` (257 features: 253 `Polygon` + 4 `MultiPolygon`; every feature has `FMEL_UPD_D` = `20191209180316`).
+     - **LTA DataMall train-station point table** (`STN_NAME` and `STN_NO`), mirrored at `https://raw.githubusercontent.com/cheeaun/sgraildata/master/data/raw/MRTLRTStnPtt.json`. This is an older LTA export (191 rows, 171 distinct names; interchanges repeat once per line). For example, it still has `CE1`/`CE2` and lacks the TEL3–TEL4 stations; only two interchange rows already carry TEL3 codes (Orchard `NS22/TE14`, Marina Bay `NS27/TE20/CE2`), while Stevens is still `DT10` and Outram Park `EW16/NE3`. It also lists stations that were then unopened shells (`CC18` Bukit Brown, `DT4` Hume, `PW2` Teck Lee), so **presence in `STN_NO` is not evidence that a station is open**.
      - **LTA MRT Station Exit (GEOJSON)** (data.gov.sg `d_b39d3a0871985372d7e1637193335da5`). A third party retrieved it on **2026-10-01**; its latest feature update is `20260717145318`. It has 613 exits, grouped into 188 station names. Mirror: `https://raw.githubusercontent.com/WeeJC8954/sg-smart-commute/HEAD/assets/mrt_stations.json`, documented in that repo's `docs/data-sources.md`.
   3. **cheeaun/sgraildata v5.1.0** (12 Jul 2026), which is the RailRouter SG dataset. It supplies station codes for 184 operating stations, with names taken from Wikipedia. Changelog: `https://raw.githubusercontent.com/cheeaun/sgraildata/master/CHANGELOG.md`.
   4. **My own knowledge**, used only where marked **UNVERIFIED**.
@@ -66,11 +66,11 @@ Research date: **2026-10-10**. Scope:
 | Date opened | What opened | Codes | Evidence |
 |---|---|---|---|
 | **23 Jun 2024** | TEL Stage 4 (TEL4): Tanjong Rhu, Katong Park, Tanjong Katong, Marine Parade, Marine Terrace, Siglap, Bayshore (7 stations) | TE23–TE29 | The LTA release "TEL4 to welcome commuters" (Mar 2024) exists: https://www.lta.gov.sg/content/ltagov/en/newsroom/2024/3/news-releases/TEL4_to_welcome_commuters.html (search-listed only). All 7 stations are in the 2026 LTA exit dataset [PRIMARY-DATA]. **The exact date of 23 Jun 2024 is UNVERIFIED** (high confidence). |
-| **15 Aug 2024** | Teck Lee LRT station (Punggol LRT West loop) | PW2 | In LTA `STN_NO` and the exit dataset [PRIMARY-DATA]. **Date UNVERIFIED.** |
+| **15 Aug 2024** | Teck Lee LRT station (Punggol LRT West loop) | PW2 | In the 2026 exit dataset [PRIMARY-DATA] and in the Wikipedia-derived operating-station list `sgraildata/data/raw/wikipedia-lrt.json` (Jul 2026). Note: the older `STN_NO` export also lists PW2, but it predates TEL3 and so listed Teck Lee while it was still a shell; that is not opening evidence. **Date UNVERIFIED.** |
 | **10 Dec 2024** | Punggol Coast (NEL extension) | NE18 | The exit dataset has it under the code-only name `NE18`, with exit codes `1` and `2` [PRIMARY-DATA]. sgraildata 4.0.0 added it. **Date UNVERIFIED** (high confidence). |
 | **28 Feb 2025** | Hume (DTL infill station) | DT4 | The exit dataset has it under the code-only name `DT4` [PRIMARY-DATA]. sgraildata 4.0.0 added it. **Date UNVERIFIED** (high confidence). |
 | **12 Jul 2026** | **Circle Line Stage 6 (CCL6)**: Keppel, Cantonment, Prince Edward Road. Closes the loop, linking HarbourFront to Marina Bay. | CC30, CC31, CC32 | **[VERIFIED-SEARCH]** The LTA release of 14 May 2026 set a public preview on **4 Jul 2026** (free travel between the 3 stations) and passenger service from **12 Jul 2026**. The Kim Chuan Depot extension was also in operation from 12 Jul 2026. Several sources agree. |
-| **12 Jul 2026** | **CCL code change**: Marina Bay `CE2` → **`CC33`** (now `NS27/CC33/TE20`). Bayfront `CE1` → **`CC34`** (now `CC34/DT16`). | CC33, CC34 | **[CORROBORATED]** by a search summary of a secondary source and by sgraildata CHANGELOG 5.1.0 (12 Jul 2026): "Rename CE1/CE2 station codes to CC34/CC33". Not read on an LTA page. |
+| **12 Jul 2026** | **CCL code change**: Marina Bay `CE2` → **`CC33`** (now `NS27/CC33/TE20`). Bayfront `CE1` → **`CC34`** (now `CC34/DT16`). | CC33, CC34 | **[CORROBORATED]** by a search summary of a secondary source, by sgraildata CHANGELOG 5.1.0 (12 Jul 2026): "Rename CE1/CE2 station codes to CC34/CC33", and by the Wikipedia-derived `sgraildata/data/raw/wikipedia-mrt.json` (Marina Bay `["NS27","CC33","TE20"]`, Bayfront `["CC34","DT16"]`). Not read on an LTA page. |
 
 After CCL6 the CCL has **33 stations** (CC1–CC34 minus the unopened CC18) and **12 interchanges**: Dhoby Ghaut, Promenade, Paya Lebar, MacPherson, Serangoon, Bishan, Caldecott, Botanic Gardens, Buona Vista, HarbourFront, Marina Bay and Bayfront. One search summary of LTA material gives "33 stations … 12 interchange stations". The post-CCL6 service pattern is not given here: the only source is Land Transport Guru, which describes peak-hour full-loop services plus a Dhoby Ghaut–Prince Edward Road service via Bishan, and I did not verify it. The property app should not need it.
 
@@ -127,7 +127,7 @@ PTC Punggol [NE17] · PE1 Cove · PE2 Meridian · PE3 Coral Edge · PE4 Riviera 
 
 - **Lat/Lng** = the arithmetic mean of that station's exit points in **LTA MRT Station Exit (GEOJSON)** (`d_b39d3a0871985372d7e1637193335da5`), snapshot of 2026-10-01 [PRIMARY-DATA via mirror].
 - Where LTA lists the same name as both an MRT and an LRT station (Bukit Panjang, Choa Chu Kang, Punggol), the exits are merged.
-- QA: every centroid is within **244 m** of sgraildata's independent station point. Marine Parade is 244 m off and Tampines 179 m off; all the others are 150 m or less.
+- QA: every centroid is within **244 m** of sgraildata's independent station point. Marine Parade is 244 m off and Tampines 179 m off; all the others are 150 m or less. (Re-run 2026-10-10: all 184 lat/lng values and exit counts reproduce exactly from the mirror. Join on trimmed names: sgraildata spells Kaki Bukit as `"Kaki Bukit "` with a trailing space; after trimming it is 75 m off.)
 - Official names follow LTA styling, for example `one-north` (lower case), `HarbourFront`, `MacPherson` and `Prince Edward Road`. The LTA datasets use UPPER CASE with the suffix `MRT STATION` or `LRT STATION`.
 
 | # | Station (official name) | Codes | Lines | Lat | Lng | LTA exits |
@@ -322,7 +322,7 @@ PTC Punggol [NE17] · PE1 Cove · PE2 Meridian · PE3 Coral Edge · PE4 Riviera 
 ## 4. Future and unopened stations (as of 2026-10-10)
 
 **Coordinates.**
-- Unless noted, coordinates are the **area-weighted polygon centroid** from the URA Master Plan 2019 Rail Station layer [PRIMARY-DATA, `FMEL_UPD_D` 2019-12-09]. They are indicative planning footprints, so treat them as approximate (`approximate: true`), typically within ~100 m of the eventual station centre.
+- Unless noted, coordinates are the **area-weighted polygon centroid** from the URA Master Plan 2019 Rail Station layer [PRIMARY-DATA, `FMEL_UPD_D` 2019-12-09]. They are indicative planning footprints, so treat them as approximate (`approximate: true`). Calibration (computed 2026-10-10): for the 154 operating stations whose MP2019 name matches an LTA exit group, the MP2019 centroid is a median **25 m** (90th percentile 68 m) from the LTA exit centroid; 6 of 154 exceed 100 m. For stations that opened after the 2019 plan the error ranged 4–180 m (Prince Edward Road 116 m, Marine Parade 180 m). The single 640 m outlier (Jalan Besar) is a labelling error, see §5.2 pitfall 6.
 - Where a future station sits at an existing station, the coordinate is the existing LTA station coordinate from §3.1 unless a separate underground footprint exists in MP2019.
 - `null` means no credible coordinate was found. **Do not invent one.** Exclude the station from distance calculations until the URA amendment layer (§5.3) or an LTA source gives one.
 
@@ -330,7 +330,7 @@ PTC Punggol [NE17] · PE1 Cove · PE2 Meridian · PE3 Coral Edge · PE4 Riviera 
 
 - **Timeline** [VERIFIED-SEARCH, mostly secondary sources]:
   - The target slipped from 2024 to 2025, then to **2026** (MOT Committee of Supply (COS) debate, 5 Mar 2024), and was refined to **2H 2026** at COS 2025 (5 Mar 2025).
-  - An LTA 2025 release (https://www.lta.gov.sg/content/ltagov/en/newsroom/2025/1/news-releases/three_new_stations_to_connect.html, search-listed) says DTL3e "comprising Xilin and Sungei Bedok stations … will open in second half of 2026".
+  - An LTA 2025 release (https://www.lta.gov.sg/content/ltagov/en/newsroom/2025/1/news-releases/three_new_stations_to_connect.html, search-listed) says DTL3e "comprising Xilin and Sungei Bedok stations … will open in second half of 2026". **Attribution UNVERIFIED:** the page body was never fetched, and §4.7 cites the same URL for a different announcement (three new north-west stations by 2035). Either the release mentions DTL3e as context or a search snippet was mis-attributed; do not cite this URL for the 2H 2026 target until it is read.
   - The LTA project page is https://www.lta.gov.sg/content/ltagov/en/upcoming_projects/rail_expansion/downtown_line_2_and_3_extensions.html (search-listed).
 - **Why TEL5 and DTL3e open together.** Sources say they cannot open separately because of a shared integrated fire-protection system at Sungei Bedok.
 - **April 2026 LTA statement** (via a search summary of a secondary source; UNVERIFIED on LTA): final systems-integration tests ahead of a 2H 2026 opening, with shortened weekend service on TEL from 22 May to 4 Jul 2026 and on DTL from 10 Jul to 5 Sep 2026.
@@ -357,7 +357,7 @@ PTC Punggol [NE17] · PE1 Cove · PE2 Meridian · PE3 Coral Edge · PE4 Riviera 
 
 - **Station names** are confirmed by the URA MP2019 layer [PRIMARY-DATA].
 - **Codes and stage years are UNVERIFIED.** They are my understanding of LTA's JRL project page; JRL was never searched in this session.
-- Stages: **Stage 1 in 2027** (10 stations, Choa Chu Kang – Boon Lay / Tawas), **Stage 2 in 2028** (7 stations, Tengah – Pandan Reservoir), **Stage 3 in 2029** (7 stations, Boon Lay – Jurong Pier and Bahar Junction – Peng Kang Hill).
+- Stages: **Stage 1 in 2027** (10 stations, Choa Chu Kang – Boon Lay, plus Bahar Junction – Tawas), **Stage 2 in 2028** (7 stations, Tengah – Pandan Reservoir), **Stage 3 in 2029** (7 stations, Boon Lay – Jurong Pier and Tawas – Peng Kang Hill). *Corrected 2026-10-10:* Stage 3 previously read "Bahar Junction – Peng Kang Hill", which contradicts the table below (Gek Poh and Tawas are Stage 1); Stage 3 adds only Nanyang Gateway, Nanyang Crescent and Peng Kang Hill on that branch. 10 + 7 + 7 = 24 stations, matching the line total.
 - I found no 2025–2026 change to these years, but none could be checked.
 - **The station order is consistent with the MP2019 geometry**, read west to east and north to south.
 - Expected LTA project page: https://www.lta.gov.sg/content/ltagov/en/upcoming_projects/rail_expansion/jurong_region_line.html (UNVERIFIED URL).
