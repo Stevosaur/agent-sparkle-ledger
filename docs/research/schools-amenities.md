@@ -324,7 +324,7 @@ Legacy CSV `d_68a42f09f350881996d83f9cd73ab02f` columns: `name_of_centre, locati
 
 ### 3.4 Parks
 
-`d_0542d48f0991541706b58059381a6eca` "Parks" (points; "indicative Managed Areas of Parks which are under the purview of NParks"). Properties: `OBJECTID, NAME, X, Y, INC_CRC, FMEL_UPD_D` (X/Y = SVY21). 461 features in a July 2026 download, latest `FMEL_UPD_D` 20260703041208. Names are abbreviated and include playgrounds and open spaces: `PK` = park, `PG` = playground, `OS` = open space. **Corrected counts (recomputed from the same July 2026 file):** 26 names contain the word `PLAYGROUND` and a further 136 contain the abbreviation `PG` (134 end in ` PG`), so **162 of 461** are playground-type entries, not 26. 112 contain `PK`, 117 contain `PARK`, 17 end in `OS`. Examples: e.g. `NOVENA RISE PK`, `CARMICHAEL RD PG`, `HANDY RD OS`, `CONEY ISLAND PARK`. Filter or label by suffix.
+`d_0542d48f0991541706b58059381a6eca` "Parks" (points; "indicative Managed Areas of Parks which are under the purview of NParks"). Properties: `OBJECTID, NAME, X, Y, INC_CRC, FMEL_UPD_D` (X/Y = SVY21). 461 features in a July 2026 download, latest `FMEL_UPD_D` 20260703041208. Names are abbreviated and include playgrounds and open spaces: `PK` = park, `PG` = playground, `OS` = open space. **Corrected counts (recomputed from the same July 2026 file):** 26 names contain the word `PLAYGROUND` and a further 136 contain the abbreviation `PG` (134 end in ` PG`), so **162 of 461** are playground-type entries, not 26. 112 contain `PK`, 117 contain `PARK`, 17 end in `OS`. Examples: `NOVENA RISE PK`, `CARMICHAEL RD PG`, `HANDY RD OS`, `CONEY ISLAND PARK`. Filter or label by suffix.
 Real feature: `{"type":"Feature","geometry":{"type":"Point","coordinates":[103.84285301571919,1.3246275300259491]},"properties":{"OBJECTID":95822,"NAME":"NOVENA RISE PK","X":29061.08694996,"Y":34096.10124219,"INC_CRC":"E0CE377939D35367","FMEL_UPD_D":"20260422000138"}}` (source `hamburtab/homelens-sg/data/raw/official_layers/parks.geojson`).
 
 `d_77d7ec97be83d44f61b85454f844382f` "NParks Parks and Nature Reserves" (Polygon/MultiPolygon). Properties: `OBJECTID_1, L_CODE, NAME, N_RESERVE, INC_CRC, FMEL_UPD_D, SHAPE_1.AREA, SHAPE_1.LEN`. Use for "distance to park edge"; a centroid is not an entrance.
@@ -437,3 +437,98 @@ Codebases (2026) used for corroboration:
 - https://github.com/shenghaoc/hdb-resale-visualizer (`scripts/lib/schemas.ts`, `scripts/lib/sync/constants.ts`)
 - https://github.com/evancjx/housing-estate-framework (`property_analysis/*.md`, Aug-Sep 2026)
 - https://github.com/sanjeevr123/HomeCompass (`onemap_all_themes_full.json`)
+
+---
+
+## Verification log
+
+Adversarial fact-check run on **2026-10-10**. The fetch tool could not reach `*.gov.sg`, `data.gov.sg`, `channelnewsasia.com` or `wikipedia.org` (DNS failure or proxy 403), and the web-search budget was already used up. Every check below re-read a **primary file or archived primary page from GitHub raw** and recomputed numbers locally. "Confirmed" means it matched that copy. It does not mean the live page was re-read. Where no copy could be found, the claim is marked unverifiable or UNVERIFIED.
+
+Source keys used below:
+- **CSV** = `seehiong/autonomous-hdb-deepagents@2a0df19…/db/init/data/sg_schools.csv`, 337 rows, recomputed with Python.
+- **ARCH** = archived MOE page sources in `ISS-IntelligentSystem-GroupProject24PT/Intelligent-Reasoning-System@1bf28ea…` (`distance`, `understand_balloting`, `home_address`, `registration_phases_key_dates`, `vacancies_and_balloting`).
+- **COLL** = `pradyuprasad/ask_sg_data@bc60974…/data/input/collections_metadata/*.json` (Jan 2025), 27 collection files.
+- **META** = `jmbish04/sgd-hbd-data@215eb99…/datset_scaffolding/sg_dataset_schemas.json` (Dec 2025).
+- **RSS** = `rumca-js/RSS-Link-Database-2026` CNA feed JSON for 2026-08-05, 2026-09-10 and 2026-09-11.
+- **DIG** = `Joey111a1/Joey111a1.github.io` `daily-news/reports/2026/09/2026-09-12.html`.
+- **NS** = `hoyeehong/near-school` `data/demo.ts`.
+
+| # | Claim (section) | Verdict | Source / note |
+|---|---|---|---|
+| 1 | MOE dataset ID `d_688b934f…`, title, description, collection 457, CSV, created 2017-05-29T19:03:04, lastUpdated 2025-01-13T12:49:40, coverage 2025 (§1.1) | confirmed | COLL `School_Directory_and_Information.json` |
+| 2 | 337 rows (§1.1) | confirmed | CSV row count |
+| 3 | 31 MOE columns in the stated order; 2 extra project geometry columns (§1.3) | confirmed | CSV header |
+| 4 | `"na"` = "Data not available or not applicable" (§1.3) | confirmed | legacy metadata `wilsonwid/cs3244-pg26@9965012…` |
+| 5 | 335/337 addresses with trailing spaces (§1.3) | confirmed | CSV |
+| 6 | 4 postal codes missing a leading zero, with the named schools (§1.3) | confirmed | CSV |
+| 7 | `url_address` "mixed http/https" (§1.3) | **corrected** | CSV: 285 http, 43 https, 9 with no scheme |
+| 8 | `telephone_no` "8 digits" (§1.3) | **corrected** | CSV: 10 rows not 8 digits (spaces, `+65`, "(Secondary)"); 0 `na` |
+| 9 | 28 `dgp_code` values incl. `SENG KANG`, `TENGAH` (§1.3) | confirmed | CSV |
+| 10 | zone/type/nature/session/mainlevel/SAP/autonomous/gifted/IP counts (§1.3) | confirmed | CSV, all sums = 337 |
+| 11 | `mothertongue1_code` CHINESE for all; MT2 MALAY or na; MT3 TAMIL or na (§1.3) | confirmed | CSV (MT2: 311/26; MT3: 307/30) |
+| 12 | Example row for Admiralty Primary (§1.3) | confirmed | CSV |
+| 13 | Shared postal codes 599986 and 309437 (§1.4) | confirmed | CSV |
+| 14 | 182 schools with a P1 intake = 179 + 3 named mixed-level (§1.4) | confirmed | CSV; `zainul1996/btoprojects` `docs/DATA_SOURCES.md` ("182 primary and P1-S4 mixed-level schools") |
+| 15 | Other collection 457 datasets: IDs and "last updated June 2024" (§1.5) | confirmed | COLL (2024-06-07 / 2024-06-19) |
+| 16 | CCA column `School_name` with capital S (§1.5) | unverifiable | no API output reachable; left as CORROBORATED by the original author |
+| 17 | initiate/poll endpoints and GET method (§1.2) | confirmed (cross-ref) | consistent with datagov-api.md §3.3; `kangcodex` shows POST, which datagov-api.md already records as a variant |
+| 18 | `datastore_search` 404 claim by kangcodex vs other use (§1.2) | confirmed as a conflict | `kangcodex/singapore-skills` `docs/api/HDB.md` says 404; seehiong `db/refresh_geodata.py` uses it for d_688b… |
+| 19 | P1 vacancies page URL `/vacancies-and-balloting` = per-school data page (§1.6) | **corrected** | ARCH nav links: the data page is `/past-vacancies-and-balloting-data`; `/vacancies-and-balloting` is "Vacancies and balloting updates" (04 Sep 2023) |
+| 20 | 6-tier priority order, verbatim, `/distance` Last Updated 01 Feb 2024 (§2.1) | confirmed | ARCH `distance` |
+| 21 | Same order and balloting text on `/understand-balloting`, 23 May 2023 (§2.1) | confirmed | ARCH `understand_balloting` |
+| 22 | HSD definition "shortest distance from a point on the boundary around the school…" (§2.2) | confirmed | ARCH `home_address`; page title is "Address used for registration" (title corrected) |
+| 23 | SLA School Query Service, "accurate as of May 2023 … Primary 1 in 2024" (§2.2) | confirmed | ARCH `distance`; the "once per year" refresh is now labelled an inference |
+| 24 | OneMap SchoolQuery URL `/school`; no public API (§2.2) | unverifiable | onemap.gov.sg not reachable; stays UNVERIFIED |
+| 25 | NRIC address, 30 months from exercise start (4 Jul 2023), caregiver rule (balloted with 1-2 km group), new property ≤ 2 years with 30 months from move-in, resale by P1 start with 30 months from P1 start, documents (§2.3) | confirmed | ARCH `home_address` (03 Aug 2023) |
+| 26 | Phase 2B community leaders only within 2 km plus 30-month rule (§2.3) | confirmed | ARCH `registration_phases_key_dates` (05 Jan 2024) |
+| 27 | 20 (2B) / 40 (2C) / 60 total, verbatim quote (§2.4) | confirmed; attribution **corrected** | quote is from ARCH `vacancies_and_balloting` (04 Sep 2023); figures also on balloting and phases pages |
+| 28 | 1/3 to 2B and 2/3 to 2C; carry-forward; PR cap "in a few schools"; posting after 2C Supplementary (§2.4) | confirmed for 2023; scope **corrected** | ARCH; the claim that these apply "in every year above" (incl. pre-2022) was wrong |
+| 29 | "Up to 2021: 20/20" (§2.4) | **corrected** (relabelled) | "doubled to 40 from 2022" is consistent with the 2023 pages; the row now says before 2022 (from 2014, UNVERIFIED) |
+| 30 | 2026 exercise still had 40 Phase 2C places (§2.4) | confirmed by another source | RSS: CNA 10 Sep 2026 standfirst "an increase from 40"; CNA 5 Aug 2026 2026 Phase 2C results item |
+| 31 | Princess Elizabeth Primary "159 applicants for 40 places" (§2.4) | unverifiable | no source located; marked UNVERIFIED, do not reuse |
+| 32 | CNA 10 Sep 2026 headline, standfirst and URL (§2.4) | confirmed | RSS 2026-09-10 (`date_published` 11:04:18 UTC) |
+| 33 | CNA follow-up URL and date "11-12 Sep" (§2.4) | **corrected** to 11 Sep 2026 (13:29 UTC) with exact title | RSS 2026-09-11 |
+| 34 | "12 schools, mainly Bukit Timah, some Marine Parade … divided equally … no priority by exact distance" (§2.4) | confirmed | DIG (summary of the CNA follow-up) |
+| 35 | Places move "from Phase 2A and Phase 2B" (§2.4) | confirmed as commentary | DIG quoting NUS Assoc Prof Vincent Chua; not an MOE statement |
+| 36 | Applies from the 2027 exercise for 2028 entry (§2.4) | confirmed | NS policy text; CNA headline "from 2027"; DIG "from next year" (written Sep 2026) |
+| 37 | Two-track quotes (no HSD priority within a track; SC before PR; leftover SC flow across tracks) (§2.4) | confirmed as quoted | NS `policies[]` text, citing MOE `changes-to-p1-registration-framework` (MOE page itself unreadable) |
+| 38 | List of the 12 schools (§2.4) | confirmed as quoted; names exist in the MOE CSV | NS `demoPlaces` with `twoTrackFrom: 2027`; still a single non-government source, so UNVERIFIED against MOE |
+| 39 | Grouping "Bukit Timah side / Marine Parade side" (§2.4) | **corrected** (clarified) | CSV `dgp_code`: 4 BUKIT TIMAH, 2 NOVENA, 2 CENTRAL, 3 MARINE PARADE, 1 BEDOK |
+| 40 | 30 + 30 split (§2.4) | arithmetic ok; premise UNVERIFIED | 60 / 2 = 30, but 60 for those 12 schools is not confirmed |
+| 41 | HDB Existing Building `d_16b157c5…` polygons (§2.5) | confirmed | META (props incl. `SHAPE.AREA`) |
+| 42 | MP2025 land use `d_a8c3546b…` with `LU_DESC` (§2.5) | confirmed (cross-ref only) | matches datagov-api.md §5; not independently re-fetched |
+| 43 | Poll-only download for GeoJSON/KML (§3.0) | confirmed (cross-ref) | datagov-api.md §3.3 quotes the official guide |
+| 44 | Back off ≥ 11 s without a key (§3.0) | **corrected** to ≥ 12 s | datagov-api.md §2.2 ("5 requests per minute") |
+| 45 | `code === 24` handling in CribCheck (§3.0) | confirmed | `ElsonNg/CribCheck` `scripts/refresh-supermarkets.mjs` line 40 |
+| 46 | Dataset IDs, names, collections, agencies and formats in the §3.1 table | confirmed (except the two IDs in row 76) | COLL (27 files) and META; every ID checked matched its stated collection; MRT exit and bus stop IDs via the homelens manifest |
+| 47 | Childcare GeoJSON collection "UNVERIFIED" (§3.1) | **corrected** → collection 2015 | COLL `Child_Care_Services.json` |
+| 48 | Supermarket licences "NEA, now SFA" (§3.1) | **corrected** (qualified) | COLL `managedBy`/`sources` = NEA (Jan 2025); "now SFA" UNVERIFIED |
+| 49 | lastUpdated dates in §3.1 (2025-12-05, 2025-11-13, 2025-11-12, 2025-11-08, 2025-01-14, 2024-11-25, 2024-06-06) | confirmed | META (Dec 2025) / COLL (Jan 2025) |
+| 50 | Hawker 129 features, 20 props, STATUS counts, sample feature, 140,459 bytes = `datasetSize` (§3.1, §3.2) | confirmed | `minghao51/egg-n-bacon-housing@f1c09a0…` file + META; `hamburtab/homelens-sg` manifest (14 Jul 2026); btoprojects (4 Aug 2026) |
+| 51 | `EST_ORIGINAL_COMPLETION_DATE` e.g. "1983" (§3.2) | **corrected** (expanded) | same file: mixed formats ("1983", "2027", "30/3/2022") |
+| 52 | Parks 461 points, props, latest FMEL 20260703041208, NOVENA RISE PK sample, named examples (§3.4) | confirmed | `hamburtab/homelens-sg` `parks.geojson` + manifest |
+| 53 | "26 names contain PLAYGROUND/PG" (§3.4) | **corrected** | recomputed: 26 PLAYGROUND + 136 PG = 162 |
+| 54 | Parks polygons 461 (Aug 2026), props `OBJECTID_1 … SHAPE_1.LEN` (§3.1, §3.4) | confirmed | btoprojects (4 Aug 2026); META |
+| 55 | Park Facilities props (§3.4) | confirmed | META |
+| 56 | MRT exits 597 (Jul) / 613 (Aug 2026); bus stops 5,166 (Jul) / 5,205 (Sep) (§3.1) | confirmed | homelens manifest; btoprojects; `minghao51` `docs/plans/2026-09-01-pipeline-refresh-handoff.md`; bernardinolintang README |
+| 57 | CHAS 1,193 (Sep 2026), ~1.6 MB, KML-style `Name`/`Description` (§3.1, §3.5) | confirmed | minghao51 handoff; `Bread04/DataBricks-Challenge-` `DATASETS.md` (28 Sep 2026) |
+| 58 | CHAS `Description` key `HCI_NAME` and the `kml_<n>` placeholder (§3.5) | confirmed | minghao51 `geojson.py`; full key list not re-checked |
+| 59 | Community clubs 128; SportSG 45; park connector 1,177 lines (§3.1) | confirmed | minghao51 handoff; bernardinolintang README |
+| 60 | SportSG flat props since late 2025 (§3.1) | confirmed | META (`VENUE`, `POSTAL_CODE`, …, 2025-11-13) |
+| 61 | KML-style for NEA Market & Food Centre, Supermarkets, Eldercare, IGLS; Kindergartens flat (§3.1) | confirmed | META `geoJsonMetadata.properties` |
+| 62 | Supermarket GeoJSON/KML `DATASET_DOES_NOT_EXIST` on 4 Aug 2026; collection 1451 empty (§3.3) | confirmed as reported | btoprojects `DATA_SOURCES.md` (secondary; not re-tested live) |
+| 63 | Licence CSV used by CribCheck and shenghaoc (§3.3) | confirmed | CribCheck script; `shenghaoc/hdb-resale-visualizer` `constants.ts` (`SFA_SUPERMARKET_DATASET_ID = d_11edd…`) |
+| 64 | Licence CSV columns and example row (§3.3) | unverifiable this run | not re-fetched; left as CORROBORATED |
+| 65 | 168 OneMap themes; QUERYNAMEs, owners and expiry dates (§3.8) | confirmed | `sanjeevr123/HomeCompass` `onemap_all_themes_full.json` |
+| 66 | NParks themes shown as current (§3.8) | **corrected** | expiry 31/03/2026 is before 2026-10-10, so they are expired |
+| 67 | No CHAS or supermarket theme (§3.8) | confirmed | same dump (only `vaccination_polyclinics` and `moh_hospitals` match clinic/health) |
+| 68 | `retrieveTheme` `extents` format and raw token header (§3.8) | **corrected** to UNVERIFIED and qualified | onemap-api.md §1.6/§2.2 |
+| 69 | URA GLS text quote, collection 1669 (§4.1) | confirmed | COLL `Vacant_Sites_Sold_By_URA.json` |
+| 70 | URA Sale Sites IDs, collection 1855, "from year 1967" text, 2024-06-06 (§4.1) | confirmed | COLL `URA_Sale_Sites.json` |
+| 71 | Vacant Sites coverage 31 Aug 1992 to 28 Apr 2016; Conservation Sites 1987-2007, collection 1640; IGLS collection 287, half_year, JTC (§4.1) | confirmed | COLL |
+| 72 | URA media-release and annex URL pattern and example (§4.1) | **corrected** (example inconsistent) and UNVERIFIED | `pr24-40` vs `pr24-37a` contradicts the stated pattern |
+| 73 | HDB Miltonia Close news URL; URA GLS map URL (§4.1) | unverifiable | gov.sg hosts unreachable |
+| 74 | URA 273 collections / 509 datasets; HDB 52 / 104; no collective-sale dataset; SERS `d_741b128b…`, collection 146 (§4.2) | confirmed | `kangcodex/singapore-skills@9e175f2…` `docs/api/URA.md`, `HDB.md` |
+| 75 | Strata Titles Boards under the Ministry of Law; no public list (§4.2) | unverifiable this run | background knowledge only; publication question left UNVERIFIED |
+| 76 | `d_e4663ad3…` (health facility counts) and `d_34ba4c6d…` (supermarket counts 1993-2014) are not location data (§3.1) | unverifiable this run | no mirror found |
+| 77 | Worked arithmetic: 20 + 40 = 60; 179 + 3 = 182; all enum sums = 337; hawker statuses sum to 129; 60 / 2 = 30 | confirmed | recomputed |

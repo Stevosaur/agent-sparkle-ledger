@@ -12,7 +12,7 @@ export function ListingCard({ listing }: { listing: ListingSummary }) {
   const l = listing;
   const facts: { icon: typeof Ruler; text: string; label: string }[] = [];
   if (l.flatType) facts.push({ icon: Building2, text: titleCase(l.flatType), label: "Unit type" });
-  if (l.areaSqm != null) facts.push({ icon: Ruler, text: `${formatInt(l.areaSqm)} sqm · ${formatInt(Math.round(sqmToSqft(l.areaSqm)))} sqft`, label: "Floor area" });
+  if (l.areaSqm != null) facts.push({ icon: Ruler, text: `${formatInt(l.areaSqm)} sqm · ${formatInt(Math.round(sqmToSqft(l.areaSqm)))} sqft`, label: l.kind === "landed" ? "Land area" : "Floor area" });
   if (l.bedrooms != null) facts.push({ icon: BedDouble, text: l.bedrooms === 0 ? "Studio" : `${l.bedrooms} bed`, label: "Bedrooms" });
   if (l.bathrooms != null) facts.push({ icon: Bath, text: `${l.bathrooms} bath`, label: "Bathrooms" });
   return (

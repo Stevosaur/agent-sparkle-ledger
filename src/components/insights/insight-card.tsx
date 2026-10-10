@@ -19,10 +19,10 @@ export function InsightBody({ result }: { result: InsightResult }) {
 }
 
 /** A market module card. Title and teaser are translatable chrome; captions are data-derived English. */
-export function InsightCard({ id, title, teaser, children }: { id: string; title: string; teaser: string; children: ReactNode }) {
+export function InsightCard({ id, title, teaser, badge, children }: { id: string; title: string; teaser: string; badge?: ReactNode; children: ReactNode }) {
   return (
     <Card id={`m-${id}`} className="scroll-mt-24">
-      <CardHeader title={<T k={`insights.mod.${id}.title`} fallback={title} />} description={<T k={`insights.mod.${id}.teaser`} fallback={teaser} />} />
+      <CardHeader title={<T k={`insights.mod.${id}.title`} fallback={title} />} description={<T k={`insights.mod.${id}.teaser`} fallback={teaser} />} actions={badge} />
       <CardBody>{children}</CardBody>
     </Card>
   );
