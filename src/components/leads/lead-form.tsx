@@ -97,6 +97,15 @@ const TYPE_COPY: Record<LeadType, { title: [string, string]; description: [strin
   },
 };
 
+/** Who the lead may be shared with, per type (shown in the PDPA consent text). */
+const SHARE_WITH: Partial<Record<LeadType, [string, string]>> = {
+  mortgage: ["homes.lead.share.mortgage", ", including sharing it with a licensed mortgage adviser we work with"],
+  enquiry: ["homes.lead.share.enquiry", ", including sharing it with the party who can answer it, such as the developer's appointed sales team"],
+  services: ["homes.lead.share.services", ", including sharing it with the partner who will provide the service"],
+  listing: ["homes.lead.share.listing", ", including sharing it with the lister of this home"],
+  valuation: ["homes.lead.share.valuation", ", including sharing it with a licensed valuer we work with"],
+};
+
 const SERVICE_LABELS: Record<(typeof SERVICE_TYPES)[number], [string, string]> = {
   cleaning: ["homes.services.cleaning", "Home cleaning"],
   moving: ["homes.services.moving", "Moving"],
@@ -300,6 +309,8 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
   const emailOk = isConfiguredEmail(site.contactEmail);
 
   const busy = status === "submitting";
+  const share = SHARE_WITH[type];
+  const shareText = share ? t(share[0], share[1]) : "";
 
   return (
     <Card>
@@ -499,8 +510,8 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
               <label htmlFor={id("consent")} className="text-xs leading-relaxed text-muted">
                 {t(
                   "homes.lead.consent",
-                  "I agree that {site} may collect, use and disclose the personal data above to respond to this request, including sharing it with the partner who will provide the service, in line with the Personal Data Protection Act 2012 (PDPA). I can withdraw consent at any time by contacting {site}.",
-                  { site: site.name },
+                  "I agree that {site} may collect, use and disclose the personal data above to respond to this request{share}, in line with the Personal Data Protection Act 2012 (PDPA). I can withdraw consent at any time by contacting {site}.",
+                  { site: site.name, share: shareText },
                 )}{" "}
                 <Link href="/privacy/" className="font-medium text-brand-700 underline-offset-2 hover:underline">
                   {t("homes.lead.privacy", "Privacy policy")}
