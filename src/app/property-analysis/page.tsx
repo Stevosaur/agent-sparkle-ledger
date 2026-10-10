@@ -119,16 +119,36 @@ const condoColumns: Column<PrivateProject>[] = [
   { key: "price", header: <T k="home.recent.lastPrice" fallback="Last price" />, align: "right", cell: (p) => formatSgd(p.tx.lastPrice) },
 ];
 
+/**
+ * "Recently transacted" lists. This page is dynamic (it reads ?q=), so memoise on the loaders' cached
+ * arrays instead of rescanning every HDB block and project on each request; a new snapshot (new array
+ * identity) recomputes.
+ */
+const recentCache = new WeakMap<readonly HdbBlock[], { projects: readonly PrivateProject[]; blocks: HdbBlock[]; condos: PrivateProject[] }>();
+
+function recentLists(): { blocks: HdbBlock[]; condos: PrivateProject[] } {
+  const allBlocks = getHdbBlocks();
+  const projects = getProjects();
+  const hit = recentCache.get(allBlocks);
+  if (hit && hit.projects === projects) return hit;
+  const entry = {
+    projects,
+    blocks: recentlyTransacted(allBlocks, RECENT_LIMIT),
+    condos: recentlyTransacted(
+      projects.filter((p) => !p.isLanded),
+      RECENT_LIMIT,
+    ),
+  };
+  recentCache.set(allBlocks, entry);
+  return entry;
+}
+
 export default async function PropertyAnalysisPage({ searchParams }: { searchParams: SearchParams }) {
   const q = normaliseQuery((await searchParams).q);
   const results = q ? search(q, { limit: RESULT_LIMIT }) : [];
   const groups = groupSearchResults(results);
 
-  const recentBlocks = recentlyTransacted(getHdbBlocks(), RECENT_LIMIT);
-  const recentCondos = recentlyTransacted(
-    getProjects().filter((p) => !p.isLanded),
-    RECENT_LIMIT,
-  );
+  const { blocks: recentBlocks, condos: recentCondos } = recentLists();
 
   return (
     <PageContainer className="pb-12">

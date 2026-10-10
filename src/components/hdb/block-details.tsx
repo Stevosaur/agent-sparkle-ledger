@@ -6,7 +6,7 @@ import { DataTable } from "@/components/ui/table";
 import { T } from "@/components/i18n/t";
 import { formatInt, formatPct } from "@/lib/format";
 import { compareFlatTypes, flatTypeLabel, mopNote } from "@/lib/hdb-insights";
-import { HDB_LEASE_YEARS, HDB_MOP_YEARS } from "@/lib/calc/rules";
+import { HDB_LEASE_YEARS, HDB_MOP_YEARS, HDB_MOP_YEARS_PLUS_PRIME } from "@/lib/calc/rules";
 import { titleCase } from "@/lib/slug";
 import { SourceLine } from "./source-line";
 import type { HdbBlock } from "@/lib/data/types";
@@ -48,11 +48,14 @@ export function BlockDetails({ block, currentYear }: { block: HdbBlock; currentY
               vars={{ year: mop.mopYear, mopYears: HDB_MOP_YEARS }}
             />
           ) : (
-            <T
-              k="hdb.mop.upcoming"
-              fallback="Flats here reach their {mopYears}-year MOP around {year} (MOP counts from key collection, so this is approximate). Until then owners cannot sell on the open market."
-              vars={{ year: mop.mopYear, mopYears: HDB_MOP_YEARS }}
-            />
+            <>
+              <T
+                k="hdb.mop.upcoming"
+                fallback="Flats here reach their {mopYears}-year MOP around {year} (MOP counts from key collection, so this is approximate). Until then owners cannot sell on the open market."
+                vars={{ year: mop.mopYear, mopYears: HDB_MOP_YEARS }}
+              />{" "}
+              <T k="hdb.mop.longer" fallback="PLH, Plus and Prime flats have a {years}-year MOP instead." vars={{ years: HDB_MOP_YEARS_PLUS_PRIME }} />
+            </>
           )}
         </Notice>
       ) : null}

@@ -15,6 +15,8 @@ const TYPE_LABEL: Record<LaunchCardData["type"], { k: string; fallback: string }
 export function LaunchCard({ card }: { card: LaunchCardData }) {
   const name = titleCase(card.name);
   const typeLabel = TYPE_LABEL[card.type];
+  // a launch appears in exactly one carousel tab, so this id is unique on the page
+  const soldTextId = `launch-sold-${card.type}-${card.slug}`;
   return (
     <Link
       href={card.href}
@@ -45,12 +47,12 @@ export function LaunchCard({ card }: { card: LaunchCardData }) {
                 aria-valuemin={0}
                 aria-valuemax={card.launched}
                 aria-valuenow={Math.min(card.sold, card.launched)}
-                aria-label={`${name}: ${formatInt(card.sold)} of ${formatInt(card.launched)} launched units sold`}
+                aria-labelledby={soldTextId}
                 className="h-2 overflow-hidden rounded-full bg-canvas"
               >
                 <div className="h-full rounded-full bg-brand-600" style={{ width: `${(card.soldShare * 100).toFixed(1)}%` }} />
               </div>
-              <p className="tabular mt-1.5 text-sm text-ink">
+              <p id={soldTextId} className="tabular mt-1.5 text-sm text-ink">
                 <T k="home.launches.soldOf" fallback="{sold} of {launched} launched units sold" vars={{ sold: formatInt(card.sold), launched: formatInt(card.launched) }} />{" "}
                 <span className="text-muted">({formatPct(card.soldShare, 0)})</span>
               </p>

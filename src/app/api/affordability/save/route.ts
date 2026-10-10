@@ -1,22 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { z } from "zod";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { requireUser } from "@/lib/auth/require";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { saveCalculationSchema } from "@/lib/tools/save-schema";
 
 export const dynamic = "force-dynamic";
 
 const NO_STORE = { "Cache-Control": "private, no-store" } as const;
 const MAX_BODY_BYTES = 8192;
-
-const finite = z.number().refine(Number.isFinite, "must be a finite number");
-
-/** What the affordability tool sends: the calculator input and result (numbers / short enums only). */
-const saveSchema = z.object({
-  label: z.string().trim().min(1).max(100),
-  input: z.record(z.string().max(40), z.union([finite, z.string().max(20)])).refine((o) => Object.keys(o).length <= 30, "too many fields"),
-  result: z.record(z.string().max(40), z.union([finite, z.string().max(20)])).refine((o) => Object.keys(o).length <= 30, "too many fields"),
-});
 
 /**
  * POST /api/affordability/save/  (signed-in user; feature "affordability.save")
@@ -38,7 +29,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "invalid_json", message: "Send a JSON body" }, { status: 400, headers: NO_STORE });
   }
-  const parsed = saveSchema.safeParse(raw);
+  const parsed = saveCalculationSchema.safeParse(raw);
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_input", message: parsed.error.issues[0]?.message ?? "Invalid request" }, { status: 400, headers: NO_STORE });
   }

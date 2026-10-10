@@ -54,8 +54,8 @@ export interface DatasetMeta {
     mrtStations: number;
     schools: number;
   };
-  /** latest transaction month per family, "YYYY-MM" */
-  latestMonth: { hdb: string | null; private: string | null };
+  /** latest record month per family, "YYYY-MM" (rental fields absent in snapshots built before they were added) */
+  latestMonth: { hdb: string | null; private: string | null; hdbRentals?: string | null; privateRentals?: string | null };
 }
 
 /* ------------------------------------------------------------------ */

@@ -6,6 +6,7 @@ import {
   districtOptions,
   estimatePrice,
   filterLaunches,
+  formatIsoDay,
   fraction,
   latestPrice,
   launchHref,
@@ -167,6 +168,13 @@ describe("prices", () => {
     expect(estimatePrice(2150, 0)).toBeNull();
   });
 
+  it("formats ISO calendar days without time-zone shifts", () => {
+    expect(formatIsoDay("2026-09-30")).toBe("30 Sep 2026");
+    expect(formatIsoDay("2031-01-01")).toBe("1 Jan 2031");
+    expect(formatIsoDay("2026-13-01")).toBe("2026-13-01");
+    expect(formatIsoDay("soon")).toBe("soon");
+  });
+
   it("computes premium over a comparison", () => {
     expect(premiumOver(2200, 2000)).toBeCloseTo(0.1);
     expect(premiumOver(null, 2000)).toBeNull();
@@ -251,6 +259,12 @@ describe("catalogue", () => {
     expect(filterLaunches(list, { type: "condo", segment: "OCR", district: 18 }).map((l) => l.slug)).toEqual(["a"]);
     expect(filterLaunches(list, { type: "upcoming", segment: null, district: null }).map((l) => l.slug)).toEqual(["e", "d"]);
     expect(sortLaunches(list.slice(0, 2), "condo").map((l) => l.slug)).toEqual(["b", "a"]);
+    const sameMonth = [
+      launch({ slug: "z5", name: "Z", sales: [point("2026-08")], unitsSold: 5 }),
+      launch({ slug: "y50", name: "Y", sales: [point("2026-08")], unitsSold: 50 }),
+      launch({ slug: "a5", name: "A", sales: [point("2026-08")], unitsSold: 5 }),
+    ];
+    expect(sortLaunches(sameMonth, "condo").map((l) => l.slug)).toEqual(["y50", "a5", "z5"]);
   });
 
   it("counts tabs, segments and districts", () => {
@@ -281,5 +295,17 @@ describe("fixture snapshot", () => {
     expect(near).toEqual([]);
     const bishan = nearbyProjects({ lat: 1.3505, lng: 103.849 }, getProjects(), { radiusM: 1500, landed: false });
     expect(bishan.map((p) => p.slug)).toEqual(["sample-park-condo"]);
+  });
+});
+
+describe("launches i18n namespace", () => {
+  it("has a zh string with the same placeholders for every en key", async () => {
+    const { launches } = await import("@/lib/i18n/messages/launches");
+    const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+    expect(Object.keys(launches.zh).sort()).toEqual(Object.keys(launches.en).sort());
+    for (const [key, en] of Object.entries(launches.en)) {
+      expect(key.startsWith("launches.")).toBe(true);
+      expect(placeholders(launches.zh[key]), key).toEqual(placeholders(en));
+    }
   });
 });

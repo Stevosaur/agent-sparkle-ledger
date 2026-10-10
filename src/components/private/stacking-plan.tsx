@@ -66,7 +66,8 @@ export function StackingPlan({ slug }: { slug: string }) {
                   if (!cell) {
                     return (
                       <td key={col.key} className="px-2 py-1.5 text-center text-muted">
-                        <span aria-label={t("private.stack.noSales", "No sales")}>·</span>
+                        <span aria-hidden>·</span>
+                        <span className="sr-only">{t("private.stack.noSales", "No sales")}</span>
                       </td>
                     );
                   }

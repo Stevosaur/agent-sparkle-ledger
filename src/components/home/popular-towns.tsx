@@ -6,6 +6,14 @@ import { T } from "@/components/i18n/t";
 import { Section } from "@/components/ui/section";
 import { SourceLine } from "./source-line";
 
+const REGION_LABELS: Record<TownSummary["region"], string> = {
+  Central: "home.region.central",
+  East: "home.region.east",
+  North: "home.region.north",
+  "North-East": "home.region.northEast",
+  West: "home.region.west",
+};
+
 /** Busiest HDB towns over the last 12 months, each with its 12-month median 4-room resale price. */
 export function PopularTowns({ towns }: { towns: TownSummary[] }) {
   if (towns.length === 0) return null;
@@ -26,7 +34,7 @@ export function PopularTowns({ towns }: { towns: TownSummary[] }) {
               >
                 <span className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold text-ink">{titleCase(town.town)}</span>
-                  <span className="text-xs text-muted">{town.region}</span>
+                  <span className="text-xs text-muted">{REGION_LABELS[town.region] ? <T k={REGION_LABELS[town.region]} fallback={town.region} /> : town.region}</span>
                 </span>
                 {fourRoom != null ? (
                   <>

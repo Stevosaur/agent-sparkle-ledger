@@ -79,6 +79,18 @@ export function mediansByFlatType<T extends { flatType: string }>(rows: readonly
     .sort((a, b) => compareFlatTypes(a.flatType, b.flatType));
 }
 
+/**
+ * The block's "last sale": the highest-priced resale in its newest month, the same rule the pipeline uses for
+ * TxSummary.last / lastPrice, so the block page agrees with the block's row in lists and nearby tables.
+ */
+export function latestSale<T extends Pick<HdbTransaction, "monthIndex" | "price">>(txs: readonly T[]): T | null {
+  let best: T | null = null;
+  for (const t of txs) {
+    if (!best || t.monthIndex > best.monthIndex || (t.monthIndex === best.monthIndex && t.price > best.price)) best = t;
+  }
+  return best;
+}
+
 /** Most-sold flat type in a block; ties (or no sales) fall back to the largest unit-mix share. */
 export function dominantFlatType(txs: readonly { flatType: string }[], unitMix: HdbBlock["unitMix"] = {}): string | null {
   const counts = new Map<string, number>();

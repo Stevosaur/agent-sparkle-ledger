@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { supabaseSecretKey } from "@/lib/auth/config";
 import { dbError, errorJson, guardAccount, json, rejectCrossOrigin } from "@/lib/account/http";
 import { generateLinkCode, isTelegramConfigured, telegramBotUsername, telegramDeepLink } from "@/lib/account/telegram";
 import type { TelegramStatus } from "@/lib/account/types";
@@ -20,7 +21,7 @@ export async function GET() {
   if (!guard.ok) return guard.response;
   const { data } = await guard.supabase.from("profiles").select("telegram_chat_id").eq("id", guard.viewer.userId).maybeSingle();
   const body: TelegramStatus = {
-    configured: isTelegramConfigured() && Boolean(createSupabaseAdminClient()),
+    configured: isTelegramConfigured() && Boolean(supabaseSecretKey()),
     linked: Boolean((data as { telegram_chat_id?: string | null } | null)?.telegram_chat_id),
   };
   return json(body);

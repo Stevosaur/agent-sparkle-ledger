@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { Plus, X } from "lucide-react";
 import { useT } from "@/lib/i18n/provider";
+import { useViewer } from "@/lib/auth/viewer-context";
 import { site } from "@/lib/config/site";
 import { formatPropertyRef, type PropertyKind } from "@/lib/property-ref";
 import type { SearchEntry, SearchKind } from "@/lib/data/types";
@@ -108,6 +109,7 @@ function AddHomeForm({ onAdded, limitVars }: { onAdded: (item: TrackedHomeView) 
 /** My Property: the signed-in user's tracked homes (GET / POST / PATCH / DELETE /api/tracked/). */
 export function TrackedHomes() {
   const t = useT();
+  const { viewer } = useViewer();
   const [data, setData] = useState<TrackedListResponse | null>(null);
   const [loadError, setLoadError] = useState<{ status: number } | null>(null);
 
@@ -168,7 +170,7 @@ export function TrackedHomes() {
           <CardBody className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-ink">{t("account.tracked.err.plus", "Free accounts can track {free} home. Upgrade to {plus} to track more.", limitVars)}</p>
             <Link href="/plus/" className={buttonClass("plus", "sm")}>
-              {site.plus.trialDays > 0 ? t("account.plus.startTrial", "Start {days}-day free trial", { days: site.plus.trialDays }) : t("account.plus.upgrade", "Upgrade to {plus}", { plus: site.plusName })}
+              {site.plus.trialDays > 0 && !viewer?.subscriptionStatus && !viewer?.trialEndsAt ? t("account.plus.startTrial", "Start {days}-day free trial", { days: site.plus.trialDays }) : t("account.plus.upgrade", "Upgrade to {plus}", { plus: site.plusName })}
             </Link>
           </CardBody>
         </Card>

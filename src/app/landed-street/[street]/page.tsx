@@ -5,7 +5,7 @@ import { getLandedStreet, getLandedStreets, getLandedStreetTransactions } from "
 import { getSeries } from "@/lib/data/stats";
 import { getCoverage } from "@/lib/data/meta";
 import { monthIndex } from "@/lib/data/months";
-import { displayAddress, formatDistrict, latestFirst, salesScatter, seriesPsfPoints, timeAdjustedEstimate, type TimeAdjustedEstimate, toSaleRow } from "@/lib/private-insights";
+import { displayAddress, formatDistrict, isLandedHouse, latestFirst, salesScatter, seriesPsfPoints, timeAdjustedEstimate, type TimeAdjustedEstimate, toSaleRow } from "@/lib/private-insights";
 import { formatArea, formatInt, formatMonth, formatPsf, formatSgd } from "@/lib/format";
 import { titleCase } from "@/lib/slug";
 import { absoluteUrl, pageMetadata } from "@/lib/seo";
@@ -81,7 +81,8 @@ export default async function LandedStreetPage({ params }: Props) {
   if (!s) notFound();
 
   const name = titleCase(s.street);
-  const txs = latestFirst(getLandedStreetTransactions(s.slug));
+  // landed houses only, matching the street's summary (strata landed homes are not part of landed streets)
+  const txs = latestFirst(getLandedStreetTransactions(s.slug).filter(isLandedHouse));
   const addresses = addressesOnStreet(s.slug);
   const slugs = new Map(addresses.map((a) => [a.address, a.slug]));
   const asOf = latestPrivateMonth(txs);
@@ -134,14 +135,14 @@ export default async function LandedStreetPage({ params }: Props) {
     },
     {
       key: "estimate",
-      header: <T k="private.street.estimate" fallback="Estimate today" />,
+      header: <T k="private.street.estimate" fallback="Estimate" />,
       align: "right",
       cell: (r) =>
         r.estimate ? (
           <>
             {formatSgd(r.estimate.estimate)}
             <span className="block text-xs text-muted">
-              <T k="common.estimated" fallback="estimated" />
+              <T k="private.landed.estimateSub" fallback="Estimate as of {m}" vars={{ m: formatMonth(r.estimate.asOfMonth) }} />
             </span>
           </>
         ) : (

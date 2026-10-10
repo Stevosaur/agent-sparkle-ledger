@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   return NextResponse.json({ isOwner, status: isOwner ? (row?.status ?? null) : null }, { headers: NO_STORE });
 }
 
-/** PATCH /api/homes/<id>/ { status: "active" | "closed" } — owner only (requireUser + owner match + RLS). */
+/** PATCH /api/homes/<id>/ { status: "active" | "closed" } — owner only (requireUser + owner match + RLS; updated_at is set by a trigger). */
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const gate = await requireUser();
   if (!gate.ok) return gate.response;
@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (!supabase) return NextResponse.json({ error: "listings_disabled" }, { status: 503, headers: NO_STORE });
   const { data, error } = await supabase
     .from(LISTING_TABLE)
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status })
     .eq("id", id)
     .eq("user_id", gate.viewer.userId)
     .select("id");

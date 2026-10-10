@@ -8,6 +8,7 @@ import {
   dominantFlatType,
   flatTypeLabel,
   inWindow,
+  latestSale,
   launchesNear,
   leaseOutlook,
   mediansByFlatType,
@@ -24,6 +25,7 @@ import {
   yieldsByFlatType,
 } from "./hdb-insights";
 import { monthIndex } from "@/lib/data/months";
+import { balaPct } from "@/lib/calc/lease";
 import { getBlockRentals, getBlockTransactions, getHdbBlock, getNearbyBlocks, getTown } from "@/lib/data/hdb";
 import { getLaunches } from "@/lib/data/private";
 import { getSeries } from "@/lib/data/stats";
@@ -64,6 +66,16 @@ describe("windows and medians", () => {
       { flatType: "5 ROOM", count: 1, median: 700 },
     ]);
   });
+  it("takes the highest-priced sale in the newest month as the last sale", () => {
+    const txs = [
+      { monthIndex: m("2026-08"), price: 500_000, id: "a" },
+      { monthIndex: m("2026-08"), price: 640_000, id: "b" },
+      { monthIndex: m("2026-07"), price: 900_000, id: "c" },
+    ];
+    expect(latestSale(txs)?.id).toBe("b");
+    expect(latestSale([])).toBeNull();
+  });
+
   it("picks the most-sold flat type, falling back to the unit mix", () => {
     expect(dominantFlatType([{ flatType: "4 ROOM" }, { flatType: "5 ROOM" }, { flatType: "4 ROOM" }])).toBe("4 ROOM");
     // tie on sales -> larger unit-mix share wins
@@ -266,15 +278,28 @@ describe("lease outlook", () => {
     expect(old.cpf.shareOfValuationLimit).toBeCloseTo(43 / 60, 10);
     expect(leaseOutlook(1940, 2026.5).cpf.allowed).toBe(false);
   });
-  it("returns Bala values only when the table is populated", () => {
-    const o = leaseOutlook(2015, 2026.5);
-    if (o.bala) {
-      expect(o.bala.relIn10).toBeLessThanOrEqual(1);
-      expect(o.bala.relIn20).toBeLessThanOrEqual(o.bala.relIn10);
-    } else {
+  it("expresses future Bala's Table values relative to today", () => {
+    const o = leaseOutlook(2015, 2026.5); // 88 / 78 / 68 years left
+    const today = balaPct(88);
+    const in10 = balaPct(78);
+    const in20 = balaPct(68);
+    if (today == null || today <= 0 || in10 == null || in20 == null) {
       expect(o.bala).toBeNull();
+      return;
     }
+    expect(o.bala).not.toBeNull();
+    expect(o.bala!.today).toBeCloseTo(today, 10);
+    expect(o.bala!.in10).toBeCloseTo(in10, 10);
+    expect(o.bala!.relIn10).toBeCloseTo(in10 / today, 10);
+    expect(o.bala!.relIn20).toBeCloseTo(in20 / today, 10);
+    expect(o.bala!.relIn10).toBeLessThan(1);
+    expect(o.bala!.relIn20).toBeLessThan(o.bala!.relIn10);
   });
+
+  it("drops the Bala comparison once the lease has run out", () => {
+    expect(leaseOutlook(1900, 2026.5).bala).toBeNull();
+  });
+
   it("converts dates to mid-month year fractions", () => {
     expect(yearFraction(new Date(Date.UTC(2026, 0, 15)))).toBeCloseTo(2026 + 0.5 / 12, 10);
   });

@@ -6,7 +6,7 @@ import { getSeries } from "@/lib/data/stats";
 import { getRates } from "@/lib/data/rates";
 import { getTowns } from "@/lib/data/hdb";
 import { getLaunches } from "@/lib/data/private";
-import { credibility, groupLaunches, marketPulse, popularTowns } from "@/lib/home-insights";
+import { countLaunchTabs, credibility, groupLaunches, marketPulse, popularTowns } from "@/lib/home-insights";
 import { T } from "@/components/i18n/t";
 import { PageContainer, Section } from "@/components/ui/section";
 import { JsonLd } from "@/components/ui/json-ld";
@@ -43,7 +43,9 @@ export default function HomePage() {
   const cred = credibility(meta, { hdb: hdbSeries?.points[0]?.m ?? null, private: privateSeries?.points[0]?.m ?? null });
   const hdbPulse = marketPulse(hdbSeries, meta.latestMonth.hdb, generatedAt);
   const privatePulse = marketPulse(privateSeries, meta.latestMonth.private, generatedAt);
-  const launches = groupLaunches(getLaunches());
+  const allLaunches = getLaunches();
+  const launches = groupLaunches(allLaunches);
+  const launchTotals = countLaunchTabs(allLaunches);
   const towns = popularTowns(getTowns(), 12);
 
   return (
@@ -67,7 +69,7 @@ export default function HomePage() {
       <PageContainer className="space-y-10 py-8 sm:space-y-12 sm:py-10">
         <QuickTasks />
         <ToolTiles />
-        <LaunchCarousel groups={launches} />
+        <LaunchCarousel groups={launches} totals={launchTotals} />
         <Section
           id="market"
           title={<T k="home.pulse.title" fallback="Market pulse" />}

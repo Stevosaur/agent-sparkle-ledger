@@ -16,9 +16,12 @@ export function telegramWebhookSecret(): string | undefined {
   return process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || undefined;
 }
 
-/** Bot token and username are set, so links can be issued and messages sent. */
+/**
+ * Linking and delivery are possible: bot token (sending), username (deep links) and webhook secret
+ * (receiving /start). The daily cron only needs the token.
+ */
 export function isTelegramConfigured(): boolean {
-  return Boolean(telegramBotToken() && telegramBotUsername());
+  return Boolean(telegramBotToken() && telegramBotUsername() && telegramWebhookSecret());
 }
 
 /** Random single-use link code, valid as a Telegram /start parameter (A-Z a-z 0-9 _ -, at most 64 chars). */

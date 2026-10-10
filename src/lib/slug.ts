@@ -85,7 +85,8 @@ export function titleCase(input: string): string {
   return input
     .toLowerCase()
     .split(/(\s+|-|\/)/)
-    .map((part) => (/^[a-z]/.test(part) ? part[0].toUpperCase() + part.slice(1) : part))
+    // words get an initial capital; tokens that start with a digit (block / house numbers like "872A") stay upper case
+    .map((part) => (/^[a-z]/.test(part) ? part[0].toUpperCase() + part.slice(1) : /^\d/.test(part) ? part.toUpperCase() : part))
     .join("")
     .replace(/\b(Blk|Ec|Mrt|Lrt|Hdb|Ccr|Rcr|Ocr)\b/g, (m) => (m === "Blk" ? m : m.toUpperCase()))
     .replace(/'S\b/g, "'s");

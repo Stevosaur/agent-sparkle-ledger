@@ -119,7 +119,7 @@ export function getLandedStreetTransactions(slug: string): PrivateTransaction[] 
   const s = getLandedStreet(slug);
   if (!s || s.district == null) return [];
   const projects = new Set(s.projects);
-  return getDistrictTransactions(s.district).filter((t) => projects.has(t.projectSlug) && LANDED_TYPES.has(t.propertyType));
+  return getDistrictTransactions(s.district).filter((t) => projects.has(t.projectSlug) && LANDED_HOUSE_TYPES.has(t.propertyType));
 }
 
 export function getLandedAddressTransactions(slug: string): PrivateTransaction[] {
@@ -129,6 +129,8 @@ export function getLandedAddressTransactions(slug: string): PrivateTransaction[]
 }
 
 export const LANDED_TYPES = new Set(["Terrace", "Semi-detached", "Detached", "Strata Terrace", "Strata Semi-detached", "Strata Detached"]);
+/** Non-strata landed houses: the only types on landed street / address pages (strata landed sits inside condo projects). */
+export const LANDED_HOUSE_TYPES = new Set(["Terrace", "Semi-detached", "Detached"]);
 
 /* ------------------------------------------------------------------ */
 /* Rentals                                                             */

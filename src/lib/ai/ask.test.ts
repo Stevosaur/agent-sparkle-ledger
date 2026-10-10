@@ -101,6 +101,7 @@ describe("runAsk", () => {
     expect(first.max_tokens).toBeLessThanOrEqual(8192);
     expect(first.tool_choice).toEqual({ type: "auto" });
     expect(first.output_config).toEqual({ effort: "low" });
+    expect(first.cache_control).toEqual({ type: "ephemeral" });
     expect(first.betas).toEqual(["server-side-fallback-2026-07-01"]);
     expect((first as unknown as { fallbacks: string }).fallbacks).toBe("default");
     const system = first.system as Anthropic.Beta.BetaTextBlockParam[];
@@ -200,5 +201,19 @@ describe("runAsk", () => {
     expect((echoed[3] as Anthropic.Beta.BetaToolUseBlock).id).toBe("new");
     const plain = [thinking(), text("x")];
     expect(echoableContent(plain)).toBe(plain);
+  });
+});
+
+describe("runAsk soft deadline", () => {
+  it("stops starting tool rounds after the deadline and asks for an answer", async () => {
+    const { calls, result } = await ask(
+      [
+        { content: [toolUse("tu_1", "get_rates", {})], stop: "tool_use" },
+        { content: [text("Done.")], stop: "end_turn" },
+      ],
+      { softDeadlineMs: -1 },
+    );
+    expect(result.rounds).toBe(1);
+    expect(calls[1].tool_choice).toEqual({ type: "none" });
   });
 });

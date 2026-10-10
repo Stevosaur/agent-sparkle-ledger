@@ -28,6 +28,7 @@ import {
   distinctFlatTypes,
   dominantFlatType,
   flatTypeLabel,
+  latestSale,
   leaseOutlook,
   toSaleRow,
   townMedianPoints,
@@ -68,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { block, txs } = data;
   const label = blockLabel(block);
   const town = titleCase(block.town);
-  const last = txs[0];
+  const last = latestSale(txs);
   const parts = [`${label}, ${town}`];
   if (block.leaseCommenceYear != null) {
     const left = Math.floor(leaseOutlook(block.leaseCommenceYear, yearFraction(new Date())).remainingToday);
@@ -95,7 +96,7 @@ export default async function HdbBlockPage({ params }: Props) {
   const latestMonth = getMeta().latestMonth.hdb;
   const coords: LatLng | null = block.lat != null && block.lng != null ? { lat: block.lat, lng: block.lng } : null;
   const lease = block.leaseCommenceYear != null ? leaseOutlook(block.leaseCommenceYear, yearFraction(now)) : null;
-  const last = txs[0] ?? null;
+  const last = latestSale(txs);
 
   // Location: station lists come from nearestStations(); coordinates for map markers are joined from the station file.
   const stationIndex = new Map(getMrtStations().map((s) => [`${s.name}|${s.codes.join()}`, s]));

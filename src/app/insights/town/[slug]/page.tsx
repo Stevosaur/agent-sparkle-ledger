@@ -18,7 +18,9 @@ import { formatInt, formatMonth, formatPct, formatPsf, formatSgd } from "@/lib/f
 import { getHdbRentScan, getHdbSalesScan } from "@/lib/insights/hdb-scan";
 import { toChartPoints, windowLabel } from "@/lib/insights/math";
 import type { ChartLine, ChartSpec } from "@/lib/insights/types";
-import { getRankingInputs, RANKING_RULES, townDemandSupply } from "@/lib/rankings";
+import { RANKING_RULES, townDemandSupply } from "@/lib/rankings";
+import { referenceYear } from "@/lib/insights/memo";
+import { getLaunches } from "@/lib/data/private";
 import { pageMetadata } from "@/lib/seo";
 import { titleCase } from "@/lib/slug";
 
@@ -73,10 +75,10 @@ export default async function TownPage({ params }: Props) {
   const rent = getHdbRentScan();
   const townScan = scan.towns.find((t) => t.slug === slug) ?? null;
   const rentTotal = rent.byTown.get(slug) ?? null;
-  const inputs = getRankingInputs();
-  const mop = townDemandSupply({ ...inputs, towns: [town] })[0] ?? null;
-  const mopFrom = inputs.referenceYear + 1;
-  const mopTo = inputs.referenceYear + RANKING_RULES.demandYears;
+  const refYear = referenceYear();
+  const mop = townDemandSupply({ referenceYear: refYear, hdbBlocks: blocks, towns: [town], launches: getLaunches() })[0] ?? null;
+  const mopFrom = refYear + 1;
+  const mopTo = refYear + RANKING_RULES.demandYears;
 
   // by flat type (12-month medians from the town summary; counts from the same 12-month windows)
   const typeRows = HDB_FLAT_TYPES.map((ft) => {
@@ -194,6 +196,10 @@ export default async function TownPage({ params }: Props) {
               </EmptyState>
             )}
           </Card>
+          <p className="mt-2 text-xs text-muted">
+            <T k="common.source" fallback="Source" />: HDB resale prices and rental approvals, data.gov.sg.{" "}
+            <T k="insights.town.rentCaveat" fallback="Rents are declared by flat owners and are not verified by HDB." />
+          </p>
         </Section>
 
         <Section id="price-chart" title={<T k="insights.town.chart" fallback="Resale price by flat type" />} description={<T k="insights.town.chartDesc" fallback="Monthly median resale price over the last ten years." />}>

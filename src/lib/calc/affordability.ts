@@ -1,13 +1,15 @@
 import { additionalBuyerStampDuty, buyerStampDuty } from "./stamp-duty";
-import { bankLtv, maxServiceableLoan, type PropertyClass } from "./loan";
+import { bankLtv, hdbLoanLtvDetail, hdbLoanMaxTenure, maxBankTenure, maxServiceableLoan, msrApplies, type PropertyClass } from "./loan";
+import { cpfUsage } from "./lease";
 import { monthlyPayment } from "./mortgage";
-import { HDB_LOAN_LTV, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT } from "./rules";
+import { BANK_STRESS_RATE_PCT, HDB_LOAN_RATE_PCT, HDB_LOAN_STRESS_RATE_PCT, type RuleKey } from "./rules";
 import type { BuyerProfile } from "./rules";
 
 export interface AffordabilityInput {
   cash: number;
   cpfOa: number;
   monthlyIncome: number;
+  /** all other monthly debt repayments (TDSR) */
   monthlyDebts: number;
   /** income-weighted average age of borrowers */
   age: number;
@@ -19,8 +21,16 @@ export interface AffordabilityInput {
   /** outstanding housing loans before this purchase (bank LTV tier) */
   outstandingLoans: number;
   tenureYears: number;
-  /** rate used for the displayed repayment (not the stress test), % p.a. */
+  /** rate used for the displayed repayment, % p.a. (bank loans: also the "thereafter" rate for the stress test) */
   interestRatePct: number;
+  /** instalments on existing property loans (already in `monthlyDebts`); they also count for MSR. Default 0. */
+  monthlyPropertyLoanInstalments?: number;
+  /** remaining lease of the flat, years: enables the CPF lease rules and HDB-loan LTV pro-rating */
+  remainingLeaseYears?: number;
+  /** youngest buyer's age for the lease-to-95 rules (default: `age`) */
+  youngestBuyerAge?: number;
+  /** stress-test rate override, % p.a. Default: bank max(4%, interestRatePct); HDB max(3%, HDB rate). */
+  stressRatePct?: number;
 }
 
 export interface AffordabilityResult {
@@ -28,7 +38,9 @@ export interface AffordabilityResult {
   loan: number;
   ltv: number;
   downpayment: number;
+  /** minimum cash part of the down payment (bank loans) */
   minCash: number;
+  /** cash paid: minimum cash + down payment not covered by CPF + BSD + ABSD */
   cashUsed: number;
   cpfUsed: number;
   bsd: number;
@@ -36,63 +48,142 @@ export interface AffordabilityResult {
   monthlyPayment: number;
   maxServiceableLoan: number;
   tenureYears: number;
-  /** which limit capped the price */
+  /** which limit capped the price: the loan hit the income (TDSR/MSR) cap, or the loan is at the LTV cap and funds ran out */
   binding: "ltv-funds" | "servicing";
+  /** the loan cap that applies at the result: LTV × price, or the servicing (stress-test) loan */
+  loanLimitedBy: "ltv" | "servicing";
+  /**
+   * which funding constraint stops a higher price: "cash" = cash for the minimum cash down payment and stamp duties
+   * runs out while usable CPF is left; "cash-and-cpf" = all usable CPF and all cash are used
+   */
+  fundsLimitedBy: "cash" | "cash-and-cpf";
+  stressRatePct: number;
+  ltvReduced: boolean;
+  /** share of the price CPF may cover under the lease rules (1 = full use; 0 = not allowed) */
+  cpfShareOfValuationLimit: number;
+  cashLeft: number;
+  cpfLeft: number;
+  /** the search ceiling (S$10bn) was reached */
+  searchCapped: boolean;
+  /** rules applied, for status badges (see RULE_META) */
+  rules: RuleKey[];
 }
 
+const PRICE_CEILING = 1e10;
+
 /**
- * Highest price the buyer can pay: price P is affordable when
- *   loan = min(LTV × P, max serviceable loan)
- *   P + BSD(P) + ABSD(P) - loan <= cash + CPF OA
- *   P × minCash% + (stamp duties) <= cash  (stamp duties may be paid from CPF in practice, but we keep them conservative)
- * Solved by bisection because stamp duty is progressive.
+ * Highest price the buyer can pay. For a price P (valuation assumed equal to P):
+ *   loan      = min(LTV × P, max serviceable loan at the stress rate)
+ *   D         = P − loan                                  (down payment)
+ *   minCash   = minCash% × P                              (bank loans; HDB loans have no minimum-cash rule in the research)
+ *   cpfUsed   = min(CPF OA, CPF share × P, D − minCash)    (CPF share < 1 for short leases, 0 below 20 years)
+ *   cashNeed  = D − cpfUsed + BSD(P) + ABSD(P)            (stamp duties are paid in CASH: the research does not cover
+ *                                                          paying them from CPF, so the conservative case is used)
+ *   affordable ⇔ cashNeed ≤ cash
+ * cashNeed rises with P, so the limit is found by bisection, then rounded down to the S$1,000.
+ * Tenure is capped first (bank: 30 / 35 years; HDB loan: 25 years and age 65), and the LTV tier follows the capped tenure.
  */
 export function affordability(input: AffordabilityInput): AffordabilityResult {
-  const lender = input.lender;
-  const tenure = lender === "hdb" ? Math.min(input.tenureYears, HDB_LOAN_MAX_TENURE) : input.tenureYears;
-  const ltvInfo = lender === "hdb" ? { ltv: HDB_LOAN_LTV, minCashPct: 0 } : bankLtv(input.propertyClass, input.outstandingLoans, tenure, input.age);
-  const serv = maxServiceableLoan(
-    { monthlyIncome: input.monthlyIncome, monthlyDebts: input.monthlyDebts, propertyClass: input.propertyClass, tenureYears: tenure },
-    lender,
-  );
-  const funds = Math.max(0, input.cash) + Math.max(0, input.cpfOa);
+  const hdbLoan = input.lender === "hdb";
+  const age = input.age;
+  const youngest = input.youngestBuyerAge ?? age;
+  const tenure = hdbLoan ? hdbLoanMaxTenure(input.tenureYears, age) : Math.max(0, Math.min(input.tenureYears, maxBankTenure(input.propertyClass)));
 
-  const feasible = (p: number) => {
+  const hdbLtv = hdbLoan ? hdbLoanLtvDetail(input.remainingLeaseYears, youngest) : null;
+  const ltvInfo = hdbLtv ? { ltv: hdbLtv.ltv, minCashPct: 0, reduced: hdbLtv.prorated } : bankLtv(input.propertyClass, input.outstandingLoans, tenure, age);
+
+  const displayRate = hdbLoan ? HDB_LOAN_RATE_PCT : input.interestRatePct;
+  const thereafter = Number.isFinite(displayRate) ? displayRate : hdbLoan ? HDB_LOAN_RATE_PCT : BANK_STRESS_RATE_PCT;
+  const serv = maxServiceableLoan(
+    {
+      monthlyIncome: input.monthlyIncome,
+      monthlyDebts: input.monthlyDebts,
+      monthlyPropertyLoanInstalments: input.monthlyPropertyLoanInstalments,
+      propertyClass: input.propertyClass,
+      tenureYears: tenure,
+      thereafterRatePct: thereafter,
+      stressRatePct: input.stressRatePct,
+      borrowerAge: age,
+    },
+    input.lender,
+  );
+
+  const cpf = input.remainingLeaseYears != null ? cpfUsage(input.remainingLeaseYears, youngest) : { allowed: true, full: true, shareOfValuationLimit: 1 };
+  const cash = Math.max(0, input.cash || 0);
+  const cpfOa = Math.max(0, input.cpfOa || 0);
+
+  const evaluate = (p: number) => {
     const loan = Math.min(ltvInfo.ltv * p, serv.maxLoan);
-    const duties = buyerStampDuty(p).total + additionalBuyerStampDuty(p, input.buyerProfile, input.propertyCount).total;
-    const needCash = p * ltvInfo.minCashPct;
-    return p + duties - loan <= funds && needCash <= input.cash;
+    const downpayment = p - loan;
+    const bsd = buyerStampDuty(p).total;
+    const absd = additionalBuyerStampDuty(p, input.buyerProfile, input.propertyCount).total;
+    const minCash = p * ltvInfo.minCashPct;
+    const cpfCap = Math.min(cpfOa, cpf.shareOfValuationLimit * p);
+    const cpfUsed = Math.min(cpfCap, Math.max(0, downpayment - minCash));
+    const cashNeeded = downpayment - cpfUsed + bsd + absd;
+    return { loan, downpayment, bsd, absd, minCash, cpfCap, cpfUsed, cashNeeded };
   };
+  // tolerance of a tenth of a cent for floating-point noise in the loan maths
+  const feasible = (p: number) => evaluate(p).cashNeeded <= cash + 1e-3;
 
   let lo = 0;
-  let hi = 50_000_000;
-  for (let i = 0; i < 80; i++) {
-    const mid = (lo + hi) / 2;
-    if (feasible(mid)) lo = mid;
-    else hi = mid;
+  let hi = 1_000_000;
+  while (hi < PRICE_CEILING && feasible(hi)) {
+    lo = hi;
+    hi *= 2;
   }
+  const searchCapped = hi >= PRICE_CEILING && feasible(hi);
+  if (searchCapped) lo = hi;
+  else {
+    for (let i = 0; i < 200 && hi - lo > 0.01; i++) {
+      const mid = (lo + hi) / 2;
+      if (feasible(mid)) lo = mid;
+      else hi = mid;
+    }
+  }
+
+  const atLimit = evaluate(lo);
   const price = Math.floor(lo / 1000) * 1000;
-  const loan = Math.min(ltvInfo.ltv * price, serv.maxLoan);
-  const bsd = buyerStampDuty(price).total;
-  const absd = additionalBuyerStampDuty(price, input.buyerProfile, input.propertyCount).total;
-  const downpayment = price - loan;
-  const minCash = price * ltvInfo.minCashPct;
-  // pay the cash minimum first, then CPF, then remaining cash
-  const cpfUsed = Math.min(Math.max(0, input.cpfOa), Math.max(0, downpayment - minCash));
-  const cashUsed = downpayment - cpfUsed + bsd + absd;
+  const r = evaluate(price);
+  const cashUsed = r.cashNeeded;
+
+  const rules: RuleKey[] = ["bsdResidential", "bsdRounding", "absdRates", "absdRounding"];
+  if (hdbLoan) rules.push("hdbLoanLtv", "hdbLoanMsr", "hdbStressRate", "hdbLoanRate", "hdbLoanTenure");
+  else {
+    rules.push("tdsr", "bankStressRate", "bankLtv", "bankMinCash", "bankLtvTriggers", "bankMaxTenure", "incomeWeightedAge");
+    if (msrApplies(input.propertyClass)) rules.push("msr");
+  }
+  if (hdbLtv?.prorated) rules.push("hdbLoanLtvProration");
+  if (input.remainingLeaseYears != null) rules.push("cpfMinLease", "cpfFullUse", "cpfProration");
+
+  const loanLimitedBy = ltvInfo.ltv * price >= serv.maxLoan ? ("servicing" as const) : ("ltv" as const);
   return {
     maxPrice: price,
-    loan,
+    loan: r.loan,
     ltv: ltvInfo.ltv,
-    downpayment,
-    minCash,
+    downpayment: r.downpayment,
+    minCash: r.minCash,
     cashUsed,
-    cpfUsed,
-    bsd,
-    absd,
-    monthlyPayment: monthlyPayment(loan, lender === "hdb" ? HDB_LOAN_RATE_PCT : input.interestRatePct, tenure),
+    cpfUsed: r.cpfUsed,
+    bsd: r.bsd,
+    absd: r.absd,
+    monthlyPayment: monthlyPayment(r.loan, displayRate, tenure),
     maxServiceableLoan: serv.maxLoan,
     tenureYears: tenure,
-    binding: loan >= serv.maxLoan - 1 ? "servicing" : "ltv-funds",
+    binding: loanLimitedBy === "servicing" ? "servicing" : "ltv-funds",
+    loanLimitedBy,
+    fundsLimitedBy: atLimit.cpfUsed < atLimit.cpfCap - 0.01 ? "cash" : "cash-and-cpf",
+    stressRatePct: serv.stressRatePct,
+    ltvReduced: ltvInfo.reduced,
+    cpfShareOfValuationLimit: cpf.shareOfValuationLimit,
+    cashLeft: cash - cashUsed,
+    cpfLeft: cpfOa - r.cpfUsed,
+    searchCapped,
+    rules,
   };
+}
+
+/** Default stress rate the solver uses when none is given (exported for UI copy). */
+export function defaultStressRatePct(lender: "bank" | "hdb", interestRatePct: number): number {
+  return lender === "hdb" ? Math.max(HDB_LOAN_STRESS_RATE_PCT, HDB_LOAN_RATE_PCT) : Math.max(BANK_STRESS_RATE_PCT, Number.isFinite(interestRatePct) ? interestRatePct : 0);
 }

@@ -1,10 +1,13 @@
-import { buyerStampDuty, sellerStampDuty, additionalBuyerStampDuty } from "./stamp-duty";
-import { amortisationSchedule } from "./mortgage";
+import { absdRate as currentAbsdRate, absdRateAt, buyerStampDuty, flatDuty, sellerStampDuty, type SsdResult } from "./stamp-duty";
+import { interestPaidOver } from "./mortgage";
+import { addCalendarMonths, formatDay, toSgDay } from "./dates";
 import type { BuyerProfile } from "./rules";
 
 /**
- * "Walk-away price": the resale price needed after `holdingYears` to recover everything spent
- * (price, stamp duties, interest paid, agent fee on sale, SSD if sold early, other costs) — i.e. break even.
+ * "Walk-away price": the resale price needed after `holdingYears` to recover everything spent — price, BSD + ABSD,
+ * interest paid, the seller's agent fee, SSD if sold early, and other costs — i.e. break even.
+ * Principal repayments are not a cost: they reduce the loan that the sale proceeds repay, so
+ *   net proceeds − outstanding loan − cash put in = S − agentFee(S) − SSD(S) − (price + duties + interest + other costs).
  */
 export interface WalkAwayInput {
   price: number;
@@ -14,41 +17,58 @@ export interface WalkAwayInput {
   holdingYears: number;
   buyerProfile: BuyerProfile;
   propertyCount: number;
-  /** seller's agent commission as a fraction of the sale price (commonly 1–2% + GST) */
+  /** seller's agent commission as a fraction of the sale price, including any GST charged on it (user input) */
   agentFeePct: number;
   /** other one-off costs: legal fees, renovation, etc. */
   otherCosts: number;
-  /** purchase date, for SSD */
+  /** date of acquisition (OTP exercised / S&P signed): selects the stamp-duty tables and starts the SSD holding period */
   purchaseDate: Date;
 }
 
 export function walkAwayPrice(input: WalkAwayInput) {
-  const bsd = buyerStampDuty(input.price).total;
-  const absd = additionalBuyerStampDuty(input.price, input.buyerProfile, input.propertyCount).total;
-  const schedule = amortisationSchedule(input.loanAmount, input.interestRatePct, input.tenureYears);
-  const years = Math.max(0, Math.min(input.holdingYears, schedule.length));
-  const interestPaid = schedule.slice(0, Math.ceil(years)).reduce((s, y) => s + y.interest, 0);
-  const saleDate = new Date(input.purchaseDate.getTime());
-  saleDate.setUTCMonth(saleDate.getUTCMonth() + Math.round(input.holdingYears * 12));
+  const bsd = buyerStampDuty(input.price, "residential", { date: input.purchaseDate }).total;
+  // ABSD in force at the purchase date when the research covers it (from 6 Jul 2018); otherwise today's rate
+  const datedRate = absdRateAt(input.buyerProfile, input.propertyCount, input.purchaseDate);
+  const absd = flatDuty(input.price, datedRate ?? currentAbsdRate(input.buyerProfile, input.propertyCount));
+
+  const holdingMonths = Math.max(0, Math.round(input.holdingYears * 12));
+  // interest actually paid over the holding period, month by month (capped at the loan tenure)
+  const interestPaid = interestPaidOver(input.loanAmount, input.interestRatePct, input.tenureYears, holdingMonths);
+
+  const acquired = toSgDay(input.purchaseDate);
+  const saleDay = acquired ? formatDay(addCalendarMonths(acquired, holdingMonths)) : null;
+  const ssdAt = (s: number): SsdResult => sellerStampDuty(s, input.purchaseDate, saleDay ?? "invalid");
+
   const fixedCost = input.price + bsd + absd + interestPaid + input.otherCosts;
-  // sale price S must satisfy S - agentFee(S) - SSD(S) >= fixedCost; solve by bisection (SSD and fee scale with S)
+  // sale price S must satisfy S − agentFee(S) − SSD(S) ≥ fixedCost; net(S) rises with S while fee + SSD rate < 100%
+  const net = (s: number) => s - s * input.agentFeePct - ssdAt(s).total;
   let lo = 0;
-  let hi = fixedCost * 3;
-  for (let i = 0; i < 80; i++) {
+  let hi = Math.max(1, fixedCost);
+  for (let i = 0; i < 60 && net(hi) < fixedCost; i++) hi *= 2;
+  // no finite price breaks even when agent fee + SSD take (almost) the whole sale price
+  const reachable = net(hi) >= fixedCost;
+  for (let i = 0; reachable && i < 200 && hi - lo > 0.01; i++) {
     const mid = (lo + hi) / 2;
-    const net = mid - mid * input.agentFeePct - sellerStampDuty(mid, input.purchaseDate, saleDate).total;
-    if (net >= fixedCost) hi = mid;
+    if (net(mid) >= fixedCost) hi = mid;
     else lo = mid;
   }
-  const breakEven = Math.ceil(hi / 1000) * 1000;
+  const breakEven = reachable ? Math.ceil(hi / 1000) * 1000 : Number.POSITIVE_INFINITY;
+  const ssd = ssdAt(breakEven);
   return {
     breakEven,
     bsd,
     absd,
     interestPaid,
     agentFee: breakEven * input.agentFeePct,
-    ssd: sellerStampDuty(breakEven, input.purchaseDate, saleDate).total,
+    ssd: ssd.total,
     otherCosts: input.otherCosts,
     requiredGainPct: breakEven / input.price - 1,
+    /** date the sale is assumed to happen (purchase date + holding period, calendar months) */
+    saleDate: saleDay,
+    ssdRate: ssd.rate,
+    ssdHoldingYearBand: ssd.holdingYearBand,
+    /** sale within ±1 day of an SSD anniversary: the band is contested (show "check with IRAS") */
+    ssdNearAnniversary: ssd.nearAnniversary,
+    ssdAlternative: ssd.alternative,
   };
 }

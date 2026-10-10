@@ -21,6 +21,8 @@ const SRC_HDB_RENT = "HDB rental approvals (renting out of flats), data.gov.sg";
 const SRC_PRIVATE = "URA private residential transactions (URA Data Service)";
 const SRC_PRIVATE_RENT = "URA private residential rental contracts (URA Data Service)";
 const SRC_LAUNCH = "URA developer sales and private residential pipeline";
+/** data.gov.sg notes that HDB rental figures are declared by owners (docs/research/datagov-api.md §5.3). */
+export const RENT_CAVEAT = "Rents are declared by flat owners and are not verified by HDB.";
 
 /** Minimum samples for a town / district bar to be shown. */
 export const MIN_BAR_SAMPLE = 3;
@@ -36,12 +38,6 @@ const FLAT_ORDER: readonly string[] = HDB_FLAT_TYPES;
 
 function points(key: string): StatSeries["points"] {
   return getSeries(key)?.points ?? [];
-}
-
-function lastMonth(...lists: { m: number }[][]): number | null {
-  let max = -1;
-  for (const l of lists) for (const p of l) if (p.m > max) max = p.m;
-  return max >= 0 ? max : null;
 }
 
 function joinList(items: string[]): string {
@@ -159,7 +155,7 @@ const MODULES: ModuleDef[] = [
   {
     id: "hdb-rent-trend",
     title: "HDB rents by flat type",
-    teaser: "Median monthly rent approved for whole-flat HDB rentals, by flat type.",
+    teaser: "Median monthly rent in HDB rental approvals, by flat type.",
     compute: () => {
       const rent = getHdbRentScan();
       if (!rent.window) return null;
@@ -177,6 +173,7 @@ const MODULES: ModuleDef[] = [
         chart: { kind: "line", yFormat: "rent", ariaLabel: "Line chart of median monthly HDB rents by flat type", series },
         caption: parts.length ? `Median monthly rents over ${windowLabel(rent.window.to)} were ${joinList(parts)} flats.` : "No rental approvals were recorded in the latest 12 months.",
         source: SRC_HDB_RENT,
+        note: RENT_CAVEAT,
       };
     },
   },
@@ -309,7 +306,7 @@ const MODULES: ModuleDef[] = [
         chart: { kind: "bar", yFormat: "rent", ariaLabel: `Bar chart of median monthly rent for ${flatTypeName(type)} HDB flats by town`, data: rows.map((x) => ({ label: titleCase(x.t.town), value: x.r.medianRent })) },
         caption: `${sentence(flatTypeName(type))} flats were the most rented type over ${windowLabel(rent.window.to)}. Median rents ranged from ${formatSgd(ex.min.r.medianRent)} a month in ${titleCase(ex.min.t.town)} to ${formatSgd(ex.max.r.medianRent)} in ${titleCase(ex.max.t.town)}.`,
         source: SRC_HDB_RENT,
-        note: `Towns with fewer than ${MIN_BAR_SAMPLE} approvals are left out.`,
+        note: `${RENT_CAVEAT} Towns with fewer than ${MIN_BAR_SAMPLE} approvals are left out.`,
       };
     },
   },
@@ -337,7 +334,7 @@ const MODULES: ModuleDef[] = [
         chart: { kind: "bar", yFormat: "pct", ariaLabel: `Bar chart of gross rental yield for ${flatTypeName(type)} HDB flats by town`, data: rows.map((x) => ({ label: titleCase(x.t.town), value: x.y })) },
         caption: `For ${flatTypeName(type)} flats, estimated gross yields over the latest 12 months ranged from ${formatPct(ex.min.y, 2)} in ${titleCase(ex.min.t.town)} to ${formatPct(ex.max.y, 2)} in ${titleCase(ex.max.t.town)}.`,
         source: `${SRC_HDB}; ${SRC_HDB_RENT}`,
-        note: "Estimate: gross yield before property tax, maintenance and vacancy. Both medians need at least 3 records.",
+        note: `Estimate: gross yield before property tax, maintenance and vacancy. Both medians need at least ${MIN_BAR_SAMPLE} records. ${RENT_CAVEAT}`,
       };
     },
   },

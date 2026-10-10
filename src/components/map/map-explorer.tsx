@@ -49,7 +49,8 @@ export function MapExplorer({ heading }: { heading: ReactNode }) {
     const measure = () => {
       if (!root) return;
       const top = Math.max(0, Math.round(root.getBoundingClientRect().top + window.scrollY));
-      const bottom = tabs && tabs.offsetParent !== null ? Math.round(tabs.getBoundingClientRect().height) : 0;
+      // the tab bar is position: fixed, so offsetParent is always null; a hidden bar (md:hidden) has no box
+      const bottom = tabs && tabs.getClientRects().length > 0 ? Math.round(tabs.getBoundingClientRect().height) : 0;
       setChrome((prev) => (prev && prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
     };
     window.addEventListener("resize", measure);
@@ -171,7 +172,7 @@ export function MapExplorer({ heading }: { heading: ReactNode }) {
         </div>
       </div>
 
-      <div className="relative isolate min-h-0 flex-1 bg-canvas">
+      <div role="region" aria-label={t("launches.map.title", "Map")} className="relative isolate min-h-0 flex-1 bg-canvas">
         {layers ? <ExplorerLeaflet layers={layers} visible={visible} /> : null}
         {!layers && !error ? (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-muted" role="status">

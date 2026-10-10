@@ -5,13 +5,13 @@ import { getProjectRentals, getProjects, getProjectTransactions } from "@/lib/da
 import { getSeries } from "@/lib/data/stats";
 import { monthLabel } from "@/lib/data/months";
 import { getCoverage } from "@/lib/data/meta";
-import { enblocTier } from "@/lib/calc/enbloc";
+import { ENBLOC_HEURISTIC_AGE, enblocTier } from "@/lib/calc/enbloc";
 import {
   enblocStartYear,
   formatDistrict,
   latestFirst,
   monthlyMedianPsf,
-  salesScatter,
+  salesScatterSample,
   saleTypeMix,
   seriesPsfPoints,
   sunSummary,
@@ -121,20 +121,32 @@ export default async function CondoPage({ params }: Props) {
     propertyTypes: p.propertyTypes,
   });
   const tiered = enbloc.tier === "A" || enbloc.tier === "B" || enbloc.tier === "C";
+  // the age comes from the lease start when one is recorded, otherwise from the earliest new sale (a launch-year proxy)
+  const enblocFromNewSale = enblocStart != null && !(p.tenure?.kind === "leasehold" && p.tenure.startYear != null);
   const sun = point ? sunSummary(point.lat, point.lng, currentYear) : null;
   const near = point ? nearbyContext(point) : null;
 
   // Price chart: project monthly median + individual sales (last 5 years) + district comparison over the same span.
   const line = monthlyMedianPsf(txs);
-  const scatter = asOf != null ? salesScatter(txs, asOf - 59) : [];
+  const scatterSample = asOf != null ? salesScatterSample(txs, asOf - 59) : { points: [], total: 0 };
+  const scatter = scatterSample.points;
   const chartFrom = Math.min(line[0]?.x ?? Number.POSITIVE_INFINITY, scatter[0]?.x ?? Number.POSITIVE_INFINITY);
   const districtSeries = p.district != null ? getSeries(`private-d:${p.district}:ALL`) : null;
   const districtPts = Number.isFinite(chartFrom) ? seriesPsfPoints(districtSeries?.points, chartFrom, asOf ?? undefined) : [];
-  const chartSeries: TimeSeries[] = [
-    { name: "Monthly median psf", points: line },
-    { name: "Individual sales (last 5 years)", points: scatter, kind: "scatter" },
-  ];
-  if (districtPts.length) chartSeries.push({ name: `${formatDistrict(p.district)} median psf (all private)`, points: districtPts });
+  const chartSeries: TimeSeries[] = (
+    [
+      { name: "Monthly median psf", points: line },
+      {
+        name:
+          scatterSample.total > scatter.length
+            ? `Individual sales (last 5 years, even sample of ${formatInt(scatter.length)} of ${formatInt(scatterSample.total)})`
+            : "Individual sales (last 5 years)",
+        points: scatter,
+        kind: "scatter",
+      },
+      { name: `${formatDistrict(p.district)} median psf (all private)`, points: districtPts },
+    ] satisfies TimeSeries[]
+  ).filter((s) => s.points.length > 0);
 
   const typeLine = p.propertyTypes.join(", ");
   const unitCols = [
@@ -314,19 +326,20 @@ export default async function CondoPage({ params }: Props) {
                     rowKey={(d) => d.key}
                   />
                   <p className="mt-3 text-sm text-ink">
-                    {sun.allYear.length ? (
-                      <T k="private.sun.allYear" fallback="Units facing {dirs} take the afternoon sun on all three dates." vars={{ dirs: sun.allYear.join(", ") }} />
-                    ) : (
-                      <T
-                        k="private.sun.seasonal"
-                        fallback="No single facing takes the afternoon sun on all three dates: it comes from {mar} in March, {jun} in June and {dec} in December."
-                        vars={{
-                          mar: sun.days.find((d) => d.key === "mar")?.directions.join("/") ?? "—",
-                          jun: sun.days.find((d) => d.key === "jun")?.directions.join("/") ?? "—",
-                          dec: sun.days.find((d) => d.key === "dec")?.directions.join("/") ?? "—",
-                        }}
-                      />
-                    )}{" "}
+                    {sun.litAllDates.length ? (
+                      <>
+                        <T k="private.sun.allYear" fallback="Units facing {dirs} get direct sun after 15:00 on all three dates." vars={{ dirs: sun.litAllDates.join(", ") }} />{" "}
+                      </>
+                    ) : null}
+                    <T
+                      k="private.sun.seasonal"
+                      fallback="The afternoon sun is most head-on for facings towards {mar} in March, {jun} in June and {dec} in December."
+                      vars={{
+                        mar: sun.days.find((d) => d.key === "mar")?.directions.join("/") ?? "—",
+                        jun: sun.days.find((d) => d.key === "jun")?.directions.join("/") ?? "—",
+                        dec: sun.days.find((d) => d.key === "dec")?.directions.join("/") ?? "—",
+                      }}
+                    />{" "}
                     {sun.shaded.length ? (
                       <T k="private.sun.shaded" fallback="Units facing {dirs} get no direct sun after 15:00 on these dates." vars={{ dirs: sun.shaded.join(", ") }} />
                     ) : null}
@@ -355,8 +368,13 @@ export default async function CondoPage({ params }: Props) {
         >
           <Card>
             <CardBody>
-              {txs.length ? (
-                <TimeSeriesChart series={chartSeries} yFormat="psf" height={320} ariaLabel={`Price per square foot over time for ${name}, with the ${formatDistrict(p.district)} median for comparison`} />
+              {line.length ? (
+                <TimeSeriesChart
+                  series={chartSeries}
+                  yFormat="psf"
+                  height={320}
+                  ariaLabel={`Price per square foot over time for ${name}${districtPts.length ? `, with the ${formatDistrict(p.district)} median for comparison` : ""}`}
+                />
               ) : (
                 <EmptyState title={<T k="private.noSales" fallback="No sales recorded" />}>
                   <T k="private.noSalesBody" fallback="URA has no caveats lodged for this project in the last five years." />
@@ -501,9 +519,13 @@ export default async function CondoPage({ params }: Props) {
                 {enbloc.reasons.map((r) => (
                   <li key={r}>{r}</li>
                 ))}
-                {p.tenure?.kind === "freehold" && enblocStart != null ? (
+                {enblocFromNewSale && enbloc.tier !== "Unknown" && !p.propertyTypes.includes("Executive Condominium") ? (
                   <li>
-                    <T k="private.enbloc.freeholdAge" fallback="Age for freehold projects is taken from the earliest recorded new sale (a launch-year proxy)." />
+                    <T
+                      k="private.enbloc.freeholdAge"
+                      fallback="Age is counted from the earliest new sale in the records ({year}), a launch-year proxy, as the tenure record has no start year."
+                      vars={{ year: enblocStart }}
+                    />
                   </li>
                 ) : null}
                 {p.tenure?.kind === "freehold" && enblocStart == null ? (
@@ -515,7 +537,8 @@ export default async function CondoPage({ params }: Props) {
               <p className="text-xs text-muted">
                 <T
                   k="private.enbloc.note"
-                  fallback="Tiers: A = freehold/999-year and 30+ years old; B = freehold/999-year 20+ years, or 99-year 40+ years; C = 99-year 25+ years. A collective sale also needs most owners to agree and a buyer at the right price."
+                  fallback="Tiers: A = freehold/999-year and {a}+ years old; B = freehold/999-year {b}+ years, or 99-year {bl}+ years; C = 99-year {c}+ years. A collective sale also needs most owners to agree and a buyer at the right price."
+                  vars={{ a: ENBLOC_HEURISTIC_AGE.longTenureA, b: ENBLOC_HEURISTIC_AGE.longTenureB, bl: ENBLOC_HEURISTIC_AGE.leaseholdB, c: ENBLOC_HEURISTIC_AGE.leaseholdC }}
                 />
               </p>
             </CardBody>

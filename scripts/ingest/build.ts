@@ -458,8 +458,12 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
   const privLatest = maxMonth(input.privateSales);
 
   // assign project slugs: generic landed names become per-street pseudo projects; duplicate names across districts get a suffix
+  // Non-strata landed houses (and generically named landed developments) are grouped per street: landed pages are
+  // organised by street, and a named landed estate spanning several streets must not repeat its sales on each.
   const projectKeyOf = (p: { project: string; street: string; propertyType: string }) =>
-    GENERIC_LANDED_PROJECT.test(p.project.trim()) ? `LANDED|${p.street.trim().toUpperCase()}` : `P|${p.project.trim().toUpperCase()}`;
+    GENERIC_LANDED_PROJECT.test(p.project.trim()) || LANDED_NON_STRATA.has(p.propertyType)
+      ? `LANDED|${p.street.trim().toUpperCase()}`
+      : `P|${p.project.trim().toUpperCase()}`;
   const districtsByKey = new Map<string, Map<number, number>>();
   for (const s of input.privateSales) {
     const k = projectKeyOf(s);
@@ -497,7 +501,7 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
   for (const s of privSalesSorted) {
     const slug = slugFor(s);
     let acc = projects.get(slug);
-    const generic = GENERIC_LANDED_PROJECT.test(s.project.trim());
+    const generic = GENERIC_LANDED_PROJECT.test(s.project.trim()) || LANDED_NON_STRATA.has(s.propertyType);
     if (!acc) {
       projects.set(
         slug,
@@ -867,7 +871,12 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
       mrtStations: stations.length,
       schools: schools.length,
     },
-    latestMonth: { hdb: hdbLatest != null ? monthLabel(hdbLatest) : null, private: privLatest != null ? monthLabel(privLatest) : null },
+    latestMonth: {
+      hdb: hdbLatest != null ? monthLabel(hdbLatest) : null,
+      private: privLatest != null ? monthLabel(privLatest) : null,
+      hdbRentals: rentLatest != null ? monthLabel(rentLatest) : null,
+      privateRentals: rentPrivLatest != null ? monthLabel(rentPrivLatest) : null,
+    },
   };
   writeJson(outDir, "meta.json", meta);
   return { meta };

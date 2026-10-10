@@ -146,10 +146,12 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     path: "/api/v1/launches/",
     tag: "Private",
     summary: "New launches and upcoming projects",
-    description: "Launched and upcoming private projects with units, sales to date and expected completion. Filter by type and status.",
+    description: "Launched and upcoming private projects with units, sales to date and expected completion. Filter by type and status; page through results with limit and offset.",
     params: [
       { name: "type", in: "query", required: false, description: "condo, ec or landed.", schema: { type: "string", enum: ["condo", "ec", "landed"] }, example: "condo" },
       { name: "status", in: "query", required: false, description: "launched or upcoming.", schema: { type: "string", enum: ["launched", "upcoming"] }, example: "launched" },
+      { name: "limit", in: "query", required: false, description: "Page size, 1 to 200 (default 100).", schema: { type: "integer", minimum: 1, maximum: 200, default: 100 } },
+      { name: "offset", in: "query", required: false, description: "Number of launches to skip (default 0).", schema: { type: "integer", minimum: 0, default: 0 } },
     ],
     response: "LaunchesResponse",
     cacheSeconds: CACHE.data,

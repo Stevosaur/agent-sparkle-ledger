@@ -144,7 +144,12 @@ export function TrackedHomeCard({ home, onChange, onRemove }: { home: TrackedHom
         description={details || undefined}
         actions={
           <>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setEditing((v) => !v)} aria-expanded={editing} aria-label={t("account.tracked.edit", "Edit details for {label}", { label: home.label })}>
+            <Button type="button" variant="ghost" size="sm" onClick={() => {
+                if (!editing) setDraft(draftFrom(home));
+                setEditing(!editing);
+                setError(null);
+              }}
+              aria-expanded={editing} aria-label={t("account.tracked.edit", "Edit details for {label}", { label: home.label })}>
               <Pencil className="size-4" aria-hidden />
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={remove} disabled={busy} aria-label={t("account.tracked.remove", "Stop tracking {label}", { label: home.label })}>

@@ -51,7 +51,6 @@ export function currentMonthSg(now: Date = new Date()): string {
 /** Trim and cap a free-text label; empty -> null. */
 export function cleanLabel(v: unknown, max = 200): string | null {
   if (typeof v !== "string") return null;
-  // eslint-disable-next-line no-control-regex
   const s = v.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
   return s ? s.slice(0, max) : null;
 }

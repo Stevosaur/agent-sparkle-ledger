@@ -45,9 +45,9 @@ interface Loaded {
 function queryOf(f: Filters, def: FullRankingDef): string {
   const p = new URLSearchParams();
   p.set("group", f.group);
-  if (f.town && def.filters.includes("town")) p.set("town", f.town);
-  if (f.flatType && def.filters.includes("flatType")) p.set("flatType", f.flatType);
-  if (f.segment && def.filters.includes("segment")) p.set("segment", f.segment);
+  if (f.town && def.filters.includes("town") && f.group === "hdb") p.set("town", f.town);
+  if (f.flatType && def.filters.includes("flatType") && f.group === "hdb") p.set("flatType", f.flatType);
+  if (f.segment && def.filters.includes("segment") && f.group !== "hdb" && f.group !== "town") p.set("segment", f.segment);
   return p.toString();
 }
 

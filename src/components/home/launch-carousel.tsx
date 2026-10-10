@@ -8,15 +8,18 @@ import { LaunchCard } from "./launch-card";
 import { ScrollCarousel } from "./scroll-carousel";
 import { SourceLine } from "./source-line";
 
-const TAB_LABELS: Record<LaunchTab, { k: string; fallback: string; listingType: string; aria: string }> = {
-  condo: { k: "home.launches.tab.condo", fallback: "Condo", listingType: "condo", aria: "Condo launches" },
-  ec: { k: "home.launches.tab.ec", fallback: "EC", listingType: "ec", aria: "Executive condominium launches" },
-  landed: { k: "home.launches.tab.landed", fallback: "Landed", listingType: "landed", aria: "Landed launches" },
-  upcoming: { k: "home.launches.tab.upcoming", fallback: "Upcoming", listingType: "upcoming", aria: "Upcoming launches" },
+const TAB_LABELS: Record<LaunchTab, { k: string; fallback: string; listingType: string; ariaKey: string; aria: string }> = {
+  condo: { k: "home.launches.tab.condo", fallback: "Condo", listingType: "condo", ariaKey: "home.launches.aria.condo", aria: "Condo launches" },
+  ec: { k: "home.launches.tab.ec", fallback: "EC", listingType: "ec", ariaKey: "home.launches.aria.ec", aria: "Executive condominium launches" },
+  landed: { k: "home.launches.tab.landed", fallback: "Landed", listingType: "landed", ariaKey: "home.launches.aria.landed", aria: "Landed launches" },
+  upcoming: { k: "home.launches.tab.upcoming", fallback: "Upcoming", listingType: "upcoming", ariaKey: "home.launches.aria.upcoming", aria: "Upcoming launches" },
 };
 
-/** New-launch carousel with one tab per type (Condo / EC / Landed / Upcoming). */
-export function LaunchCarousel({ groups }: { groups: Record<LaunchTab, LaunchCardData[]> }) {
+/**
+ * New-launch carousel with one tab per type (Condo / EC / Landed / Upcoming). `groups` holds the
+ * (capped) cards per tab; `totals` the uncapped number of launches per tab shown on each tab label.
+ */
+export function LaunchCarousel({ groups, totals }: { groups: Record<LaunchTab, LaunchCardData[]>; totals?: Record<LaunchTab, number> }) {
   const total = LAUNCH_TABS.reduce((s, tab) => s + groups[tab].length, 0);
   const viewAll = (
     <Link href="/listings/" className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline">
@@ -57,12 +60,12 @@ export function LaunchCarousel({ groups }: { groups: Record<LaunchTab, LaunchCar
             label: (
               <>
                 <T k={meta.k} fallback={meta.fallback} />
-                <span className="ml-1 text-xs text-muted">{cards.length}</span>
+                <span className="ml-1 text-xs text-muted">{totals?.[tab] ?? cards.length}</span>
               </>
             ),
             content:
               cards.length > 0 ? (
-                <ScrollCarousel label={meta.aria} items={cards.map((card) => ({ key: `${card.type}/${card.slug}`, node: <LaunchCard card={card} /> }))} />
+                <ScrollCarousel labelKey={meta.ariaKey} label={meta.aria} items={cards.map((card) => ({ key: `${card.type}/${card.slug}`, node: <LaunchCard card={card} /> }))} />
               ) : (
                 <p className="rounded-xl border border-dashed border-line bg-surface px-4 py-6 text-center text-sm text-muted">
                   <T k="home.launches.emptyTab" fallback="Nothing in this category in the current data." />{" "}

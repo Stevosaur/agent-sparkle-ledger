@@ -26,11 +26,12 @@ export function ValuationReport({ body }: { body: ValuationRequestBody }) {
       .then(async (res) => {
         const json = (await res.json().catch(() => null)) as (ValuationResponse & { message?: string }) | null;
         if (cancelled) return;
-        if (!res.ok || !json) setState({ key, status: "error", message: json?.message ?? `HTTP ${res.status}` });
+        if (res.status === 401 || res.status === 402) setState({ key, status: "error", message: "no_access" });
+        else if (!res.ok || !json) setState({ key, status: "error", message: json?.message ?? "error" });
         else setState({ key, status: "done", data: json });
       })
       .catch(() => {
-        if (!cancelled) setState({ key, status: "error", message: "network_error" });
+        if (!cancelled) setState({ key, status: "error", message: "error" });
       });
     return () => {
       cancelled = true;
@@ -43,7 +44,13 @@ export function ValuationReport({ body }: { body: ValuationRequestBody }) {
   if (current.status === "error")
     return (
       <div className="space-y-4">
-        <Notice tone="warn">{current.message}</Notice>
+        <Notice tone="warn">
+          {current.message === "no_access"
+            ? t("tools.val.noAccess", "Your session has ended or your plan does not include this. Refresh the page to sign in again.")
+            : current.message === "error"
+              ? t("common.error", "Something went wrong. Please try again.")
+              : current.message}
+        </Notice>
         <Link href={backHref} className={buttonClass("outline", "sm")}>
           {t("tools.val.backToTool", "Back to the valuation tool")}
         </Link>

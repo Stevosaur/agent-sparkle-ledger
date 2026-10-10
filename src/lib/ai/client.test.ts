@@ -20,7 +20,7 @@ describe("createAnthropicClient", () => {
   it("streams through the SDK's beta messages API with bounded retries and timeout", async () => {
     const { createAnthropicClient } = await import("./ask");
     const client = createAnthropicClient();
-    expect(ctor).toHaveBeenCalledWith({ maxRetries: 2, timeout: 60_000 });
+    expect(ctor).toHaveBeenCalledWith({ maxRetries: 2, timeout: 40_000 });
     const signal = new AbortController().signal;
     const params = { model: "claude-opus-5-5", max_tokens: 10, messages: [{ role: "user" as const, content: "hi" }] };
     client.stream(params, { signal });

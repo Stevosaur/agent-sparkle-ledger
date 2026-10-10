@@ -133,6 +133,9 @@ describe("tool dispatch", () => {
     expect(aff.isError).toBe(false);
     expect(aff.data.maxPrice).toBeGreaterThan(0);
     expect(aff.data.repaymentRatePct).toBe(2.6);
+    expect(typeof aff.data.indicative).toBe("boolean");
+    expect(Array.isArray(aff.data.indicativeRules)).toBe(true);
+    expect((aff.data.assumptions as string[]).join(" ")).toMatch(/CPF lease limits were not applied/);
     const bank = await run("calc_affordability", { monthlyIncome: 10_000, cash: 100_000, cpfOa: 150_000, age: 32, propertyClass: "private", lender: "hdb" });
     expect((bank.data.assumptions as string[]).join(" ")).toMatch(/bank loan was assumed/);
     expect(bank.data.repaymentRatePct).toBe(4);

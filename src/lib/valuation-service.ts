@@ -16,7 +16,7 @@ import { monthIndex, monthLabel, monthToYearFraction } from "@/lib/data/months";
 import type { HdbBlock, HdbTransaction, MonthlyStat, PrivateProject, PrivateTransaction, StatSeries } from "@/lib/data/types";
 import { haversineM } from "@/lib/geo-math";
 import { valueByComparables, type ComparableInput } from "@/lib/calc/valuation";
-import { balaPct, remainingLeaseYears } from "@/lib/calc/lease";
+import { BALA_TABLE_STATUS, balaPct, remainingLeaseYears } from "@/lib/calc/lease";
 import { formatPropertyRef, type PropertyRef } from "@/lib/property-ref";
 import { landedAddressSlug, titleCase } from "@/lib/slug";
 import { isEcProject } from "@/lib/tools/fit";
@@ -264,10 +264,19 @@ export function selectCondoComparables(project: PrivateProject, asOf: number): C
     let widened = false;
     if (same.length < MIN_SAME_SITE && neighbours.length > 0) {
       widened = true;
-      for (const { p, distanceM } of neighbours) {
-        for (const t of getProjectTransactions(p.slug)) {
-          if (!usablePrivateTx(t) || isLandedTx(t) || !inWindow(t.monthIndex, asOf, lookback)) continue;
-          comps.push(condoCandidate(t, p, distanceM, false));
+      // one pass per district file rather than one per neighbouring project
+      const byDistrict = new Map<number, Map<string, { p: PrivateProject; distanceM: number }>>();
+      for (const n of neighbours) {
+        if (n.p.district == null) continue;
+        const m = byDistrict.get(n.p.district) ?? new Map();
+        m.set(n.p.slug, n);
+        byDistrict.set(n.p.district, m);
+      }
+      for (const [district, projects] of byDistrict) {
+        for (const t of getDistrictTransactions(district)) {
+          const n = projects.get(t.projectSlug);
+          if (!n || !usablePrivateTx(t) || isLandedTx(t) || !inWindow(t.monthIndex, asOf, lookback)) continue;
+          comps.push(condoCandidate(t, n.p, n.distanceM, false));
         }
       }
     }
@@ -475,7 +484,9 @@ function run(args: RunArgs): ValuationOutcome {
   if (args.kind === "hdb") {
     method.push(
       leaseAdjusted
-        ? "Remaining-lease differences are adjusted with Bala's Table (leasehold value as a share of freehold)."
+        ? `Remaining-lease differences are adjusted with Bala's Table (leasehold land value as a share of freehold, used here as a proxy for flats)${
+            BALA_TABLE_STATUS.verified ? "" : `. ${BALA_TABLE_STATUS.label}`
+          }.`
         : "Remaining-lease differences between sales are not adjusted for.",
     );
   }

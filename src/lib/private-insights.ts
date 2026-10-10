@@ -167,14 +167,28 @@ export function monthlyMedianPsf(txs: readonly Pick<PrivateTransaction, "monthIn
   return [...byMonth.entries()].sort((a, b) => a[0] - b[0]).map(([x, v]) => ({ x, y: Math.round(median(v)) }));
 }
 
-/** Individual sales since `sinceMonth` as scatter points (most recent `cap` kept), ascending by month. */
-export function salesScatter(txs: readonly Pick<PrivateTransaction, "monthIndex" | "psf">[], sinceMonth: number, cap = 600): XY[] {
-  return txs
+/**
+ * Individual sales since `sinceMonth` as scatter points, ascending by month. Large projects can have thousands of
+ * sales, so above `cap` an even sample across the whole period is kept (first and last sale included) rather than
+ * only the most recent ones; `total` is the number of sales before sampling so the chart can say it is a sample.
+ */
+export function salesScatterSample(txs: readonly Pick<PrivateTransaction, "monthIndex" | "psf">[], sinceMonth: number, cap = 600): { points: XY[]; total: number } {
+  const all = txs
     .filter((t) => t.monthIndex >= sinceMonth && t.psf > 0)
-    .sort((a, b) => b.monthIndex - a.monthIndex)
-    .slice(0, cap)
     .map((t) => ({ x: t.monthIndex, y: t.psf }))
-    .sort((a, b) => a.x - b.x);
+    .sort((a, b) => a.x - b.x || a.y - b.y);
+  const n = all.length;
+  const k = Math.max(1, Math.floor(cap));
+  if (n <= k) return { points: all, total: n };
+  if (k === 1) return { points: [all[n - 1]], total: n };
+  const points: XY[] = [];
+  for (let i = 0; i < k; i++) points.push(all[Math.round((i * (n - 1)) / (k - 1))]);
+  return { points, total: n };
+}
+
+/** Points of salesScatterSample() only. */
+export function salesScatter(txs: readonly Pick<PrivateTransaction, "monthIndex" | "psf">[], sinceMonth: number, cap = 600): XY[] {
+  return salesScatterSample(txs, sinceMonth, cap).points;
 }
 
 /** Median psf points of a precomputed stats series from `fromMonth` onwards. */
@@ -370,6 +384,20 @@ export function timeAdjustedEstimate(
 }
 
 /* ------------------------------------------------------------------ */
+/* Landed houses                                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Landed house types that landed streets and addresses are built from (the ingest's street and address summaries
+ * leave out strata landed homes, whose caveats record floor area rather than land area).
+ */
+export const LANDED_HOUSE_TYPES: ReadonlySet<string> = new Set(["Terrace", "Semi-detached", "Detached"]);
+
+export function isLandedHouse(t: Pick<PrivateTransaction, "propertyType">): boolean {
+  return LANDED_HOUSE_TYPES.has(t.propertyType);
+}
+
+/* ------------------------------------------------------------------ */
 /* Price range summary (district landed context)                       */
 /* ------------------------------------------------------------------ */
 
@@ -381,11 +409,21 @@ export interface PriceRangeSummary {
   medianPsf: number | null;
 }
 
-export function priceRangeSummary(txs: readonly Pick<PrivateTransaction, "price" | "psf" | "units">[]): PriceRangeSummary {
+/**
+ * Count, price range, median price and median psf of single-unit sales. With `landPsfOnly`, the median psf uses only
+ * sales whose recorded area is land area (strata landed homes record floor area, so their psf is not a land psf).
+ */
+export function priceRangeSummary(
+  txs: readonly (Pick<PrivateTransaction, "price" | "psf" | "units"> & Partial<Pick<PrivateTransaction, "typeOfArea">>)[],
+  opts: { landPsfOnly?: boolean } = {},
+): PriceRangeSummary {
   const single = txs.filter((t) => t.units <= 1 && t.price > 0);
   if (single.length === 0) return { count: 0, minPrice: null, maxPrice: null, medianPrice: null, medianPsf: null };
   const prices = single.map((t) => t.price);
-  const psfs = single.map((t) => t.psf).filter((v) => v > 0);
+  const psfs = single
+    .filter((t) => !opts.landPsfOnly || t.typeOfArea === "Land")
+    .map((t) => t.psf)
+    .filter((v) => v > 0);
   return {
     count: single.length,
     minPrice: Math.min(...prices),
@@ -427,8 +465,11 @@ export interface SunSummary {
   days: SunDaySummary[];
   /** each direction the afternoon sun comes from, with the dates it does */
   facings: { direction: string; days: SunDayKey[] }[];
-  /** directions that face the afternoon sun on all three dates */
-  allYear: string[];
+  /**
+   * 8-point facings that get direct sun after 15:00 on every one of the dates: the sun is above the horizon and
+   * less than 90° from the facade's outward normal at some sampled time (west-facing in Singapore).
+   */
+  litAllDates: string[];
   /** 8-point facings that get no direct sun after 15:00 on any of the dates (sun always behind the facade) */
   shaded: string[];
 }
@@ -458,9 +499,11 @@ export function sunSummary(lat: number, lng: number, year: number, stepMinutes =
   const days: SunDaySummary[] = [];
   const facing = new Map<string, Set<SunDayKey>>();
   const azimuths: number[] = [];
+  const perDay: number[][] = [];
   for (const d of SUN_DAYS) {
     const pts = sunPathForDay(year, d.month, d.day, lat, lng, stepMinutes).filter((p) => p.time >= AFTERNOON_FROM && p.altitude > 0);
     if (pts.length === 0) continue;
+    perDay.push(pts.map((p) => p.azimuth));
     const directions: string[] = [];
     for (const p of pts) {
       azimuths.push(p.azimuth);
@@ -475,9 +518,10 @@ export function sunSummary(lat: number, lng: number, year: number, stepMinutes =
   const facings = [...facing.entries()]
     .sort((a, b) => COMPASS_ORDER.indexOf(a[0]) - COMPASS_ORDER.indexOf(b[0]))
     .map(([direction, set]) => ({ direction, days: SUN_DAYS.filter((d) => set.has(d.key)).map((d) => d.key) }));
-  const allYear = facings.filter((f) => f.days.length === days.length && days.length > 0).map((f) => f.direction);
+  const litAllDates =
+    days.length === SUN_DAYS.length ? PRINCIPAL.filter(([, bearing]) => perDay.every((az) => az.some((a) => angleBetween(a, bearing) < 90))).map(([d]) => d) : [];
   const shaded = azimuths.length ? PRINCIPAL.filter(([, bearing]) => azimuths.every((az) => angleBetween(az, bearing) >= 90)).map(([d]) => d) : [];
-  return { days, facings, allYear, shaded };
+  return { days, facings, litAllDates, shaded };
 }
 
 /* ------------------------------------------------------------------ */

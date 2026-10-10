@@ -5,7 +5,7 @@ import { absoluteUrl } from "@/lib/seo";
 import { titleCase } from "@/lib/slug";
 import { additionalBuyerStampDuty, buyerStampDuty } from "@/lib/calc/stamp-duty";
 import { amortisationSchedule, monthlyPayment } from "@/lib/calc/mortgage";
-import type { BuyerProfile } from "@/lib/calc/rules";
+import { RULE_META, ruleNeedsDisclaimer, type BuyerProfile, type RuleKey } from "@/lib/calc/rules";
 import type { HdbBlock, HdbTransaction, NewLaunch, PrivateProject, PrivateTransaction, SearchEntry, TownSummary } from "@/lib/data/types";
 import { refIdFromPath } from "./refs";
 import type {
@@ -177,13 +177,19 @@ export function searchResultDto(e: SearchEntry): SearchResultDto {
 export function stampDutyResult(price: number, profile: BuyerProfile, propertyCount: number): StampDutyResponseDto {
   const bsd = buyerStampDuty(price, "residential");
   const absd = additionalBuyerStampDuty(price, profile, propertyCount);
+  const rules: { id: RuleKey; description: string }[] = [
+    { id: "bsdResidential", description: "Buyer's Stamp Duty, residential (IRAS)" },
+    { id: "absdRates", description: "Additional Buyer's Stamp Duty (IRAS)" },
+  ];
+  const indicative = rules.some((r) => ruleNeedsDisclaimer(r.id));
   return {
     input: { price, profile, propertyCount },
     bsd: { total: bsd.total, tiers: bsd.tiers.map((t) => ({ from: t.from, to: t.to, rate: t.rate, taxable: t.taxable, amount: Math.round(t.amount * 100) / 100 })) },
     absd: { rate: absd.rate, total: absd.total },
     total: bsd.total + absd.total,
-    rules: { bsd: "IRAS residential Buyer's Stamp Duty, documents executed on or after 15 Feb 2023", absd: "IRAS Additional Buyer's Stamp Duty, acquisitions on or after 27 Apr 2023" },
-    note: "Estimate for a residential purchase by a single buyer type, on the price given (duty is charged on the higher of price and market value). propertyCount includes this purchase. Remissions and refunds (e.g. for some married couples) are not applied. Check with IRAS before you commit.",
+    rules: rules.map((r) => ({ id: r.id, description: r.description, effectiveFrom: RULE_META[r.id].effectiveFrom, status: RULE_META[r.id].status, source: RULE_META[r.id].source })),
+    indicative,
+    note: `${indicative ? "Indicative: some rates are not yet verified against the official IRAS pages. " : ""}Estimate for a residential purchase by a single buyer type, on the price given (duty is charged on the higher of price and market value). propertyCount includes this purchase. Remissions and refunds (e.g. for some married couples) are not applied. Check with IRAS before you commit.`,
   };
 }
 

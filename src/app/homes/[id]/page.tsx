@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { cache, type ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MessageCircle } from "lucide-react";
@@ -44,10 +44,11 @@ export function generateStaticParams(): { id: string }[] {
 
 type Params = { params: Promise<{ id: string }> };
 
-async function load(id: string): Promise<HomeListing | null> {
+/** One lookup per request, shared by generateMetadata and the page. */
+const load = cache(async (id: string): Promise<HomeListing | null> => {
   if (!isListingId(id)) return null;
   return getListing(id.toLowerCase());
-}
+});
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;

@@ -70,7 +70,7 @@ export default async function ValuationPage({ searchParams }: { searchParams: Se
                   <li>
                     <T
                       k="tools.val.how4"
-                      fallback="Each sale is moved to today's prices with a market index and adjusted by {pct}% per floor; the estimate is the median of the adjusted prices."
+                      fallback="Each sale is moved to today's prices with a market index, adjusted by {pct}% per floor and, for HDB flats, for remaining lease; the estimate is the median of the adjusted prices."
                       vars={{ pct: FLOOR_PREMIUM_PER_LEVEL * 100 }}
                     />
                   </li>

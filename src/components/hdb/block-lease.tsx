@@ -3,11 +3,14 @@ import { EmptyState, Notice } from "@/components/ui/notice";
 import { Stat, StatGrid } from "@/components/ui/stat";
 import { T } from "@/components/i18n/t";
 import { formatLeaseMonths, formatPct } from "@/lib/format";
-import { CPF_LEASE_COVER_AGE, CPF_MIN_REMAINING_LEASE } from "@/lib/calc/rules";
+import { CPF_LEASE_COVER_AGE, CPF_MIN_REMAINING_LEASE, ruleNeedsDisclaimer } from "@/lib/calc/rules";
 import type { LeaseOutlook } from "@/lib/hdb-insights";
 import { SourceLine } from "./source-line";
 
 const years = (y: number) => formatLeaseMonths(Math.floor(y * 12));
+
+/** CPF lease rules still marked unverified in rules.ts need an "indicative, check with CPF Board" note. */
+const CPF_NEEDS_DISCLAIMER = ruleNeedsDisclaimer("cpfMinLease") || ruleNeedsDisclaimer("cpfFullUse") || ruleNeedsDisclaimer("cpfProration");
 
 /** Section 9 body: remaining lease today and in 10 / 20 years, Bala's Table context and CPF usage. */
 export function BlockLease({ outlook }: { outlook: LeaseOutlook | null }) {
@@ -32,12 +35,12 @@ export function BlockLease({ outlook }: { outlook: LeaseOutlook | null }) {
             <Stat
               label={<T k="hdb.lease.in10" fallback="In 10 years" />}
               value={years(outlook.remainingIn10)}
-              sub={bala ? <T k="hdb.lease.balaRel" fallback="≈{pct} of today's lease value (Bala's Table)" vars={{ pct: formatPct(bala.relIn10, 0) }} /> : null}
+              sub={bala ? <T k="hdb.lease.balaRel" fallback="≈{pct} of today's land-lease value (Bala's Table, approx.)" vars={{ pct: formatPct(bala.relIn10, 0) }} /> : null}
             />
             <Stat
               label={<T k="hdb.lease.in20" fallback="In 20 years" />}
               value={years(outlook.remainingIn20)}
-              sub={bala ? <T k="hdb.lease.balaRel" fallback="≈{pct} of today's lease value (Bala's Table)" vars={{ pct: formatPct(bala.relIn20, 0) }} /> : null}
+              sub={bala ? <T k="hdb.lease.balaRel" fallback="≈{pct} of today's land-lease value (Bala's Table, approx.)" vars={{ pct: formatPct(bala.relIn20, 0) }} /> : null}
             />
           </StatGrid>
           <p className="mt-4 text-xs text-muted">
@@ -47,7 +50,7 @@ export function BlockLease({ outlook }: { outlook: LeaseOutlook | null }) {
                 {" "}
                 <T
                   k="hdb.lease.balaNote"
-                  fallback="Bala's Table (SLA) values land leases, not flat prices; it is shown only as a guide to how lease decay accelerates. Reproduction of the table is approximate."
+                  fallback="Bala's Table (SLA) values the remaining lease on land, not flat prices, so it is only a guide to how lease value decays; it is not a resale price forecast. Approximate: based on SLA's Bala's Table; the reproduction used here is not yet verified against the official table."
                 />
               </>
             ) : null}
@@ -76,6 +79,12 @@ export function BlockLease({ outlook }: { outlook: LeaseOutlook | null }) {
           />
         )}{" "}
         <T k="hdb.lease.cpfAssumption" fallback="Assumes the youngest buyer is {age} and buys today; older buyers need less lease." vars={{ age: cpf.buyerAge }} />
+        {CPF_NEEDS_DISCLAIMER ? (
+          <>
+            {" "}
+            <T k="hdb.lease.cpfIndicative" fallback="Indicative: these CPF rules are not yet verified against CPF Board's own pages, so check with CPF Board before you buy." />
+          </>
+        ) : null}
       </Notice>
       <SourceLine>
         <T k="hdb.source.lease" fallback="HDB lease commencement (resale records, data.gov.sg); CPF Board rules on using CPF for property with shorter leases." />

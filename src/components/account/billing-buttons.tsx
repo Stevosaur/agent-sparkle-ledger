@@ -58,13 +58,16 @@ export function CheckoutButton({ interval, featured }: { interval: "month" | "ye
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ text: string; profileLink: boolean } | null>(null);
   const variant = featured ? "plus" : "outline";
-  const trialLabel = site.plus.trialDays > 0 ? t("account.plus.startTrial", "Start {days}-day free trial", { days: site.plus.trialDays }) : t("account.plus.subscribe", "Subscribe");
+  // Same rule as the server (eligibleForTrial): no trial for accounts that have had a subscription or trial.
+  const trialEligible = !viewer?.subscriptionStatus && !viewer?.trialEndsAt;
+  const trialLabel =
+    site.plus.trialDays > 0 && trialEligible ? t("account.plus.startTrial", "Start {days}-day free trial", { days: site.plus.trialDays }) : t("account.plus.subscribe", "Subscribe");
 
   if (loading) return <span className={buttonClass(variant, "lg", "w-full opacity-60")} aria-hidden>{trialLabel}</span>;
 
   if (!viewer?.integrations.auth || !viewer.integrations.billing) {
     return (
-      <Button type="button" variant={variant} size="lg" className="w-full" disabled aria-describedby="checkout-unavailable">
+      <Button type="button" variant={variant} size="lg" className="w-full" disabled aria-describedby={viewer ? "checkout-unavailable" : undefined}>
         {trialLabel}
       </Button>
     );

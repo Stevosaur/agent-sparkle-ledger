@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { MarkdownLite } from "@/components/ai/markdown-lite";
-import { MAX_HISTORY_TURNS, MAX_QUESTION_CHARS, type AskErrorCode, type AskRequest, type AskStreamEvent, type AskTurn } from "@/lib/ai/protocol";
+import { MAX_HISTORY_TURNS, MAX_QUESTION_CHARS, type AskErrorCode, type AskRequest, type AskTurn } from "@/lib/ai/protocol";
+import { readAskStream } from "@/lib/ai/stream-client";
 import { formatMonth } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -107,7 +108,15 @@ export function AskPanel({ context, title, suggestions }: AskPanelProps) {
   const nextId = useRef(1);
   const busy = exchanges.some((e) => e.status === "streaming");
 
+  const listRef = useRef<HTMLOListElement | null>(null);
+
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  // Keep the newest exchange in view as the answer streams in.
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [exchanges]);
 
   if (!viewer?.integrations.ai) return null;
 
@@ -138,11 +147,8 @@ export function AskPanel({ context, title, suggestions }: AskPanelProps) {
         fail(err?.error && KNOWN_ERRORS.has(err.error) ? (err.error as AskErrorCode) : "ai_error");
         return;
       }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
       let finished = false;
-      const handle = (ev: AskStreamEvent) => {
+      await readAskStream(res.body, (ev) => {
         if (ev.type === "text") update(id, (e) => ({ answer: e.answer + ev.text, tool: null }));
         else if (ev.type === "tool") update(id, () => ({ tool: ev.name }));
         else if (ev.type === "done") {
@@ -153,23 +159,7 @@ export function AskPanel({ context, title, suggestions }: AskPanelProps) {
           // A refusal discards any partial answer; other errors keep what already arrived.
           update(id, (e) => ({ status: "error", error: KNOWN_ERRORS.has(ev.error) ? ev.error : "ai_error", tool: null, answer: ev.error === "refused" ? "" : e.answer }));
         }
-      };
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = buffer.indexOf("\n")) >= 0) {
-          const line = buffer.slice(0, nl).trim();
-          buffer = buffer.slice(nl + 1);
-          if (!line) continue;
-          try {
-            handle(JSON.parse(line) as AskStreamEvent);
-          } catch {
-            /* ignore a malformed line */
-          }
-        }
-      }
+      });
       if (!finished) fail("ai_error");
     } catch (err) {
       if ((err as Error)?.name === "AbortError") return;
@@ -211,7 +201,7 @@ export function AskPanel({ context, title, suggestions }: AskPanelProps) {
 
       <div className="space-y-4 px-4 py-4 sm:px-5">
         {exchanges.length ? (
-          <ol className="max-h-[28rem] space-y-4 overflow-y-auto" aria-label={t("ai.conversation", "Conversation")}>
+          <ol ref={listRef} className="max-h-[28rem] space-y-4 overflow-y-auto" aria-label={t("ai.conversation", "Conversation")}>
             {exchanges.map((e) => (
               <li key={e.id} className="space-y-2">
                 <p className="ml-auto w-fit max-w-[90%] rounded-2xl rounded-br-sm bg-brand-50 px-3 py-2 text-sm text-brand-900">
@@ -279,7 +269,6 @@ export function AskPanel({ context, title, suggestions }: AskPanelProps) {
               autoComplete="off"
               aria-invalid={tooLong || undefined}
               aria-describedby={`${inputId}-hint`}
-              disabled={busy}
             />
             <Button type="submit" aria-label={t("ai.send", "Ask")} disabled={busy || !question.trim() || tooLong} className="shrink-0 px-3">
               {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <SendHorizontal className="size-4" aria-hidden />}

@@ -246,16 +246,32 @@ export function launchCard(l: NewLaunch): LaunchCard {
   };
 }
 
+/** The carousel tab a launch belongs to: "upcoming" for any type not yet launched, else its type. */
+export function launchTab(l: Pick<NewLaunch, "type" | "status">): LaunchTab | null {
+  if (l.status === "upcoming") return "upcoming";
+  return l.type === "condo" || l.type === "ec" || l.type === "landed" ? l.type : null;
+}
+
+/** Number of launches per carousel tab, before the per-tab cap applied by groupLaunches. */
+export function countLaunchTabs(launches: readonly Pick<NewLaunch, "type" | "status">[]): Record<LaunchTab, number> {
+  const out: Record<LaunchTab, number> = { condo: 0, ec: 0, landed: 0, upcoming: 0 };
+  for (const l of launches) {
+    const tab = launchTab(l);
+    if (tab) out[tab]++;
+  }
+  return out;
+}
+
 /**
  * Carousel tabs: launched condo / EC / landed projects (most recently reported sales first), and
- * upcoming projects of any type (soonest expected completion first). Each tab is capped.
+ * upcoming projects of any type (soonest expected completion first). Each tab is capped at `perTab`;
+ * use countLaunchTabs for the uncapped totals.
  */
 export function groupLaunches(launches: readonly NewLaunch[], perTab = 12): Record<LaunchTab, LaunchCard[]> {
   const out: Record<LaunchTab, LaunchCard[]> = { condo: [], ec: [], landed: [], upcoming: [] };
   for (const l of launches) {
-    const card = launchCard(l);
-    if (l.status === "upcoming") out.upcoming.push(card);
-    else if (l.type === "condo" || l.type === "ec" || l.type === "landed") out[l.type].push(card);
+    const tab = launchTab(l);
+    if (tab) out[tab].push(launchCard(l));
   }
   const byRecent = (a: LaunchCard, b: LaunchCard) =>
     (b.latestSalesMonth ?? "").localeCompare(a.latestSalesMonth ?? "") || (b.sold ?? -1) - (a.sold ?? -1) || a.name.localeCompare(b.name);
@@ -280,8 +296,13 @@ export function popularTowns(towns: readonly TownSummary[], limit = 12): TownSum
     .slice(0, limit);
 }
 
+/** Plain code-unit comparison: "YYYY-MM" labels and slugs are ASCII, and this avoids ICU collation in a hot loop. */
+function cmp(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function compareRecent(a: { slug: string; tx: TxSummary }, b: { slug: string; tx: TxSummary }): number {
-  return (b.tx.last ?? "").localeCompare(a.tx.last ?? "") || b.tx.count12m - a.tx.count12m || a.slug.localeCompare(b.slug);
+  return cmp(b.tx.last ?? "", a.tx.last ?? "") || b.tx.count12m - a.tx.count12m || cmp(a.slug, b.slug);
 }
 
 /**

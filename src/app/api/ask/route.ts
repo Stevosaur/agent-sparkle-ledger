@@ -64,6 +64,12 @@ export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
   const abort = new AbortController();
   req.signal.addEventListener("abort", () => abort.abort(), { once: true });
+  // Stop before the platform kills the function (maxDuration), so the client gets a clean error event.
+  let timedOut = false;
+  const deadline = setTimeout(() => {
+    timedOut = true;
+    abort.abort();
+  }, (maxDuration - 5) * 1000);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -90,12 +96,16 @@ export async function POST(req: NextRequest) {
         });
         console.info(`[ai] ${result.outcome} rounds=${result.rounds} in=${result.inputTokens} out=${result.outputTokens}`);
       } catch (err) {
-        if (!abort.signal.aborted) {
+        if (timedOut) {
+          console.error("[ai] request timed out");
+          emit({ type: "error", error: "ai_error", message: "The answer took too long. Please try a narrower question." });
+        } else if (!abort.signal.aborted) {
           const overloaded = err instanceof Anthropic.RateLimitError || (err instanceof Anthropic.APIError && err.status === 529);
           console.error("[ai] request failed", err instanceof Anthropic.APIError ? `${err.status} ${err.message}` : err);
           emit({ type: "error", error: overloaded ? "ai_overloaded" : "ai_error", message: overloaded ? "The assistant is busy. Please try again in a minute." : "The assistant could not answer just now. Please try again." });
         }
       } finally {
+        clearTimeout(deadline);
         open = false;
         try {
           controller.close();

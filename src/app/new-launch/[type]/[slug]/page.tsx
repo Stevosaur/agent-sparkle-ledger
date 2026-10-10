@@ -22,6 +22,7 @@ import { DataTable, type Column } from "@/components/ui/table";
 import { SimpleBarChart } from "@/components/charts/bar-chart";
 import { CHART_COLORS, TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { MiniMap, type MapMarker } from "@/components/map/mini-map";
+import { focusHref } from "@/components/map/layers";
 import { LeadForm } from "@/components/leads/lead-form";
 import { AskPanel } from "@/components/ai/ask-panel";
 import { WhatsNext } from "@/components/property/whats-next";
@@ -33,6 +34,7 @@ import { titleCase } from "@/lib/slug";
 import { absoluteUrl, pageMetadata } from "@/lib/seo";
 import {
   districtLabel,
+  formatIsoDay,
   isLaunchType,
   latestPrice,
   launchHref,
@@ -76,7 +78,7 @@ function originOf(l: NewLaunch): LatLng | null {
 function describe(l: NewLaunch): string {
   const p = launchProgress(l);
   const price = latestPrice(l.sales);
-  const parts = [`${titleCase(l.name)} is a ${l.status === "upcoming" ? "upcoming" : "new"} ${launchTypeLabel(l.type).toLowerCase()} launch`];
+  const parts = [`${titleCase(l.name)} is ${l.status === "upcoming" ? "an upcoming" : "a new"} ${launchTypeLabel(l.type).toLowerCase()} launch`];
   if (l.district != null) parts[0] += ` in District ${l.district}${l.segment ? ` (${l.segment})` : ""}`;
   if (l.developer) parts[0] += ` by ${titleCase(l.developer)}`;
   const facts: string[] = [];
@@ -122,7 +124,9 @@ function resaleComparison(l: NewLaunch, origin: LatLng) {
   const landed = l.type === "landed";
   const nearby = nearbyProjects(origin, getProjects(), { radiusM: NEARBY_RESALE_RADIUS_M, landed, excludeSlugs: [l.projectSlug, l.slug] });
   const slugs = new Set(nearby.map((p) => p.slug));
-  const districts = [...new Set(nearby.map((p) => p.district).filter((d): d is number => d != null))].slice(0, 6);
+  // every district a nearby project sits in (a 1.5 km circle in the centre can touch seven or more); capping
+  // this would silently drop projects from the comparison
+  const districts = [...new Set(nearby.map((p) => p.district).filter((d): d is number => d != null))];
   const transactions = districts.flatMap((d) => getDistrictTransactions(d).filter((t) => slugs.has(t.projectSlug)));
   const latest = getMeta().latestMonth.private;
   const end = latest ? monthIndex(latest) : transactions.reduce((m, t) => Math.max(m, t.monthIndex), -1);
@@ -130,9 +134,27 @@ function resaleComparison(l: NewLaunch, origin: LatLng) {
   return { summary: nearbyResalePsf({ nearby, transactions, endMonthIndex: end, radiusM: NEARBY_RESALE_RADIUS_M, landed, limit: 8 }), landed };
 }
 
-function formatDay(iso: string): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-SG", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+/** Header lede: the same facts as describe(), in the viewer's language (describe() stays English for metadata). */
+function Lede({ l }: { l: NewLaunch }) {
+  const p = launchProgress(l);
+  const price = latestPrice(l.sales);
+  const parts: ReactNode[] = [];
+  if (l.developer) parts.push(<T key="dev" k="launches.page.byDeveloper" fallback="By {developer}" vars={{ developer: titleCase(l.developer) }} />);
+  if (p.sold != null && p.total != null && p.asOf)
+    parts.push(<T key="sold" k="launches.page.soldOf" fallback="{sold} of {total} units sold as of {month}" vars={{ sold: formatInt(p.sold), total: formatInt(p.total), month: formatMonth(p.asOf) }} />);
+  else if (l.totalUnits != null) parts.push(<T key="units" k="launches.page.units" fallback="{n} units" vars={{ n: formatInt(l.totalUnits) }} />);
+  if (price?.medianPsf != null) parts.push(<T key="psf" k="launches.page.medianIn" fallback="Median {psf} in {month}" vars={{ psf: formatPsf(price.medianPsf), month: formatMonth(price.month) }} />);
+  if (l.expectedCompletionYear != null) parts.push(<T key="top" k="launches.page.completion" fallback="Expected completion {year}" vars={{ year: l.expectedCompletionYear }} />);
+  return parts.length ? (
+    <>
+      {parts.map((node, i) => (
+        <span key={i}>
+          {i > 0 ? " · " : null}
+          {node}
+        </span>
+      ))}
+    </>
+  ) : null;
 }
 
 function SourceLine({ children }: { children: ReactNode }) {
@@ -181,6 +203,14 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
   const mrtNear = origin ? stationsWithin(origin, NEARBY_RESALE_RADIUS_M, "operational", 3) : [];
   const futureNear = origin ? stationsWithin(origin, NEARBY_RESALE_RADIUS_M, "future", 3) : [];
   const schools = origin ? schoolsWithin(origin, SCHOOL_RADIUS_M, "PRIMARY").slice(0, 6) : [];
+  const otherLaunches = origin
+    ? getLaunches()
+        .filter((l) => !(l.slug === launch.slug && l.type === launch.type) && l.lat != null && l.lng != null)
+        .map((l) => ({ l, d: haversineM(origin, { lat: l.lat as number, lng: l.lng as number }) }))
+        .filter((x) => x.d <= NEARBY_RESALE_RADIUS_M)
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 5)
+    : [];
 
   const markers: MapMarker[] = origin
     ? [
@@ -188,6 +218,7 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
         ...mrtNear.map((s): MapMarker => ({ lat: s.lat, lng: s.lng, label: `${titleCase(s.name)} (${s.codes.join(" ")})`, tone: "mrt" })),
         ...futureNear.map((s): MapMarker => ({ lat: s.lat, lng: s.lng, label: `${titleCase(s.name)} (${s.expectedYear ?? "future"})`, tone: "future-mrt" })),
         ...schools.map((s): MapMarker => ({ lat: s.lat, lng: s.lng, label: titleCase(s.name), tone: "school" })),
+        ...otherLaunches.map(({ l }): MapMarker => ({ lat: l.lat as number, lng: l.lng as number, label: titleCase(l.name), tone: "launch", href: launchHref(l) })),
         ...(summary?.projects ?? []).map((p): MapMarker => {
           const h = rowHref(p);
           return { lat: p.lat, lng: p.lng, label: titleCase(p.name), tone: "condo", ...(h ? { href: h } : {}) };
@@ -248,7 +279,7 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
           </span>
         }
         title={name}
-        description={describe(launch)}
+        description={<Lede l={launch} />}
       >
         <div className="flex flex-wrap gap-2">
           <a href="#enquire" className={buttonClass("primary", "sm")}>
@@ -293,7 +324,7 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
                   </Fact>
                   <Fact label={<T k="launches.facts.completion" fallback="Expected completion" />}>{launch.expectedCompletionYear ?? <T k="launches.facts.notPublished" fallback="Not published" />}</Fact>
                   <Fact label={<T k="launches.facts.district" fallback="District / segment" />}>
-                    {launch.district != null ? `District ${launch.district}` : "—"}
+                    {launch.district != null ? <T k="launches.facts.districtN" fallback="District {n}" vars={{ n: launch.district }} /> : "—"}
                     {launch.segment ? (
                       <>
                         {" · "}
@@ -307,6 +338,8 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
                       <>
                         {titleCase(launch.nearestMrt.name)} <span className="text-muted">({launch.nearestMrt.codes.join(" · ")})</span>, {formatDistance(launch.nearestMrt.distanceM)}
                       </>
+                    ) : origin ? (
+                      <T k="launches.facts.noMrtData" fallback="Not available: no MRT station data loaded" />
                     ) : (
                       <T k="launches.facts.noMrt" fallback="Unknown: no coordinates for this project yet" />
                     )}
@@ -341,10 +374,10 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
             <div className="lg:col-span-2">
               {origin ? (
                 <>
-                  <MiniMap center={origin} zoom={15} markers={markers} height={300} radiusM={NEARBY_RESALE_RADIUS_M} />
+                  <MiniMap center={origin} zoom={14} markers={markers} height={320} radiusM={NEARBY_RESALE_RADIUS_M} />
                   <p className="mt-2 text-xs text-muted">
                     <T k="launches.map.radiusNote" fallback="Dashed circle: 1.5 km comparison radius." />{" "}
-                    <Link href={`/map/?focus=${origin.lat.toFixed(5)},${origin.lng.toFixed(5)},15`} className="text-brand-700 hover:underline">
+                    <Link href={focusHref(origin.lat, origin.lng, 15)} className="text-brand-700 hover:underline">
                       <T k="launches.map.openFull" fallback="Open the full map" />
                     </Link>
                   </p>
@@ -383,7 +416,15 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
           description={<T k="launches.sales.description" fallback="Developer-reported units launched and sold, cumulative to date and month by month." />}
         >
           {launch.sales.length === 0 ? (
-            <EmptyState title={<T k="launches.sales.emptyTitle" fallback="Not launched yet" />}>
+            <EmptyState
+              title={
+                launch.status === "launched" ? (
+                  <T k="launches.progress.none" fallback="No developer sales reported yet" />
+                ) : (
+                  <T k="launches.sales.emptyTitle" fallback="Not launched yet" />
+                )
+              }
+            >
               <T k="launches.sales.emptyBody" fallback="Sales figures appear once the developer reports launched and sold units to URA (monthly developer sales)." />
             </EmptyState>
           ) : (
@@ -485,7 +526,17 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
                     <Stat
                       label={<T k="launches.resale.nearbyMedian" fallback="Nearby resale median" />}
                       value={formatPsf(summary.medianPsf)}
-                      sub={<T k="launches.resale.nearbySub" fallback="{n} resales, {projects} projects" vars={{ n: formatInt(summary.count), projects: formatInt(summary.projectCount) }} />}
+                      sub={
+                        <>
+                          {summary.count === 1 ? <T k="launches.resale.oneResale" fallback="1 resale" /> : <T k="launches.resale.nResales" fallback="{n} resales" vars={{ n: formatInt(summary.count) }} />}
+                          {", "}
+                          {summary.projectCount === 1 ? (
+                            <T k="launches.resale.oneProject" fallback="1 project" />
+                          ) : (
+                            <T k="launches.resale.nProjects" fallback="{n} projects" vars={{ n: formatInt(summary.projectCount) }} />
+                          )}
+                        </>
+                      }
                     />
                     <Stat
                       label={<T k="launches.resale.launchMedian" fallback="This launch, median" />}
@@ -540,7 +591,7 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
             medianPsf={price?.medianPsf ?? null}
             medianPsfMonth={price?.month ?? null}
             defaultRatePct={sora3m?.value ?? null}
-            defaultRateSource={sora3m ? `3M compounded SORA, ${formatDay(sora3m.date)}` : null}
+            defaultRateSource={sora3m ? `3M compounded SORA, ${formatIsoDay(sora3m.date)}` : null}
           />
         </Section>
 

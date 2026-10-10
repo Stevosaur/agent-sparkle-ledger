@@ -21,7 +21,7 @@ export const EMPTY_META: DatasetMeta = {
     mrtStations: 0,
     schools: 0,
   },
-  latestMonth: { hdb: null, private: null },
+  latestMonth: { hdb: null, private: null, hdbRentals: null, privateRentals: null },
 };
 
 export function getMeta(): DatasetMeta {

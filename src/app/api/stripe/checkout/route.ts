@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
     }
 
     const origin = appOrigin(req);
-    const trial = eligibleForTrial(existing) && site.plus.trialDays > 0;
+    // Stripe accepts whole days (1-730); a misconfigured NEXT_PUBLIC_PLUS_TRIAL_DAYS disables the trial.
+    const trialDays = Math.floor(site.plus.trialDays);
+    const trial = eligibleForTrial(existing) && trialDays >= 1 && trialDays <= 730;
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
       metadata: { user_id: viewer.userId },
       subscription_data: {
         metadata: { user_id: viewer.userId },
-        ...(trial ? { trial_period_days: site.plus.trialDays } : {}),
+        ...(trial ? { trial_period_days: trialDays } : {}),
       },
       success_url: `${origin}/profile/?checkout=success`,
       cancel_url: `${origin}/plus/`,

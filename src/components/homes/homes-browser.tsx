@@ -125,7 +125,7 @@ export function HomesBrowser({ initial, areas, backend, unavailable }: HomesBrow
             <SlidersHorizontal className="size-4" aria-hidden />
             {t("homes.filters", "Filters")}
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div className="space-y-1.5">
               <label htmlFor={`${uid}-kind`} className="block text-xs font-medium text-muted">
                 {t("homes.filter.kind", "Property type")}
@@ -182,7 +182,7 @@ export function HomesBrowser({ initial, areas, backend, unavailable }: HomesBrow
                 ))}
               </Select>
             </div>
-            <form key={qs} onSubmit={onPriceSubmit} className="space-y-1.5" aria-label={priceLabel}>
+            <form key={qs} onSubmit={onPriceSubmit} className="col-span-2 space-y-1.5 lg:col-span-1" aria-label={priceLabel}>
               <span className="block text-xs font-medium text-muted" aria-hidden>
                 {priceLabel}
               </span>

@@ -4,11 +4,12 @@ import { useId, useMemo, useState } from "react";
 import { useT } from "@/lib/i18n/provider";
 import { walkAwayPrice } from "@/lib/calc/walk-away";
 import { BANK_LTV, BANK_MAX_TENURE, LTV_TENURE_THRESHOLD, SSD_FROM_2025_07_04, type BuyerProfile } from "@/lib/calc/rules";
-import { estimatePrice } from "@/lib/launch-insights";
+import { estimatePrice, formatIsoDay } from "@/lib/launch-insights";
 import { formatMonth, formatPct, formatPsf, formatSgd } from "@/lib/format";
 import { Card, CardBody } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
+import { Notice } from "@/components/ui/notice";
 
 export interface WalkAwayToolProps {
   /** latest developer-reported median psf for the launch, used to prefill the price from a size */
@@ -52,6 +53,10 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
     if (est != null) {
       setPrice(String(est));
       setPriceFromSize(true);
+    } else if (priceFromSize) {
+      // the size behind the estimated price was cleared: drop the estimate rather than leave it unlabelled
+      setPrice("");
+      setPriceFromSize(false);
     }
   }
 
@@ -65,16 +70,26 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
     agentPct: num(agentPct),
     other: num(other),
   };
+  // Validation: an empty price just keeps the result panel in its prompt state; every other field is
+  // prefilled, so emptying it (or entering an out-of-range value) shows an inline message.
+  const raw = { size, price, loanPct, rate, tenure, holding, agentPct, other };
   const errors: Partial<Record<keyof typeof values, string>> = {};
-  if (!(values.price >= 10_000)) errors.price = t("launches.walk.err.price", "Enter a purchase price, or a unit size to estimate one.");
-  if (!(values.loanPct >= 0 && values.loanPct <= MAX_LTV_PCT)) errors.loanPct = t("launches.walk.err.loan", "Between 0% and {max}%.", { max: MAX_LTV_PCT });
-  if (!(values.rate >= 0 && values.rate <= 20)) errors.rate = t("launches.walk.err.rate", "Enter an interest rate between 0% and 20%.");
-  if (!(values.tenure >= 1 && values.tenure <= BANK_MAX_TENURE.private)) errors.tenure = t("launches.walk.err.tenure", "Between 1 and {max} years.", { max: BANK_MAX_TENURE.private });
-  if (!(values.holding >= 0.5 && values.holding <= 50)) errors.holding = t("launches.walk.err.holding", "Between 0.5 and 50 years.");
-  if (!(values.agentPct >= 0 && values.agentPct <= 10)) errors.agentPct = t("launches.walk.err.agent", "Between 0% and 10%.");
-  if (!(values.other >= 0)) errors.other = t("launches.walk.err.other", "Enter 0 or more.");
-  if (size.trim() !== "" && !(values.size > 0)) errors.size = t("launches.walk.err.size", "Enter a size in square feet.");
+  const required = t("launches.walk.err.required", "Required.");
+  const check = (k: keyof typeof values, ok: boolean, message: string, optional = false) => {
+    if (raw[k].trim() === "") {
+      if (!optional) errors[k] = k === "price" ? "" : required;
+    } else if (!ok) errors[k] = message;
+  };
+  check("price", values.price >= 10_000, t("launches.walk.err.price", "Enter a price of at least S$10,000."));
+  check("loanPct", values.loanPct >= 0 && values.loanPct <= MAX_LTV_PCT, t("launches.walk.err.loan", "Between 0% and {max}%.", { max: MAX_LTV_PCT }));
+  check("rate", values.rate >= 0 && values.rate <= 20, t("launches.walk.err.rate", "Between 0% and 20%."));
+  check("tenure", values.tenure >= 1 && values.tenure <= BANK_MAX_TENURE.private, t("launches.walk.err.tenure", "Between 1 and {max} years.", { max: BANK_MAX_TENURE.private }));
+  check("holding", values.holding >= 0.5 && values.holding <= 50, t("launches.walk.err.holding", "Between 0.5 and 50 years."));
+  check("agentPct", values.agentPct >= 0 && values.agentPct <= 10, t("launches.walk.err.agent", "Between 0% and 10%."));
+  check("other", values.other >= 0, t("launches.walk.err.other", "Enter 0 or more."));
+  check("size", values.size > 0, t("launches.walk.err.size", "Enter a size in square feet."), true);
   const valid = Object.keys(errors).filter((k) => k !== "size").length === 0;
+  const shown = (k: keyof typeof values) => (errors[k] ? errors[k] : null);
 
   const result = useMemo(() => {
     if (!valid) return null;
@@ -96,12 +111,12 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
   const breakEvenPsf = result && values.size > 0 ? result.breakEven / values.size : null;
   const fid = (k: string) => `${id}-${k}`;
   const err = (k: keyof typeof values) =>
-    errors[k] ? (
+    shown(k) ? (
       <p id={fid(`${k}-err`)} className="text-xs text-down">
-        {errors[k]}
+        {shown(k)}
       </p>
     ) : null;
-  const invalidProps = (k: keyof typeof values) => (errors[k] ? { "aria-invalid": true as const, "aria-describedby": fid(`${k}-err`) } : {});
+  const invalidProps = (k: keyof typeof values) => (shown(k) ? { "aria-invalid": true as const, "aria-describedby": fid(`${k}-err`) } : {});
 
   const rows: { label: string; value: number; note?: string }[] = result
     ? [
@@ -111,16 +126,30 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
         { label: t("launches.walk.row.interest", "Interest paid while holding"), value: result.interestPaid, note: t("launches.walk.estimate", "estimate") },
         { label: t("launches.walk.row.other", "Other costs"), value: result.otherCosts },
         { label: t("launches.walk.row.agent", "Agent's fee on sale"), value: result.agentFee, note: formatPct(values.agentPct / 100, 1) },
-        { label: t("launches.walk.row.ssd", "Seller's stamp duty on sale"), value: result.ssd },
+        { label: t("launches.walk.row.ssd", "Seller's stamp duty on sale"), value: result.ssd, note: formatPct(result.ssdRate, 0) },
       ]
     : [];
+  // A sale on (or within a day of) a purchase anniversary sits between two SSD bands; say so instead of picking one silently.
+  const ssdAmbiguity =
+    result && result.ssdNearAnniversary && result.ssdAlternative && result.saleDate
+      ? t(
+          "launches.walk.ssdAnniversary",
+          "The assumed sale date, {date}, falls on an anniversary of the purchase, so the seller's stamp duty band is ambiguous: this uses {rate}, the other reading gives {alt}. Check with IRAS, or change the holding period.",
+          { date: formatIsoDay(result.saleDate), rate: formatPct(result.ssdRate, 0), alt: formatPct(result.ssdAlternative.rate, 0) },
+        )
+      : null;
+  const gainText =
+    result != null
+      ? values.holding === 1
+        ? t("launches.walk.gainOne", "{pct} above your purchase price after 1 year", { pct: formatPct(result.requiredGainPct, 1) })
+        : t("launches.walk.gain", "{pct} above your purchase price after {years} years", { pct: formatPct(result.requiredGainPct, 1), years: values.holding })
+      : "";
 
   return (
     <Card>
       <CardBody className="grid gap-6 lg:grid-cols-2">
-        <form className="grid grid-cols-2 gap-x-3 gap-y-4" onSubmit={(e) => e.preventDefault()} aria-label={t("launches.walk.formLabel", "Walk-away price inputs")}>
+        <form className="grid grid-cols-1 content-start gap-x-3 gap-y-4 sm:grid-cols-2" onSubmit={(e) => e.preventDefault()} aria-label={t("launches.walk.formLabel", "Walk-away price inputs")}>
           <Field
-            className="col-span-2 sm:col-span-1"
             label={t("launches.walk.size", "Unit size (sqft)")}
             htmlFor={fid("size")}
             hint={
@@ -133,7 +162,6 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
             {err("size")}
           </Field>
           <Field
-            className="col-span-2 sm:col-span-1"
             label={t("launches.walk.price", "Purchase price (S$)")}
             htmlFor={fid("price")}
             hint={
@@ -214,7 +242,7 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
               </div>
               <div className="tabular mt-1 text-3xl font-bold text-ink">{formatSgd(result.breakEven)}</div>
               <p className="mt-1 text-sm text-muted">
-                {t("launches.walk.gain", "{pct} above your purchase price after {years} years", { pct: formatPct(result.requiredGainPct, 1), years: values.holding })}
+                {gainText}
                 {breakEvenPsf != null ? ` · ${formatPsf(breakEvenPsf)}` : ""}
               </p>
               <table className="tabular mt-4 w-full text-sm">
@@ -237,10 +265,17 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
                   </tr>
                 </tbody>
               </table>
+              {ssdAmbiguity ? (
+                <Notice tone="warn" className="mt-3 text-xs leading-5">
+                  {ssdAmbiguity}
+                </Notice>
+              ) : null}
             </div>
           ) : (
             <div className="flex h-full min-h-32 items-center justify-center rounded-xl border border-dashed border-line px-4 py-8 text-center text-sm text-muted">
-              {t("launches.walk.empty", "Enter a purchase price (or a unit size) to see the price you would need to sell at to break even.")}
+              {price.trim() === ""
+                ? t("launches.walk.empty", "Enter a purchase price (or a unit size) to see the price you would need to sell at to break even.")
+                : t("launches.walk.fix", "Check the highlighted fields to see your walk-away price.")}
             </div>
           )}
           <p className="mt-4 text-xs leading-5 text-muted">

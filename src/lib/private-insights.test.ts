@@ -7,6 +7,7 @@ import {
   floorRangeSortKey,
   floorSizeGrid,
   formatDistrict,
+  isLandedHouse,
   isSingleUnitSale,
   latestFirst,
   monthlyMedianPsf,
@@ -17,6 +18,7 @@ import {
   profitLoss,
   saleTypeMix,
   salesScatter,
+  salesScatterSample,
   seriesLevel,
   seriesPsfPoints,
   sizeBandOf,
@@ -159,13 +161,26 @@ describe("chart series", () => {
       { x: monthIndex("2024-01"), y: 1100 },
     ]);
   });
-  it("keeps only sales since the cut-off, capped to the most recent", () => {
+  it("keeps only sales since the cut-off", () => {
     const pts = salesScatter(rows, monthIndex("2023-01"));
     expect(pts).toHaveLength(4);
     expect(pts[0].x).toBe(monthIndex("2023-06"));
-    const capped = salesScatter(rows, 0, 2);
-    expect(capped).toHaveLength(2);
-    expect(capped.every((p) => p.x === monthIndex("2024-01"))).toBe(true);
+  });
+  it("samples evenly across the whole period above the cap and reports the total", () => {
+    const capped = salesScatterSample(rows, 0, 2);
+    expect(capped.total).toBe(5);
+    expect(capped.points).toEqual([
+      { x: monthIndex("2020-01"), y: 800 },
+      { x: monthIndex("2024-01"), y: 1200 },
+    ]);
+    const many = Array.from({ length: 1000 }, (_, i) => tx({ month: `20${String(20 + Math.floor(i / 200)).padStart(2, "0")}-${String((i % 12) + 1).padStart(2, "0")}`, psf: 1000 + i }));
+    const s = salesScatterSample(many, 0, 100);
+    expect(s.total).toBe(1000);
+    expect(s.points).toHaveLength(100);
+    expect(s.points[0].x).toBe(monthIndex("2020-01"));
+    expect(s.points[99].x).toBe(monthIndex("2024-12"));
+    expect(s.points.every((p, i) => i === 0 || p.x >= s.points[i - 1].x)).toBe(true);
+    expect(salesScatterSample(rows, monthIndex("2030-01")).points).toEqual([]);
   });
   it("clips a stats series to the chart window", () => {
     const pts = seriesPsfPoints([stat("2019-01", 700), stat("2023-01", 900), stat("2024-01", 0), stat("2025-01", 1000)], monthIndex("2020-01"), monthIndex("2024-12"));
@@ -305,6 +320,22 @@ describe("price range summary", () => {
       ]),
     ).toEqual({ count: 2, minPrice: 3_000_000, maxPrice: 5_000_000, medianPrice: 4_000_000, medianPsf: 1900 });
   });
+  it("takes the land psf only from caveats that record land area", () => {
+    const rows = [
+      { price: 3_000_000, psf: 1800, units: 1, typeOfArea: "Land" as const },
+      { price: 2_000_000, psf: 1000, units: 1, typeOfArea: "Strata" as const },
+      { price: 5_000_000, psf: 2000, units: 1, typeOfArea: "Land" as const },
+    ];
+    expect(priceRangeSummary(rows).medianPsf).toBe(1800);
+    expect(priceRangeSummary(rows, { landPsfOnly: true })).toEqual({ count: 3, minPrice: 2_000_000, maxPrice: 5_000_000, medianPrice: 3_000_000, medianPsf: 1900 });
+    expect(priceRangeSummary([rows[1]], { landPsfOnly: true }).medianPsf).toBeNull();
+  });
+  it("recognises landed house types (not strata landed)", () => {
+    expect(isLandedHouse({ propertyType: "Terrace" })).toBe(true);
+    expect(isLandedHouse({ propertyType: "Detached" })).toBe(true);
+    expect(isLandedHouse({ propertyType: "Strata Terrace" })).toBe(false);
+    expect(isLandedHouse({ propertyType: "Condominium" })).toBe(false);
+  });
 });
 
 describe("sun summary", () => {
@@ -329,8 +360,12 @@ describe("sun summary", () => {
 
   it("lists facings that never face the afternoon sun", () => {
     expect(s.shaded).toEqual(["NE", "E", "SE"]);
-    expect(s.allYear).toEqual([]);
     expect(s.facings.map((f) => f.direction)).toContain("W");
+  });
+
+  it("lists facings that get direct afternoon sun on all three dates (west-facing in Singapore)", () => {
+    expect(s.litAllDates).toEqual(["SW", "W", "NW"]);
+    for (const d of s.litAllDates) expect(s.shaded).not.toContain(d);
   });
 
   it("measures bearings both ways round", () => {

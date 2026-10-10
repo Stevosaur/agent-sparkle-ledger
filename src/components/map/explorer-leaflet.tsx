@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CircleMarker, LayerGroup, MapContainer, Popup, Tooltip, useMap } from "react-leaflet";
+import { CircleMarker, LayerGroup, MapContainer, Popup, useMap } from "react-leaflet";
 import { useT } from "@/lib/i18n/provider";
 import { titleCase } from "@/lib/slug";
 import { formatInt } from "@/lib/format";
@@ -27,10 +27,19 @@ export interface ExplorerVisibility {
   schools: boolean;
 }
 
+const FOCUS_RING = { color: MARKER_STYLES.primary.fillColor, weight: 3, fill: false, dashArray: "4 4" } as const;
+
 type Selection =
   | { kind: "launch"; item: MapLaunch }
   | { kind: "mrt"; item: MapStation; future: boolean }
   | { kind: "school"; item: MapSchool };
+
+/** A popup stays open only while its layer is switched on. */
+function selectionVisible(s: Selection, visible: ExplorerVisibility): boolean {
+  if (s.kind === "launch") return visible.launches;
+  if (s.kind === "school") return visible.schools;
+  return s.future ? visible.futureMrt : visible.mrt;
+}
 
 /** Pans to `?focus=lat,lng,zoom` whenever it changes after the first render (client-side navigation). */
 function FocusController({ focus }: { focus: { lat: number; lng: number; zoom: number } | null }) {
@@ -101,7 +110,6 @@ function SelectionPopup({ selection, onClose }: { selection: Selection; onClose:
 
 /** Full-page Leaflet map for /map/. Loaded with next/dynamic({ ssr: false }) from map-explorer.tsx only. */
 export default function ExplorerLeaflet({ layers, visible }: { layers: ExplorerLayers; visible: ExplorerVisibility }) {
-  const t = useT();
   const params = useSearchParams();
   const focusRaw = params?.get("focus") ?? null;
   const focus = useMemo(() => parseFocus(focusRaw), [focusRaw]);
@@ -122,6 +130,11 @@ export default function ExplorerLeaflet({ layers, visible }: { layers: ExplorerL
       <BasemapLayer />
       <InvalidateOnResize />
       <FocusController focus={focus} />
+
+      {/* highlight ring for a shared ?focus= point, drawn underneath so markers there stay clickable */}
+      {focus ? (
+        <CircleMarker center={[focus.lat, focus.lng]} radius={16} pathOptions={FOCUS_RING} interactive={false} />
+      ) : null}
 
       {visible.schools ? (
         <LayerGroup>
@@ -186,15 +199,8 @@ export default function ExplorerLeaflet({ layers, visible }: { layers: ExplorerL
         </LayerGroup>
       ) : null}
 
-      {focus ? (
-        <CircleMarker center={[focus.lat, focus.lng]} radius={MARKER_STYLES.primary.radius} pathOptions={MARKER_STYLES.primary} bubblingMouseEvents={false}>
-          <Tooltip direction="top" offset={[0, -MARKER_STYLES.primary.radius]}>
-            {t("launches.map.sharedSpot", "Shared location")}
-          </Tooltip>
-        </CircleMarker>
-      ) : null}
 
-      {selection ? <SelectionPopup key={`${selection.kind}-${selection.item.lat}-${selection.item.lng}-${selection.item.name}`} selection={selection} onClose={close} /> : null}
+      {selection && selectionVisible(selection, visible) ? <SelectionPopup key={`${selection.kind}-${selection.item.lat}-${selection.item.lng}-${selection.item.name}`} selection={selection} onClose={close} /> : null}
     </MapContainer>
   );
 }

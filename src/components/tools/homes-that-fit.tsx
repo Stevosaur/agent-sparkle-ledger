@@ -28,8 +28,13 @@ const DEFAULT_SIZE_SQFT = 1000;
 /** "Homes that fit" — HDB towns × flat types and condo projects within the budget (aggregates from /api/affordability/fit/). */
 export function HomesThatFit({ maxPrice, defaultKind }: { maxPrice: number; defaultKind: "hdb" | "condo" }) {
   const t = useT();
-  const [kind, setKind] = useState<"hdb" | "condo">(defaultKind);
-  const [budget, setBudget] = useState(maxPrice > 0 ? String(maxPrice) : "");
+  // The visitor's own choices win; until they make one, follow the calculator (budget = max price,
+  // kind = the property class picked above). An edited budget is dropped when the max price changes.
+  const [kindChoice, setKind] = useState<"hdb" | "condo" | null>(null);
+  const kind = kindChoice ?? defaultKind;
+  const [budgetEdit, setBudgetEdit] = useState<{ forMax: number; value: string } | null>(null);
+  const budget = budgetEdit && budgetEdit.forMax === maxPrice ? budgetEdit.value : maxPrice > 0 ? String(maxPrice) : "";
+  const setBudget = (value: string) => setBudgetEdit({ forMax: maxPrice, value });
   const [size, setSize] = useState(String(DEFAULT_SIZE_SQFT));
   const budgetNum = parseNum(budget);
   const sizeNum = parseNum(size);

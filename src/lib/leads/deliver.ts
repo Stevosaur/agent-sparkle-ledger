@@ -33,10 +33,8 @@ export async function deliverLead(lead: ValidLead, meta: { userId: string | null
   const webhook = leadsWebhookUrl();
   if (!admin && !webhook) return { status: "disabled" };
 
-  const id = crypto.randomUUID();
-  const createdAt = new Date().toISOString();
+  // Columns of public.leads (supabase/migrations/0001_init.sql); id and created_at use the table defaults.
   const row = {
-    id,
     type: lead.type,
     name: lead.name,
     email: lead.email,
@@ -45,7 +43,6 @@ export async function deliverLead(lead: ValidLead, meta: { userId: string | null
     context: lead.context,
     user_id: meta.userId,
     status: "new",
-    created_at: createdAt,
   };
 
   const tasks: Promise<"stored" | "forwarded" | null>[] = [];
@@ -74,7 +71,8 @@ export async function deliverLead(lead: ValidLead, meta: { userId: string | null
       fetch(webhook, {
         method: "POST",
         headers,
-        body: JSON.stringify({ ...row, site: site.name, siteUrl: site.url }),
+        // leadId lets the receiver de-duplicate retries; it is not the database row id.
+        body: JSON.stringify({ leadId: crypto.randomUUID(), ...row, createdAt: new Date().toISOString(), site: site.name, siteUrl: site.url }),
         signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
         cache: "no-store",
       }).then(

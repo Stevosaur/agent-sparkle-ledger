@@ -120,7 +120,8 @@ function computeHdbSalesScan(): HdbSalesScan {
         if (!isCur && !isPrev12 && !isPrev5y) continue;
 
         const sqft = (f.a[i] / 10) * SQFT_PER_SQM;
-        const psf = sqft > 0 ? Math.round(price / sqft) : 0;
+        // unrounded, like the snapshot builder, so medians match towns.json / blocks.json exactly
+        const psf = sqft > 0 ? price / sqft : 0;
         const flatType = f.flatTypes[f.t[i]];
         const blockSlug = f.blocks[f.b[i]];
 

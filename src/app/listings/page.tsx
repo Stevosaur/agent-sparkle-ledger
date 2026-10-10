@@ -49,7 +49,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   return pageMetadata({
     title: TYPE_LABELS[f.type].title,
     description: "Private residential new launches from URA developer sales: units sold, launch prices per square foot, expected completion, tenure and developer, filterable by region and district.",
-    path: listingsHref({ type: f.type }),
+    path: listingsHref({ type: f.type, page: f.page }),
   });
 }
 
@@ -113,7 +113,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
       ) : (
         <>
           <nav aria-label="Launch type" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <ul className="flex gap-1 border-b border-line">
+            <ul className="flex gap-0.5 border-b border-line sm:gap-1">
               {LISTING_TYPES.map((type) => {
                 const active = f.type === type;
                 return (
@@ -122,7 +122,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                       href={listingsHref({ type, segment: f.segment, district: f.district })}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors",
+                        "-mb-px flex items-center gap-1 border-b-2 px-2 py-2 text-sm font-medium whitespace-nowrap transition-colors sm:gap-1.5 sm:px-3",
                         active ? "border-brand-600 text-brand-800" : "border-transparent text-muted hover:text-ink",
                       )}
                     >
@@ -186,7 +186,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                   ) : undefined
                 }
               >
-                {f.type === "upcoming" ? (
+                {f.type === "upcoming" && !filtersActive ? (
                   <T k="launches.list.noUpcoming" fallback="No projects are in URA's pipeline without launched units right now." />
                 ) : (
                   <T k="launches.list.noMatchBody" fallback="Try another market segment or district, or switch tabs." />

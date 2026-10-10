@@ -123,22 +123,24 @@ function computePrivateSalesScan(): PrivateSalesScan {
       const isPrev12 = inWindow(m, w.prev12);
       const isPrev5y = inWindow(m, w.prev5y);
       if (!isCur && !isPrev12 && !isPrev5y) continue;
+      // unrounded psf, like the snapshot builder (the decoded t.psf is rounded per record)
+      const psf = t.areaSqm > 0 ? t.price / (t.areaSqm * SQFT_PER_SQM) : 0;
       const group = privateGroupOf(t.propertyType);
       const landed = group === "Landed";
       const segment = projectsBySlug.get(t.projectSlug)?.segment ?? null;
       if (isCur || isPrev5y) {
         const pa = upsert(projAcc, t.projectSlug, () => ({ cur: new WindowAcc(), prev5y: new WindowAcc() }));
-        (isCur ? pa.cur : pa.prev5y).add(t.price, t.psf);
+        (isCur ? pa.cur : pa.prev5y).add(t.price, psf);
       }
       if (isCur || isPrev12) {
         const ga = upsert(groupAcc, group, () => ({ cur: new WindowAcc(), prev12: new WindowAcc() }));
-        (isCur ? ga.cur : ga.prev12).add(t.price, t.psf);
+        (isCur ? ga.cur : ga.prev12).add(t.price, psf);
         if (group === "Condo" && segment) {
           const sa = upsert(segAcc, segment, () => ({ cur: new WindowAcc(), prev12: new WindowAcc() }));
-          (isCur ? sa.cur : sa.prev12).add(t.price, t.psf);
+          (isCur ? sa.cur : sa.prev12).add(t.price, psf);
         }
       }
-      if (isCur && !landed) upsert(distAcc, d, () => new WindowAcc()).add(t.price, t.psf);
+      if (isCur && !landed) upsert(distAcc, d, () => new WindowAcc()).add(t.price, psf);
     }
   }
   if (seen === 0) return EMPTY_SCAN;

@@ -7,9 +7,9 @@ import { Notice } from "@/components/ui/notice";
 import { useT } from "@/lib/i18n/provider";
 import { formatPct, formatSgd } from "@/lib/format";
 import { affordability, type AffordabilityInput, type AffordabilityResult } from "@/lib/calc/affordability";
-import { bankLtv, maxBankTenure, maxServiceableLoan, msrApplies, type PropertyClass } from "@/lib/calc/loan";
+import { bankLtv, hdbLoanLtv, hdbLoanMaxTenure, maxBankTenure, maxServiceableLoan, maxTenureForStandardLtv, msrApplies, type PropertyClass } from "@/lib/calc/loan";
 import { monthlyPayment } from "@/lib/calc/mortgage";
-import { BANK_STRESS_RATE_PCT, HDB_LOAN_LTV, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, HDB_LOAN_STRESS_RATE_PCT, MSR_LIMIT, TDSR_LIMIT, type BuyerProfile } from "@/lib/calc/rules";
+import { BANK_STRESS_RATE_PCT, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, MSR_LIMIT, TDSR_LIMIT, type BuyerProfile } from "@/lib/calc/rules";
 import { BreakdownRow, NumberField, parseNum, Segmented } from "./controls";
 import { HomesThatFit } from "./homes-that-fit";
 import { SaveCalculation } from "./save-calculation";
@@ -46,10 +46,11 @@ export function AffordabilityTool({ defaults }: { defaults: AffordabilityDefault
   const [count, setCount] = useState("1");
 
   const lender: "hdb" | "bank" = cls === "hdb" ? lenderPick : "bank";
-  const maxTenure = lender === "hdb" ? HDB_LOAN_MAX_TENURE : maxBankTenure(cls);
+  const ageNum = Math.min(Math.max(21, Math.round(num(age, 35))), 99);
+  // HDB loans run at most 25 years and end by age 65; bank loans 30 (HDB flat) / 35 years
+  const maxTenure = lender === "hdb" ? Math.max(1, hdbLoanMaxTenure(HDB_LOAN_MAX_TENURE, ageNum)) : maxBankTenure(cls);
   const tenureYears = Math.min(Math.max(1, Math.round(num(tenure, 25))), maxTenure);
   const ratePct = lender === "hdb" ? HDB_LOAN_RATE_PCT : num(rate, defaultBankRate);
-  const ageNum = Math.min(Math.max(21, Math.round(num(age, 35))), 99);
   const outstandingNum = Math.min(2, Math.max(0, Math.round(num(outstanding, 0))));
 
   const input: AffordabilityInput = useMemo(
@@ -209,7 +210,7 @@ export function AffordabilityTool({ defaults }: { defaults: AffordabilityDefault
         {mode === "budget" ? <BudgetResult input={input} result={result} /> : <IncomeResult cls={cls} lender={lender} income={num(income)} debts={num(debts)} tenureYears={tenureYears} ratePct={ratePct} age={ageNum} outstanding={outstandingNum} />}
       </div>
 
-      {mode === "budget" ? <HomesThatFit key={result.maxPrice} maxPrice={result.maxPrice} defaultKind={cls === "hdb" ? "hdb" : "condo"} /> : null}
+      {mode === "budget" ? <HomesThatFit maxPrice={result.maxPrice} defaultKind={cls === "hdb" ? "hdb" : "condo"} /> : null}
     </div>
   );
 }
@@ -217,13 +218,15 @@ export function AffordabilityTool({ defaults }: { defaults: AffordabilityDefault
 function BudgetResult({ input, result }: { input: AffordabilityInput; result: AffordabilityResult }) {
   const t = useT();
   const absdRate = result.maxPrice > 0 ? result.absd / result.maxPrice : 0;
-  const cashShort = result.cashUsed - input.cash;
   const bindingText =
     result.maxPrice <= 0
       ? t("tools.aff.bindingNone", "With these numbers no purchase is possible. Check your cash, CPF and income.")
       : result.binding === "servicing"
         ? t("tools.aff.bindingServicing", "Your income limits the loan (TDSR / MSR). More cash or CPF would raise your budget; a longer tenure or fewer debts would raise the loan.")
-        : t("tools.aff.bindingFunds", "Your cash and CPF limit the price: the loan is capped at {ltv} of the price, so the rest (plus stamp duty) must come from your savings.", { ltv: formatPct(result.ltv, 0) });
+        : result.fundsLimitedBy === "cash"
+          ? t("tools.aff.bindingCash", "Your cash limits the price: the minimum cash downpayment and stamp duties must be paid in cash, and some of your CPF is left unused.")
+          : t("tools.aff.bindingFunds", "Your cash and CPF limit the price: the loan is capped at {ltv} of the price, so the rest (plus stamp duty) must come from your savings.", { ltv: formatPct(result.ltv, 0) });
+  const standardLtvYears = input.lender === "bank" ? maxTenureForStandardLtv(input.propertyClass, input.age) : null;
   return (
     <Card>
       <CardHeader title={t("tools.aff.resultTitle", "What you can afford")} />
@@ -234,7 +237,16 @@ function BudgetResult({ input, result }: { input: AffordabilityInput; result: Af
           <p className="mt-1 text-sm text-muted">{bindingText}</p>
         </div>
         <dl>
-          <BreakdownRow label={t("tools.aff.loan", "Loan")} sub={t("tools.aff.ltvSub", "Loan-to-value limit {ltv}", { ltv: formatPct(result.ltv, 0) })} value={formatSgd(result.loan)} strong />
+          <BreakdownRow
+            label={t("tools.aff.loan", "Loan")}
+            sub={
+              result.ltvReduced && standardLtvYears != null
+                ? t("tools.aff.ltvReducedSub", "Loan-to-value limit {ltv}: the lower limit applies because the loan runs longer than {n} years or past age 65", { ltv: formatPct(result.ltv, 0), n: standardLtvYears })
+                : t("tools.aff.ltvSub", "Loan-to-value limit {ltv}", { ltv: formatPct(result.ltv, 0) })
+            }
+            value={formatSgd(result.loan)}
+            strong
+          />
           <BreakdownRow label={t("tools.aff.downpayment", "Downpayment")} value={formatSgd(result.downpayment)} strong />
           <BreakdownRow label={t("tools.aff.minCash", "Minimum cash portion")} value={formatSgd(result.minCash)} />
           <BreakdownRow label={t("tools.aff.cpfUsed", "Paid from CPF OA")} value={formatSgd(result.cpfUsed)} />
@@ -253,15 +265,12 @@ function BudgetResult({ input, result }: { input: AffordabilityInput; result: Af
           />
           <BreakdownRow
             label={t("tools.aff.maxServiceable", "Largest loan your income supports")}
-            sub={t("tools.aff.stressSub", "Tested at {rate}% as MAS / HDB require", { rate: input.lender === "hdb" ? HDB_LOAN_STRESS_RATE_PCT : BANK_STRESS_RATE_PCT })}
+            sub={t("tools.aff.stressSub", "Tested at {rate}% as MAS / HDB require", { rate: result.stressRatePct })}
             value={formatSgd(result.maxServiceableLoan)}
           />
+          <BreakdownRow label={t("tools.aff.leftOver", "Left over: cash / CPF")} value={`${formatSgd(result.cashLeft)} / ${formatSgd(result.cpfLeft)}`} />
         </dl>
-        {cashShort > 1 && result.maxPrice > 0 ? (
-          <Notice tone="warn">
-            {t("tools.aff.cashShort", "This counts stamp duty as a cash cost, so it needs {x} more cash than you entered. Stamp duty can often be paid or reimbursed from CPF OA; check with the CPF Board.", { x: formatSgd(cashShort) })}
-          </Notice>
-        ) : null}
+        <p className="text-xs text-muted">{t("tools.aff.dutyCashNote", "Stamp duties are counted as a cash cost.")}</p>
         <SaveCalculation input={input} result={result} />
         <p className="text-xs text-muted">
           {t("tools.aff.rulesSource", "Rules: MAS TDSR {tdsr} and MSR {msr}, MAS LTV limits, IRAS stamp duty rates, HDB loan terms. Estimates only; your bank or HDB decides the final loan.", {
@@ -276,8 +285,8 @@ function BudgetResult({ input, result }: { input: AffordabilityInput; result: Af
 
 function IncomeResult({ cls, lender, income, debts, tenureYears, ratePct, age, outstanding }: { cls: PropertyClass; lender: "hdb" | "bank"; income: number; debts: number; tenureYears: number; ratePct: number; age: number; outstanding: number }) {
   const t = useT();
-  const serv = maxServiceableLoan({ monthlyIncome: income, monthlyDebts: debts, propertyClass: cls, tenureYears }, lender);
-  const ltv = lender === "hdb" ? HDB_LOAN_LTV : bankLtv(cls, outstanding, serv.tenureYears, age).ltv;
+  const serv = maxServiceableLoan({ monthlyIncome: income, monthlyDebts: debts, propertyClass: cls, tenureYears, thereafterRatePct: ratePct, borrowerAge: age }, lender);
+  const ltv = lender === "hdb" ? hdbLoanLtv() : bankLtv(cls, outstanding, serv.tenureYears, age).ltv;
   const priceSupported = ltv > 0 ? serv.maxLoan / ltv : 0;
   const instalmentAtRate = monthlyPayment(serv.maxLoan, ratePct, serv.tenureYears);
   const msr = msrApplies(cls) || lender === "hdb";

@@ -9,6 +9,7 @@ import type { DatasetMeta, MonthlyStat, NewLaunch, SearchEntry, StatSeries, Town
 import {
   anchorMonth,
   compareYoY,
+  countLaunchTabs,
   credibility,
   formatIsoDate,
   formatMonthRange,
@@ -236,6 +237,19 @@ describe("launch cards", () => {
     expect(groups.ec.map((c) => c.slug)).toEqual(["ec1"]);
     expect(groups.landed.map((c) => c.slug)).toEqual(["land"]);
     expect(groups.upcoming.map((c) => c.slug)).toEqual(["up-soon", "up-late"]);
+  });
+  it("counts every launch per tab, ignoring the carousel cap", () => {
+    const launches = [
+      launch({ slug: "a" }),
+      launch({ slug: "b" }),
+      launch({ slug: "c" }),
+      launch({ slug: "e", type: "ec" }),
+      launch({ slug: "u1", status: "upcoming" }),
+      launch({ slug: "u2", status: "upcoming", type: "landed" }),
+    ];
+    expect(groupLaunches(launches, 2).condo).toHaveLength(2);
+    expect(countLaunchTabs(launches)).toEqual({ condo: 3, ec: 1, landed: 0, upcoming: 2 });
+    expect(countLaunchTabs([])).toEqual({ condo: 0, ec: 0, landed: 0, upcoming: 0 });
   });
   it("splits the fixture launches into launched and upcoming", () => {
     const groups = groupLaunches(getLaunches());

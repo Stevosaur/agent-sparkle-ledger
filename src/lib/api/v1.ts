@@ -86,11 +86,13 @@ export function v1Condo(rawSlug: string): CondoResponseDto {
 export function v1Launches(params: URLSearchParams): LaunchesResponseDto {
   const type = params.has("type") ? enumParam(params, "type", ["condo", "ec", "landed"] as const) : null;
   const status = params.has("status") ? enumParam(params, "status", ["launched", "upcoming"] as const) : null;
-  const launches = getLaunches()
+  const limit = numberParam(params, "limit", { min: 1, max: 200, integer: true, fallback: 100 });
+  const offset = numberParam(params, "offset", { min: 0, max: 1_000_000, integer: true, fallback: 0 });
+  const matching = getLaunches()
     .filter((l) => (!type || l.type === type) && (!status || l.status === status))
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map(launchDto);
-  return { count: launches.length, launches, meta: dataMeta("private", SOURCES.launches) };
+    .sort((a, b) => a.name.localeCompare(b.name) || a.slug.localeCompare(b.slug));
+  const launches = matching.slice(offset, offset + limit).map(launchDto);
+  return { count: matching.length, offset, returned: launches.length, launches, meta: dataMeta("private", SOURCES.launches) };
 }
 
 export function v1Rates(): RatesResponseDto {

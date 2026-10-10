@@ -19,21 +19,42 @@ export interface EnblocResult {
   reasons: string[];
 }
 
+/**
+ * Age thresholds (years) behind the tiers. These are this app's own heuristic, NOT a regulatory rule and not taken
+ * from any research file: collective-sale outcomes depend on owner votes, land value and redevelopment potential that
+ * the dataset does not hold. Shown to users as "a transparent heuristic".
+ */
+export const ENBLOC_HEURISTIC_AGE = {
+  /** freehold / 999-year developments at least this old: tier A */
+  longTenureA: 30,
+  /** freehold / 999-year developments at least this old: tier B */
+  longTenureB: 20,
+  /** 99-year leasehold developments at least this old: tier B */
+  leaseholdB: 40,
+  /** 99-year leasehold developments at least this old: tier C */
+  leaseholdC: 25,
+} as const;
+
+/** Tenure treated as "long" (no lease top-up needed): freehold, or a lease of at least this many years. */
+export const ENBLOC_LONG_LEASE_YEARS = 999;
+
 export function enblocTier(input: EnblocInput): EnblocResult {
   const reasons: string[] = [];
   if (input.propertyTypes.some((t) => t === "Executive Condominium")) {
     return { tier: "Unlikely", label: "Executive condominium", reasons: ["Executive condominiums are rarely sold en bloc while subject to EC resale restrictions."] };
   }
   if (input.startYear == null || input.tenureKind == null) return { tier: "Unknown", label: "Not enough data", reasons: ["Tenure or age is not recorded for this development."] };
-  const age = input.currentYear - input.startYear;
-  const longTenure = input.tenureKind === "freehold" || (input.leaseYears != null && input.leaseYears >= 999);
+  // a start year after the reference year is a data error or an uncompleted project: treat the age as 0
+  const age = Math.max(0, input.currentYear - input.startYear);
+  const longTenure = input.tenureKind === "freehold" || (input.leaseYears != null && input.leaseYears >= ENBLOC_LONG_LEASE_YEARS);
   if (longTenure) reasons.push("Freehold or 999-year tenure: no lease top-up premium is needed for redevelopment.");
   else reasons.push(`${input.leaseYears ?? "?"}-year lease: redevelopment needs a lease top-up, which raises the land cost.`);
   reasons.push(`About ${age} years since ${longTenure ? "the earliest record" : "lease start"}.`);
   let tier: EnblocResult["tier"];
-  if (longTenure && age >= 30) tier = "A";
-  else if ((longTenure && age >= 20) || (!longTenure && age >= 40)) tier = "B";
-  else if (!longTenure && age >= 25) tier = "C";
+  const t = ENBLOC_HEURISTIC_AGE;
+  if (longTenure && age >= t.longTenureA) tier = "A";
+  else if ((longTenure && age >= t.longTenureB) || (!longTenure && age >= t.leaseholdB)) tier = "B";
+  else if (!longTenure && age >= t.leaseholdC) tier = "C";
   else tier = "Unlikely";
   const labels = { A: "Higher en-bloc potential", B: "Moderate en-bloc potential", C: "Lower en-bloc potential", Unlikely: "En bloc unlikely for now", Unknown: "Not enough data" } as const;
   return { tier, label: labels[tier], reasons };

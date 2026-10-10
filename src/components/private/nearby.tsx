@@ -124,7 +124,7 @@ export function NearbyAmenities({ ctx, label }: { ctx: NearbyContext; label: str
           </CardBody>
         </Card>
       </div>
-      <MiniMap center={ctx.center} markers={markers} radiusM={1000} height={280} />
+      <MiniMap center={ctx.center} zoom={14} markers={markers} radiusM={1000} height={280} />
       <SourceLine>
         <T k="private.nearby.source" fallback="MOE school directory (data.gov.sg), LTA station locations; distances are straight-line." />
       </SourceLine>

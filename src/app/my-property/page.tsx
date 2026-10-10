@@ -26,7 +26,7 @@ export default async function MyPropertyPage() {
         description={
           <T
             k="account.myProperty.intro"
-            fallback="Follow what your home is worth. Each estimate comes from recorded sales of similar homes in the same block, project or street, updated as new records are published."
+            fallback="Follow what your home is worth. Each estimate is built from recorded sales of comparable homes in the same block, project or street (or town), and updates as new records are published."
           />
         }
       />

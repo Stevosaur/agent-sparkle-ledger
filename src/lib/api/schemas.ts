@@ -229,8 +229,10 @@ export const LaunchSchema = z.object({
 });
 
 export const LaunchesResponseSchema = z.object({
-  count: z.number().int(),
-  launches: z.array(LaunchSchema),
+  count: z.number().int().describe("Launches matching the filters"),
+  offset: z.number().int(),
+  returned: z.number().int(),
+  launches: z.array(LaunchSchema).describe("Sorted by name; page with limit and offset"),
   meta: DataMetaSchema,
 });
 
@@ -265,7 +267,18 @@ export const StampDutyResponseSchema = z.object({
   }),
   absd: z.object({ rate: z.number().describe("Fraction, e.g. 0.2 = 20%"), total: z.number() }),
   total: z.number(),
-  rules: z.object({ bsd: z.string(), absd: z.string() }).describe("Rule sets applied"),
+  rules: z
+    .array(
+      z.object({
+        id: z.string(),
+        description: z.string(),
+        effectiveFrom: z.string().nullable(),
+        status: z.string().describe('Verification status of the rule; values other than "verified-*" are indicative'),
+        source: z.string().describe("Official page to check"),
+      }),
+    )
+    .describe("Rules applied, with their verification status"),
+  indicative: z.boolean().describe("true when any rule applied is not yet verified against the official source: check with IRAS"),
   note: z.string(),
 });
 

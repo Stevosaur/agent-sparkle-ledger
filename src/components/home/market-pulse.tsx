@@ -10,6 +10,8 @@ import { SourceLine } from "./source-line";
 
 function FamilyStats({ pulse, titleKey, title }: { pulse: MarketPulseData; titleKey: string; title: string }) {
   const { yoy } = pulse;
+  // colour by the change as displayed (one decimal place), so "0.0%" is never shown as a rise or fall
+  const shownChange = yoy.change != null ? Math.round(yoy.change * 1000) : 0;
   const now = windowLabels(yoy.end, yoy.months);
   const before = windowLabels(yoy.end - 12, yoy.months);
   return (
@@ -23,7 +25,7 @@ function FamilyStats({ pulse, titleKey, title }: { pulse: MarketPulseData; title
           value={yoy.current ? formatSgd(yoy.current.medianPrice) : "—"}
           sub={
             yoy.change != null ? (
-              <span className={yoy.change > 0 ? "text-up" : yoy.change < 0 ? "text-down" : undefined}>
+              <span className={shownChange > 0 ? "text-up" : shownChange < 0 ? "text-down" : undefined}>
                 <T k="home.pulse.yoy" fallback="{change} vs {range}" vars={{ change: formatPctSigned(yoy.change), range: formatMonthRange(before) }} />
               </span>
             ) : yoy.current ? (

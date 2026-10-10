@@ -18,7 +18,8 @@ import { nearestStations } from "@/lib/data/geo";
 import { monthLabel } from "@/lib/data/months";
 import { search } from "@/lib/data/search";
 import { affordability } from "@/lib/calc/affordability";
-import { LTV_TENURE_THRESHOLD, BANK_STRESS_RATE_PCT, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, HDB_MOP_YEARS } from "@/lib/calc/rules";
+import { maxBankTenure, maxTenureForStandardLtv } from "@/lib/calc/loan";
+import { BANK_STRESS_RATE_PCT, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, HDB_MOP_YEARS, RULE_META, ruleNeedsDisclaimer } from "@/lib/calc/rules";
 import { titleCase, slugify } from "@/lib/slug";
 import { formatPropertyRef, parsePropertyRef, type PropertyRef } from "@/lib/property-ref";
 import { toJsonSchema } from "@/lib/api/json-schema";
@@ -105,6 +106,7 @@ const SCHEMAS = {
       monthlyDebts: z.number().min(0).max(1_000_000).default(0).describe("Other monthly debt repayments, SGD"),
       tenureYears: z.number().int().min(5).max(35).optional().describe("Loan tenure; defaults to the longest tenure that keeps the standard LTV limit"),
       interestRatePct: z.number().min(0).max(20).optional().describe("Rate for the displayed repayment, % p.a.; defaults to the MAS 4% floor (bank) or the HDB rate"),
+      remainingLeaseYears: z.number().min(0).max(99).optional().describe("Remaining lease of the flat in years, if known (applies the CPF lease rules)"),
     })
     .strict(),
 } as const;
@@ -386,8 +388,9 @@ function affordabilityResult(i: z.output<(typeof SCHEMAS)["calc_affordability"]>
   if (i.lender === "hdb" && lender !== "hdb") assumptions.push("HDB loans are only for HDB flats, so a bank loan was assumed.");
   let tenure = i.tenureYears;
   if (tenure == null) {
-    tenure = lender === "hdb" ? HDB_LOAN_MAX_TENURE : i.propertyClass === "hdb" ? LTV_TENURE_THRESHOLD.hdb : LTV_TENURE_THRESHOLD.private;
-    assumptions.push(`Loan tenure ${tenure} years (not given).`);
+    const standard = maxTenureForStandardLtv(i.propertyClass, i.age);
+    tenure = lender === "hdb" ? HDB_LOAN_MAX_TENURE : standard >= 5 ? standard : maxBankTenure(i.propertyClass);
+    assumptions.push(lender === "hdb" ? `HDB loan tenure up to ${tenure} years (capped at age 65).` : `Loan tenure ${tenure} years (the longest that keeps the standard LTV limit), since none was given.`);
   }
   let rate = i.interestRatePct;
   if (lender === "hdb") {
@@ -395,6 +398,9 @@ function affordabilityResult(i: z.output<(typeof SCHEMAS)["calc_affordability"]>
   } else if (rate == null) {
     rate = BANK_STRESS_RATE_PCT;
     assumptions.push(`Repayment shown at ${BANK_STRESS_RATE_PCT}% p.a. (the MAS medium-term floor rate), since no rate was given.`);
+  }
+  if (i.remainingLeaseYears == null && (i.propertyClass === "hdb" || i.propertyClass === "ec-resale")) {
+    assumptions.push("Remaining lease not given, so CPF lease limits were not applied.");
   }
   const r = affordability({
     cash: i.cash,
@@ -409,13 +415,16 @@ function affordabilityResult(i: z.output<(typeof SCHEMAS)["calc_affordability"]>
     outstandingLoans: i.outstandingLoans,
     tenureYears: tenure,
     interestRatePct: rate,
+    ...(i.remainingLeaseYears != null ? { remainingLeaseYears: i.remainingLeaseYears } : {}),
   });
   const round = (n: number) => Math.round(n);
+  const indicativeRules = [...new Set(r.rules)].filter(ruleNeedsDisclaimer);
   return {
     estimate: true,
     maxPrice: r.maxPrice,
     loan: round(r.loan),
     ltv: r.ltv,
+    ltvReduced: r.ltvReduced,
     downpayment: round(r.downpayment),
     minimumCashDownpayment: round(r.minCash),
     cpfUsed: round(r.cpfUsed),
@@ -424,10 +433,15 @@ function affordabilityResult(i: z.output<(typeof SCHEMAS)["calc_affordability"]>
     additionalBuyersStampDuty: r.absd,
     monthlyRepayment: round(r.monthlyPayment),
     repaymentRatePct: rate,
+    stressTestRatePct: r.stressRatePct,
     maxServiceableLoan: round(r.maxServiceableLoan),
     tenureYears: r.tenureYears,
-    limitedBy: r.binding === "servicing" ? "income (TDSR/MSR stress test)" : "loan-to-value limit and available funds",
+    loanLimitedBy: r.loanLimitedBy === "servicing" ? "income (TDSR/MSR stress test)" : "loan-to-value limit",
+    fundsLimitedBy: r.fundsLimitedBy === "cash" ? "cash (for the minimum cash down payment and stamp duties)" : "cash and CPF",
+    cpfShareAllowed: r.cpfShareOfValuationLimit,
     assumptions,
+    indicative: indicativeRules.length > 0,
+    indicativeRules: indicativeRules.map((k) => ({ rule: k, status: RULE_META[k].status, checkAt: RULE_META[k].source })),
     note: "Estimate only. Banks and HDB assess eligibility individually (e.g. variable income haircuts, valuation, HDB Flat Eligibility letter).",
   };
 }

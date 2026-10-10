@@ -10,7 +10,7 @@ import { cn } from "@/lib/cn";
  * point); previous/next buttons scroll by one viewport and disable themselves at either end.
  * Touch, trackpad and keyboard (tabbing through the links inside) all work without the buttons.
  */
-export function ScrollCarousel({ items, label, className }: { items: { key: string; node: ReactNode }[]; label: string; className?: string }) {
+export function ScrollCarousel({ items, label, labelKey, className }: { items: { key: string; node: ReactNode }[]; label: string; labelKey?: string; className?: string }) {
   const t = useT();
   const scroller = useRef<HTMLUListElement>(null);
   const [edges, setEdges] = useState({ start: true, end: true });
@@ -43,7 +43,7 @@ export function ScrollCarousel({ items, label, className }: { items: { key: stri
 
   return (
     <div className={cn("relative", className)}>
-      <ul ref={scroller} aria-label={label} className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0 [scrollbar-width:thin]">
+      <ul ref={scroller} aria-label={labelKey ? t(labelKey, label) : label} className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0 [scrollbar-width:thin]">
         {items.map((item) => (
           <li key={item.key} className="w-[82%] shrink-0 snap-start sm:w-[calc(50%-0.375rem)] lg:w-[calc(33.333%-0.5rem)]">
             {item.node}

@@ -35,7 +35,7 @@ export function BlockLocation({
   /** announced future stations within 2 km, nearest first */
   futureStations: StationWithCoords[];
   cbdDistanceM: number | null;
-  /** precomputed nearest station (used only when the block has no coordinates) */
+  /** precomputed nearest operational station (shown when none is within 2 km, or when the block has no coordinates) */
   nearestMrt: NearbyStation | null;
 }) {
   if (!coords) {
@@ -70,9 +70,16 @@ export function BlockLocation({
             <CardHeader title={<T k="hdb.location.stations" fallback="MRT/LRT within 2 km" />} />
             <CardBody className="py-2">
               {stations.length === 0 ? (
-                <p className="py-2 text-sm text-muted">
-                  <T k="hdb.location.noStations" fallback="No operational MRT or LRT station within 2 km (straight line)." />
-                </p>
+                <div className="space-y-1 py-2 text-sm">
+                  <p className="text-muted">
+                    <T k="hdb.location.noStations" fallback="No operational MRT or LRT station within 2 km (straight line)." />
+                  </p>
+                  {nearestMrt ? (
+                    <p className="text-ink">
+                      <T k="hdb.location.nearestMrt" fallback="Nearest MRT/LRT station" />: <StationName s={nearestMrt} /> · {formatDistance(nearestMrt.distanceM)}
+                    </p>
+                  ) : null}
+                </div>
               ) : (
                 <ul className="divide-y divide-line/70">
                   {stations.map((s) => (

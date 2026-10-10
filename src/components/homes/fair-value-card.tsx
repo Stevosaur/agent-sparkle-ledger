@@ -103,15 +103,15 @@ export function FairValueCard({ outcome, askingPrice, listingType, propertyHref 
         <div
           role="img"
           aria-label={`Fair-value range ${fmt(range.low)} to ${fmt(range.high)}; asking ${formatAsking(askingPrice, listingType)}`}
-          className="relative h-10"
+          className="relative h-12"
         >
-          <div className="absolute inset-x-0 top-4 h-2 rounded-full bg-canvas" />
+          <div className="absolute inset-x-0 top-3 h-2 rounded-full bg-canvas" />
           <div
-            className="absolute top-4 h-2 rounded-full bg-brand-300"
+            className="absolute top-3 h-2 rounded-full bg-brand-300"
             style={{ left: `${percentAlong(range.low, min, max)}%`, width: `${Math.max(1, percentAlong(range.high, min, max) - percentAlong(range.low, min, max))}%` }}
           />
-          <div className="absolute top-1 h-8 w-0.5 -translate-x-1/2 bg-ink" style={{ left: `${percentAlong(askingPrice, min, max)}%` }} />
-          <div className="tabular absolute -bottom-1 -translate-x-1/2 whitespace-nowrap text-[11px] text-ink" style={{ left: `${Math.min(88, Math.max(12, percentAlong(askingPrice, min, max)))}%` }}>
+          <div className="absolute top-0.5 h-6 w-0.5 -translate-x-1/2 rounded-full bg-ink" style={{ left: `${percentAlong(askingPrice, min, max)}%` }} />
+          <div className="absolute top-7 -translate-x-1/2 whitespace-nowrap text-[11px] font-medium text-ink" style={{ left: `${Math.min(88, Math.max(12, percentAlong(askingPrice, min, max)))}%` }}>
             <T k="homes.fv.asking" fallback="Asking" />
           </div>
         </div>

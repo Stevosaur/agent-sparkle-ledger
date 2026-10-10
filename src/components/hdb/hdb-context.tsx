@@ -14,7 +14,7 @@ import { PlusBadge } from "@/components/gating/gated-panel";
 import { useT } from "@/lib/i18n/provider";
 import { formatDistance, formatInt, formatMonth, formatPct, formatSgd } from "@/lib/format";
 import { titleCase } from "@/lib/slug";
-import { HDB_MOP_YEARS } from "@/lib/calc/rules";
+import { HDB_MOP_YEARS, HDB_MOP_YEARS_PLUS_PRIME } from "@/lib/calc/rules";
 import { flatTypeLabel, type HdbContextData, type LaunchRow, type MopBlockRow, type YieldRow } from "@/lib/hdb-insights";
 
 /* ------------------------------------------------------------------ */
@@ -237,7 +237,11 @@ export function HdbCompetingSupply({ slug }: { slug: string }) {
             </div>
           )}
           <p className="mt-3 text-xs text-muted">
-            {t("hdb.supply.mopCaveat", "Counts only completed blocks in HDB's property information; flats still under construction are not included. MOP counts from key collection, so years are approximate.")}
+            {t(
+              "hdb.supply.mopCaveat",
+              "Counts only completed blocks in HDB's property information; flats still under construction are not included. Assumes the standard {mopYears}-year MOP (PLH, Plus and Prime flats have {longYears} years). MOP counts from key collection, so years are approximate.",
+              { mopYears: HDB_MOP_YEARS, longYears: HDB_MOP_YEARS_PLUS_PRIME },
+            )}
           </p>
         </CardBody>
       </Card>

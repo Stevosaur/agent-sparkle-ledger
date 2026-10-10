@@ -148,16 +148,16 @@ export function RefinanceSaver({ presets, defaultNewRate }: { presets: RatePrese
             <Stat label={t("tools.mr.newPayment", "New instalment")} value={formatSgd(r.newPayment)} />
             <Stat label={t("tools.mr.monthlySaving", "Monthly saving")} value={formatSgd(r.monthlySaving)} tone={r.monthlySaving > 0 ? "up" : r.monthlySaving < 0 ? "down" : undefined} />
             <Stat
-              label={t("tools.mr.netSaving", "Net saving over {n} years", { n: r.horizonYears })}
-              value={formatSgd(r.savingOverHorizon)}
-              tone={r.savingOverHorizon > 0 ? "up" : r.savingOverHorizon < 0 ? "down" : undefined}
+              label={t("tools.mr.interestSaved", "Interest saved over {n} years", { n: r.horizonYears })}
+              value={formatSgd(r.interestSavedOverHorizon)}
+              tone={r.interestSavedOverHorizon > 0 ? "up" : r.interestSavedOverHorizon < 0 ? "down" : undefined}
               sub={t("tools.mr.afterFees", "after switching costs")}
             />
           </StatGrid>
         ) : (
           <p className="text-sm text-muted">{t("tools.mr.refiNeed", "Enter your current and new rates to see the saving.")}</p>
         )}
-        {r && r.savingOverHorizon <= 0 && r.monthlySaving > 0 ? <Notice tone="warn">{t("tools.mr.refiNotWorth", "The switching costs outweigh the interest saved over this period.")}</Notice> : null}
+        {r && r.interestSavedOverHorizon <= 0 && r.monthlySaving > 0 ? <Notice tone="warn">{t("tools.mr.refiNotWorth", "The switching costs outweigh the interest saved over this period.")}</Notice> : null}
       </CardBody>
     </Card>
   );

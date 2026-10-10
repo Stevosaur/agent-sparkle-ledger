@@ -27,8 +27,9 @@ export interface ModelClient {
 }
 
 export function createAnthropicClient(): ModelClient {
-  // Reads ANTHROPIC_API_KEY from the environment. Two retries on 429/5xx/connection errors.
-  const client = new Anthropic({ maxRetries: 2, timeout: 60_000 });
+  // Reads ANTHROPIC_API_KEY from the environment. Two retries on 429/5xx/connection errors; the route's
+  // overall deadline aborts anything still running before the platform's function time limit.
+  const client = new Anthropic({ maxRetries: 2, timeout: 40_000 });
   return { stream: (params, options) => client.beta.messages.stream(params, options) };
 }
 
@@ -46,6 +47,8 @@ export interface RunAskOptions {
   model?: string;
   effort?: Effort | null;
   fallbacks?: boolean;
+  /** after this many ms no more tool rounds are started and the model must answer (keeps replies inside the function time limit) */
+  softDeadlineMs?: number;
 }
 
 export interface RunAskResult {
@@ -83,6 +86,8 @@ export async function runAsk(opts: RunAskOptions): Promise<RunAskResult> {
   const fallbacks = opts.fallbacks ?? refusalFallbacksEnabled(model);
   const meta = getMeta();
   const toolCtx: ToolContext = { maxSales: opts.maxSales, now };
+  const startedAt = Date.now();
+  const softDeadlineMs = opts.softDeadlineMs ?? 35_000;
   const tools = toolDefinitions();
 
   const system: Anthropic.Beta.BetaTextBlockParam[] = [
@@ -105,7 +110,7 @@ export async function runAsk(opts: RunAskOptions): Promise<RunAskResult> {
   const dataMonth = { hdb: meta.latestMonth.hdb, private: meta.latestMonth.private };
 
   for (;;) {
-    const finalRound = rounds >= MAX_TOOL_ROUNDS;
+    const finalRound = rounds >= MAX_TOOL_ROUNDS || (rounds > 0 && Date.now() - startedAt > softDeadlineMs);
     const params: StreamParams = {
       model,
       max_tokens: MAX_TOKENS,
@@ -113,6 +118,8 @@ export async function runAsk(opts: RunAskOptions): Promise<RunAskResult> {
       tools,
       tool_choice: finalRound ? { type: "none" } : { type: "auto" },
       messages,
+      // Also cache the growing conversation, so each tool round re-reads the earlier turns from cache.
+      cache_control: { type: "ephemeral" },
       ...(effort ? { output_config: { effort } } : {}),
       ...(fallbacks ? { betas: [FALLBACK_BETA], fallbacks: "default" as const } : {}),
     };

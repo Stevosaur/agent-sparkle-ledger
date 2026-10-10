@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BellRing, Trash2 } from "lucide-react";
 import { useT } from "@/lib/i18n/provider";
+import { site } from "@/lib/config/site";
 import { formatMonth } from "@/lib/format";
 import { formatPropertyRef } from "@/lib/property-ref";
 import type { SearchEntry, SearchKind } from "@/lib/data/types";
@@ -51,7 +52,7 @@ export function AlertsManager() {
       case "not_found":
         return t("account.alerts.notFound", "We couldn't find that property.");
       case "plus_required":
-        return t("account.alerts.plusRequired", "Alerts are a Plus feature.");
+        return t("account.alerts.plusRequired", "Alerts need {plus}.", { plus: site.plusName });
       default:
         return t("common.error", "Something went wrong. Please try again.");
     }

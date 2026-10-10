@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
-import { isStripeConfigured, isSupabaseConfigured } from "@/lib/auth/config";
+import { isStripeConfigured, isSupabaseConfigured, supabaseSecretKey } from "@/lib/auth/config";
 import { getViewer } from "@/lib/auth/viewer";
-import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { site } from "@/lib/config/site";
 import { pageMetadata } from "@/lib/seo";
 import { firstParam } from "@/lib/account/next-path";
@@ -78,21 +78,22 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
   if (!viewer.userId) redirect(`/login/?next=${encodeURIComponent("/profile/")}`);
 
   const supabase = await createSupabaseServerClient();
+  if (!supabase) redirect("/login/");
   const [subResult, profileResult] = await Promise.all([
-    supabase!
+    supabase
       .from("subscriptions")
       .select("status, price_id, current_period_end, trial_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id")
       .eq("user_id", viewer.userId)
       .maybeSingle(),
-    supabase!.from("profiles").select("telegram_chat_id").eq("id", viewer.userId).maybeSingle(),
+    supabase.from("profiles").select("telegram_chat_id").eq("id", viewer.userId).maybeSingle(),
   ]);
   const sub = (subResult.data ?? null) as SubscriptionInfo | null;
   const telegramLinked = Boolean((profileResult.data as { telegram_chat_id?: string | null } | null)?.telegram_chat_id);
-  const telegramConfigured = isTelegramConfigured() && Boolean(createSupabaseAdminClient());
+  const telegramConfigured = isTelegramConfigured() && Boolean(supabaseSecretKey());
   const billing = isStripeConfigured();
 
   const isPlus = viewer.plan === "plus";
-  const status = sub?.status ? (STATUS_LABELS[sub.status] ?? { k: "account.status.other", fallback: sub.status, tone: "neutral" as const }) : null;
+  const status = sub?.status ? (STATUS_LABELS[sub.status] ?? null) : null;
   const trialing = sub?.status === "trialing";
   const periodEnd = formatDate(sub?.current_period_end ?? null);
   const trialEnd = formatDate(sub?.trial_end ?? null);
@@ -134,7 +135,15 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
                     <T k="account.profile.planFreeBody" fallback="Full sales histories, valuations, a watchlist and {free} tracked home." vars={{ free: site.freeTrackedHomes }} />
                   )
                 }
-                actions={status ? <Badge tone={status.tone === "neutral" ? "neutral" : status.tone}><T k={status.k} fallback={status.fallback} /></Badge> : null}
+                actions={
+                  status ? (
+                    <Badge tone={status.tone}>
+                      <T k={status.k} fallback={status.fallback} />
+                    </Badge>
+                  ) : sub?.status ? (
+                    <Badge>{sub.status}</Badge>
+                  ) : null
+                }
               />
               <CardBody className="space-y-5">
                 {sub?.stripe_subscription_id ? (
@@ -145,24 +154,16 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
                         value={interval === "year" ? <T k="account.plus.yearly" fallback="Yearly" /> : <T k="account.plus.monthly" fallback="Monthly" />}
                       />
                     ) : null}
-                    {trialing && trialEnd ? <Stat label={<T k="account.profile.trialEnds" fallback="Trial ends" />} value={trialEnd} /> : null}
-                    {periodEnd && (sub.status === "active" || sub.status === "trialing" || sub.status === "past_due") ? (
+                    {trialing && (trialEnd ?? periodEnd) ? <Stat label={<T k="account.profile.trialEnds" fallback="Trial ends" />} value={trialEnd ?? periodEnd} /> : null}
+                    {periodEnd && (sub.status === "active" || sub.status === "past_due") ? (
                       <Stat
-                        label={
-                          sub.cancel_at_period_end ? (
-                            <T k="account.profile.endsOn" fallback="Access ends" />
-                          ) : trialing ? (
-                            <T k="account.profile.firstCharge" fallback="First payment" />
-                          ) : (
-                            <T k="account.profile.renewsOn" fallback="Renews on" />
-                          )
-                        }
+                        label={sub.cancel_at_period_end ? <T k="account.profile.endsOn" fallback="Access ends" /> : <T k="account.profile.renewsOn" fallback="Renews on" />}
                         value={periodEnd}
                       />
                     ) : null}
                   </StatGrid>
                 ) : null}
-                {sub?.cancel_at_period_end && periodEnd ? (
+                {sub?.cancel_at_period_end && periodEnd && (sub.status === "active" || sub.status === "trialing") ? (
                   <p className="text-sm text-muted">
                     <T k="account.profile.cancelNote" fallback="Your membership won't renew. You keep {plus} until {date}." vars={{ plus: site.plusName, date: periodEnd }} />
                   </p>
@@ -215,7 +216,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
           </Section>
         </div>
 
-        <aside className="space-y-4" aria-label="Account">
+        <aside className="space-y-4">
           <Card>
             <CardHeader title={<T k="account.profile.accountTitle" fallback="Account" />} />
             <CardBody className="space-y-4 text-sm">
@@ -243,9 +244,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
                   <T k="account.profile.signOut" fallback="Sign out" />
                 </Button>
               </form>
-              <p className="text-xs text-muted">
-                <T k="account.profile.deleteNote" fallback="To delete your account and data, email {email} from this address." vars={{ email: site.contactEmail }} />
-              </p>
+              {process.env.NEXT_PUBLIC_CONTACT_EMAIL ? (
+                <p className="text-xs text-muted">
+                  <T k="account.profile.deleteNote" fallback="To delete your account and data, email {email} from this address." vars={{ email: site.contactEmail }} />
+                </p>
+              ) : null}
             </CardBody>
           </Card>
         </aside>

@@ -310,6 +310,10 @@ function EstimatePanel({ body }: { body: ValuationRequestBody | null }) {
         body: key,
       });
       const json = (await res.json().catch(() => null)) as (ValuationResponse & { message?: string }) | null;
+      if (res.status === 401 || res.status === 402) {
+        setState({ key, status: "error", message: t("tools.val.noAccess", "Your session has ended or your plan does not include this. Refresh the page to sign in again.") });
+        return;
+      }
       if (!res.ok || !json) {
         setState({ key, status: "error", message: json?.message ?? t("common.error", "Something went wrong. Please try again.") });
         return;

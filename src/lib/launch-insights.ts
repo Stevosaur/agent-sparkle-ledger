@@ -159,6 +159,12 @@ export function latestSalesMonth(l: Pick<NewLaunch, "sales">): string | null {
   return s.length ? s[s.length - 1].month : null;
 }
 
+/** "2026-09-30" -> "30 Sep 2026" (calendar date, no time-zone conversion); other input is returned as is. */
+export function formatIsoDay(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m && Number(m[2]) >= 1 && Number(m[2]) <= 12 ? `${Number(m[3])} ${formatMonth(`${m[1]}-${m[2]}`)}` : iso;
+}
+
 /** Estimated price for a unit size from a psf figure, rounded to the nearest S$1,000. */
 export function estimatePrice(psf: number | null | undefined, sizeSqft: number | null | undefined): number | null {
   if (psf == null || sizeSqft == null || !(psf > 0) || !(sizeSqft > 0)) return null;
@@ -331,21 +337,23 @@ function matches(l: NewLaunch, f: { type?: ListingType; segment?: MarketSegment 
  * upcoming projects by expected completion, soonest first. Name breaks ties.
  */
 export function sortLaunches(list: readonly NewLaunch[], type: ListingType): NewLaunch[] {
-  return [...list].sort((a, b) => {
+  // sort keys computed once per launch (each derivation copies and sorts the monthly sales)
+  const keyed = list.map((l) => ({
+    l,
+    year: l.expectedCompletionYear ?? Number.MAX_SAFE_INTEGER,
+    month: type === "upcoming" ? "" : (latestSalesMonth(l) ?? ""),
+    sold: type === "upcoming" ? -1 : (launchProgress(l).sold ?? -1),
+  }));
+  keyed.sort((a, b) => {
     if (type === "upcoming") {
-      const ay = a.expectedCompletionYear ?? Number.MAX_SAFE_INTEGER;
-      const by = b.expectedCompletionYear ?? Number.MAX_SAFE_INTEGER;
-      if (ay !== by) return ay - by;
+      if (a.year !== b.year) return a.year - b.year;
     } else {
-      const am = latestSalesMonth(a) ?? "";
-      const bm = latestSalesMonth(b) ?? "";
-      if (am !== bm) return bm.localeCompare(am);
-      const as = launchProgress(a).sold ?? -1;
-      const bs = launchProgress(b).sold ?? -1;
-      if (as !== bs) return bs - as;
+      if (a.month !== b.month) return b.month.localeCompare(a.month);
+      if (a.sold !== b.sold) return b.sold - a.sold;
     }
-    return a.name.localeCompare(b.name);
+    return a.l.name.localeCompare(b.l.name);
   });
+  return keyed.map((k) => k.l);
 }
 
 export function filterLaunches(launches: readonly NewLaunch[], f: Pick<ListingFilters, "type" | "segment" | "district">): NewLaunch[] {

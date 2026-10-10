@@ -18,7 +18,6 @@ export function safeNextPath(raw: string | null | undefined, fallback: string = 
   // Must be a rooted path, but not protocol-relative ("//host") or backslash-relative ("/\host").
   if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return fallback;
   // Browsers treat "\" like "/" and ignore tabs/newlines inside URLs: reject both outright.
-  // eslint-disable-next-line no-control-regex
   if (/[\\\u0000-\u001f\u007f]/.test(value)) return fallback;
   let url: URL;
   try {

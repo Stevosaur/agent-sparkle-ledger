@@ -10,7 +10,6 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Card, CardBody } from "@/components/ui/card";
 import { JsonLd } from "@/components/ui/json-ld";
 import { PageContainer, PageHeader, Section } from "@/components/ui/section";
-import { DataTable, type Column } from "@/components/ui/table";
 import { CheckoutAvailabilityNote, CheckoutButton } from "@/components/account/billing-buttons";
 
 const plus = site.plus;
@@ -20,7 +19,7 @@ const featureVars = { free: site.freeTrackedHomes, max: TRACKED_MAX };
 
 export const metadata = pageMetadata({
   title: `${site.plusName}: plans and pricing`,
-  description: `${site.plusName} unlocks demand vs supply, stacking plans, full rankings, insights, alerts and unlimited home tracking. ${formatSgd(plus.monthlyPrice)} a month or ${formatSgd(plus.yearlyPrice)} a year${plus.trialDays > 0 ? `, with a ${plus.trialDays}-day free trial` : ""}.`,
+  description: `${site.plusName} unlocks demand vs supply, stacking plans, full rankings, insights, alerts and tracking for up to ${TRACKED_MAX} homes. ${formatSgd(plus.monthlyPrice)} a month or ${formatSgd(plus.yearlyPrice)} a year${plus.trialDays > 0 ? `, with a ${plus.trialDays}-day free trial` : ""}.`,
   path: "/plus/",
 });
 
@@ -96,21 +95,60 @@ function Included({ yes }: { yes: boolean }) {
   );
 }
 
-const columns: Column<FeatureRow>[] = [
-  {
-    key: "feature",
-    header: <T k="account.plus.colFeature" fallback="Feature" />,
-    cell: (r) => (
-      <span className="whitespace-normal">
-        <T k={r.k} fallback={r.fallback} vars={featureVars} />
-      </span>
-    ),
-    className: "min-w-48 max-w-md",
-  },
-  { key: "visitor", header: <T k="account.plus.colVisitor" fallback="Visitor" />, cell: (r) => <Included yes={includedIn(r.level)[0]} />, align: "center" },
-  { key: "free", header: <T k="account.plus.colFree" fallback="Free account" />, cell: (r) => <Included yes={includedIn(r.level)[1]} />, align: "center" },
-  { key: "plus", header: site.plusName, cell: (r) => <Included yes={includedIn(r.level)[2]} />, align: "center" },
-];
+/** Plan comparison: fixed layout so the feature names wrap and all three plan columns stay visible at 360px. */
+function ComparisonTable({ rows }: { rows: FeatureRow[] }) {
+  const th = "px-2 py-2 text-xs font-medium uppercase tracking-wide text-muted sm:px-3";
+  return (
+    <table className="w-full table-fixed border-collapse text-sm">
+      <caption className="sr-only">
+        <T k="account.plus.compareTitle" fallback="What's included" />
+      </caption>
+      <colgroup>
+        <col />
+        <col className="w-16 sm:w-28" />
+        <col className="w-16 sm:w-28" />
+        <col className="w-16 sm:w-28" />
+      </colgroup>
+      <thead>
+        <tr className="border-b border-line">
+          <th scope="col" className={`${th} text-left`}>
+            <T k="account.plus.colFeature" fallback="Feature" />
+          </th>
+          <th scope="col" className={`${th} text-center`}>
+            <T k="account.plus.colVisitor" fallback="Visitor" />
+          </th>
+          <th scope="col" className={`${th} text-center`}>
+            <T k="account.plus.colFree" fallback="Free account" />
+          </th>
+          <th scope="col" className={`${th} text-center text-plus-700`}>
+            {site.plusName}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => {
+          const [visitor, free, plusIncluded] = includedIn(r.level);
+          return (
+            <tr key={r.feature} className="border-b border-line/70 last:border-0">
+              <th scope="row" className="px-2 py-2.5 text-left font-normal text-ink sm:px-3">
+                <T k={r.k} fallback={r.fallback} vars={featureVars} />
+              </th>
+              <td className="px-2 py-2.5 text-center sm:px-3">
+                <Included yes={visitor} />
+              </td>
+              <td className="px-2 py-2.5 text-center sm:px-3">
+                <Included yes={free} />
+              </td>
+              <td className="px-2 py-2.5 text-center sm:px-3">
+                <Included yes={plusIncluded} />
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
 
 function PlanCard({ interval }: { interval: "month" | "year" }) {
   const yearly = interval === "year";
@@ -193,7 +231,7 @@ export default function PlusPage() {
         description={<T k="account.plus.compareBody" fallback="Every gated feature on the site, and which plan unlocks it." />}
       >
         <Card>
-          <DataTable columns={columns} rows={rows} rowKey={(r) => r.feature} />
+          <ComparisonTable rows={rows} />
         </Card>
       </Section>
 

@@ -12,8 +12,8 @@ import {
 } from "@/lib/data/private";
 import { getSeries } from "@/lib/data/stats";
 import { monthLabel } from "@/lib/data/months";
-import { displayAddress, formatDistrict, latestFirst, priceRangeSummary, salesScatter, seriesPsfPoints, tenureSummary, tenureText, timeAdjustedEstimate, toSaleRow } from "@/lib/private-insights";
-import { formatArea, formatInt, formatMonth, formatPctSigned, formatPsf, formatSgd, sqmToSqft } from "@/lib/format";
+import { displayAddress, formatDistrict, isLandedHouse, latestFirst, priceRangeSummary, salesScatter, seriesPsfPoints, tenureSummary, tenureText, timeAdjustedEstimate, toSaleRow } from "@/lib/private-insights";
+import { formatArea, formatInt, formatMonth, formatPctSigned, formatPsf, formatSgd, formatSgdCompact, sqmToSqft } from "@/lib/format";
 import { titleCase } from "@/lib/slug";
 import { absoluteUrl, pageMetadata } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -89,7 +89,8 @@ export default async function LandedAddressPage({ params }: Props) {
   const streetName = titleCase(a.street);
   const street = getLandedStreet(a.streetSlug);
   const own = latestFirst(getLandedAddressTransactions(a.slug));
-  const others = street ? latestFirst(getLandedStreetTransactions(street.slug)).filter((t) => t.address !== a.address) : [];
+  // same scope as the street page: landed houses only (strata landed homes are not part of landed streets)
+  const others = street ? latestFirst(getLandedStreetTransactions(street.slug)).filter((t) => isLandedHouse(t) && t.address !== a.address) : [];
   const slugs = addressSlugMap(a.streetSlug);
   const asOf = latestPrivateMonth(own);
   const tenure = tenureSummary(a.tenure, currentYear);
@@ -100,7 +101,8 @@ export default async function LandedAddressPage({ params }: Props) {
   const districtSeries = a.district != null ? getSeries(`private-d:${a.district}:ALL`) : null;
   const landed12 =
     a.district != null && asOf != null ? getDistrictTransactions(a.district).filter((t) => LANDED_TYPES.has(t.propertyType) && t.monthIndex > asOf - 12) : [];
-  const district12 = priceRangeSummary(landed12);
+  // median land psf only from caveats that record land area (strata landed homes record floor area)
+  const district12 = priceRangeSummary(landed12, { landPsfOnly: true });
   const estimate = own[0] && districtSeries && asOf != null ? timeAdjustedEstimate(own[0], districtSeries.points, asOf) : null;
   const chartFrom = asOf != null ? asOf - 59 : 0;
   const chartSeries: TimeSeries[] = [];
@@ -291,11 +293,14 @@ export default async function LandedAddressPage({ params }: Props) {
               <CardBody>
                 {district12.count ? (
                   <StatGrid>
-                    <Stat label={<T k="private.landed.count" fallback="Sales" />} value={formatInt(district12.count)} />
                     <Stat
-                      label={<T k="private.landed.range" fallback="Price range" />}
-                      value={district12.minPrice === district12.maxPrice ? formatSgd(district12.minPrice) : `${formatSgd(district12.minPrice)} – ${formatSgd(district12.maxPrice)}`}
-                      className="col-span-2 sm:col-span-1"
+                      label={<T k="private.landed.count" fallback="Sales" />}
+                      value={formatInt(district12.count)}
+                      sub={
+                        district12.minPrice === district12.maxPrice
+                          ? formatSgdCompact(district12.minPrice)
+                          : `${formatSgdCompact(district12.minPrice)} – ${formatSgdCompact(district12.maxPrice)}`
+                      }
                     />
                     <Stat label={<T k="private.landed.medianPrice" fallback="Median price" />} value={formatSgd(district12.medianPrice)} />
                     <Stat label={<T k="private.landed.medianLandPsf" fallback="Median land psf" />} value={formatPsf(district12.medianPsf)} />

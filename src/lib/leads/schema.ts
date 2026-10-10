@@ -38,10 +38,13 @@ const contextKey = z
   .max(MAX_CONTEXT_KEY_LENGTH)
   .regex(/^[A-Za-z0-9_.:-]+$/);
 
-/** Shape and length limits; cross-field rules live in validateLeadFields (shared with the form). */
+/**
+ * Types and length limits only; presence and cross-field rules (name, contact, consent, services fields)
+ * live in validateLeadFields, shared with the form, so every problem is reported in one response.
+ */
 const leadSchema = z.object({
   type: z.enum(LEAD_TYPES),
-  name: z.string().trim().min(1).max(MAX_NAME_LENGTH),
+  name: z.string().trim().max(MAX_NAME_LENGTH).optional(),
   email: z.string().trim().max(MAX_EMAIL_LENGTH).optional(),
   phone: z.string().trim().max(32).optional(),
   message: z.string().trim().max(MAX_MESSAGE_LENGTH).optional(),
@@ -49,7 +52,7 @@ const leadSchema = z.object({
     .record(contextKey, z.string().trim().max(MAX_CONTEXT_VALUE_LENGTH))
     .optional()
     .refine((c) => !c || Object.keys(c).length <= MAX_CONTEXT_ENTRIES, { message: "too_many_entries" }),
-  consent: z.literal(true),
+  consent: z.boolean().optional(),
   [HONEYPOT_FIELD]: z.string().optional(),
 });
 
@@ -61,7 +64,7 @@ function firstIssueByField(issues: readonly { code: string; path: readonly Prope
     const head = String(issue.path[0] ?? "type");
     const field = (KNOWN_FIELDS.has(head) ? head : "type") as LeadField;
     if (errors[field]) continue;
-    if (field === "consent") errors.consent = "required";
+    if (field === "consent") errors.consent = "invalid";
     else if (issue.code === "too_big") errors[field] = "too_long";
     else if (issue.code === "too_small") errors[field] = "required";
     else errors[field] = "invalid";
@@ -91,11 +94,11 @@ export function parseLeadPayload(input: unknown, opts: { today?: string } = {}):
   const errors = validateLeadFields(
     {
       type: data.type,
-      name: data.name,
+      name: data.name ?? "",
       email: data.email ?? "",
       phone: data.phone ?? "",
       message: data.message ?? "",
-      consent: data.consent,
+      consent: data.consent === true,
       postal: context.postal,
       service: context.service,
       preferredDate: context.preferredDate,
@@ -109,7 +112,7 @@ export function parseLeadPayload(input: unknown, opts: { today?: string } = {}):
     ok: true,
     lead: {
       type: data.type,
-      name: data.name,
+      name: data.name ?? "",
       email: data.email ? data.email.toLowerCase() : null,
       phone: data.phone ? normalizeSgPhone(data.phone) : null,
       message: data.message ? data.message : null,

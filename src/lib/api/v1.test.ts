@@ -69,6 +69,9 @@ describe("public API responses match their documented schemas", () => {
     const up = LaunchesResponseSchema.parse(v1Launches(qs("status=upcoming")));
     expect(up.launches.map((l) => l.slug)).toEqual(["upcoming-fixture-towers"]);
     expectApiError(() => v1Launches(qs("type=castle")), 400);
+    const page = LaunchesResponseSchema.parse(v1Launches(qs("limit=1&offset=1")));
+    expect(page).toMatchObject({ count: 2, offset: 1, returned: 1 });
+    expectApiError(() => v1Launches(qs("limit=1000")), 400);
   });
 
   it("rates", () => {
@@ -79,6 +82,9 @@ describe("public API responses match their documented schemas", () => {
     const sd = StampDutyResponseSchema.parse(v1StampDuty(qs("price=1,500,000&profile=spr&count=1")));
     expect(sd.input.profile).toBe("SPR");
     expect(sd.absd.rate).toBe(0.05);
+    expect(sd.rules.map((r) => r.id)).toEqual(["bsdResidential", "absdRates"]);
+    expect(sd.indicative).toBe(sd.rules.some((r) => !r.status.startsWith("verified")));
+    if (sd.indicative) expect(sd.note).toMatch(/^Indicative/);
     expectApiError(() => v1StampDuty(qs("price=abc")), 400);
     expectApiError(() => v1StampDuty(qs("price=100&count=1.5")), 400);
     const m = MortgageResponseSchema.parse(v1Mortgage(qs("principal=500000&rate=2.6&years=25")));

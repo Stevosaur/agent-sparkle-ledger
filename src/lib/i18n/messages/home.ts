@@ -46,6 +46,10 @@ export const home: Messages = {
     "home.launches.browse": "Browse launches",
     "home.launches.none": "No new-launch sales data has been loaded yet.",
     "home.launches.noneLink": "Browse the new-launch catalogue",
+    "home.launches.aria.condo": "Condo launches",
+    "home.launches.aria.ec": "Executive condominium launches",
+    "home.launches.aria.landed": "Landed launches",
+    "home.launches.aria.upcoming": "Upcoming launches",
     "home.launches.prev": "Previous launches",
     "home.launches.next": "More launches",
 
@@ -82,6 +86,11 @@ export const home: Messages = {
     "home.towns.fourRoom": "4-room median, last 12 months",
     "home.towns.noFourRoom": "No 4-room resales in the last 12 months",
     "home.towns.sales": "{count} resales in 12 months",
+    "home.region.central": "Central",
+    "home.region.east": "East",
+    "home.region.north": "North",
+    "home.region.northEast": "North-East",
+    "home.region.west": "West",
 
     // sources
     "home.source.hdb": "HDB resale prices, data.gov.sg",
@@ -170,6 +179,10 @@ export const home: Messages = {
     "home.launches.browse": "浏览新盘",
     "home.launches.none": "尚未载入新盘销售数据。",
     "home.launches.noneLink": "浏览新盘目录",
+    "home.launches.aria.condo": "公寓新盘",
+    "home.launches.aria.ec": "执行共管公寓新盘",
+    "home.launches.aria.landed": "有地住宅新盘",
+    "home.launches.aria.upcoming": "即将推出的新盘",
     "home.launches.prev": "上一组新盘",
     "home.launches.next": "更多新盘",
 
@@ -203,6 +216,11 @@ export const home: Messages = {
     "home.towns.fourRoom": "四房式中位价（近12个月）",
     "home.towns.noFourRoom": "近12个月无四房式转售",
     "home.towns.sales": "近12个月 {count} 宗转售",
+    "home.region.central": "中部",
+    "home.region.east": "东部",
+    "home.region.north": "北部",
+    "home.region.northEast": "东北部",
+    "home.region.west": "西部",
 
     "home.source.hdb": "组屋转售价格，data.gov.sg",
     "home.source.private": "市建局私人住宅成交记录",

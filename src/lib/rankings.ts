@@ -91,7 +91,7 @@ export const LIST_DEFS: Record<ListId, ListDef> = {
     methodology: [
       `HDB: for each block and flat type with at least ${RANKING_RULES.yieldMinSales} resales and ${RANKING_RULES.yieldMinRentals} rental approvals in the latest 12 months, gross yield = median monthly rent × 12 ÷ median resale price.`,
       `Condos and ECs: URA publishes rents with a floor-area band, so rent per sqft uses the band mid-point (approximate). Gross yield = median monthly rent psf × 12 ÷ median sale psf, with at least ${RANKING_RULES.yieldMinSales} non-bulk sales and ${RANKING_RULES.yieldMinRentals} rentals in 12 months.`,
-      "Gross yield ignores property tax, maintenance, agent fees and vacancy, so net yields are lower. It is an estimate, not a forecast.",
+      "HDB rents are declared by flat owners and are not verified by HDB. Gross yield ignores property tax, maintenance, agent fees and vacancy, so net yields are lower. It is an estimate, not a forecast.",
     ],
     source: `${SRC_HDB}; ${SRC_PRIVATE}`,
   },
@@ -652,7 +652,8 @@ export function filterRows(def: ListDef, rows: readonly RankRow[], q: ListQuery)
     if (q.segment && r.segment !== q.segment) return false;
     // flat-type filters apply to HDB rows only; other groups have no flat type
     if (flatType && r.group === "hdb" && r.flatType != null && r.flatType !== flatType) return false;
-    if (q.flatType && r.group !== "hdb") return false;
+    // a specific flat type is an HDB-only filter; "ALL" (block-level view) leaves other groups alone
+    if (q.flatType && q.flatType !== "ALL" && r.group !== "hdb") return false;
     return true;
   });
 }

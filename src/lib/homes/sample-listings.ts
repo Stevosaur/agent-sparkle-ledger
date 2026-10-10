@@ -102,7 +102,7 @@ export function sampleListings(): HomeListing[] {
   const projects = getProjects()
     .filter((p) => !p.isLanded && p.tx.count12m > 0)
     .sort((a, b) => a.slug.localeCompare(b.slug));
-  for (const p of projects.slice(0, 2)) {
+  for (const p of projects.slice(0, 3)) {
     const tx = getProjectTransactions(p.slug).find((t) => t.units === 1 && t.typeOfArea !== "Land");
     if (!tx) continue;
     push({

@@ -1,6 +1,6 @@
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { PageContainer, PageHeader, Section } from "@/components/ui/section";
-import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Card, CardBody } from "@/components/ui/card";
 import { Stat, StatGrid } from "@/components/ui/stat";
 import { EmptyState, Notice } from "@/components/ui/notice";
 import { T } from "@/components/i18n/t";

@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
  * "tracking.unlimited", enforced here).
  *   GET                 -> { items (with estimated value series), limit }
  *   POST   { ref, flatType?, areaSqm?, floor?, purchasePrice?, purchaseMonth? } -> { item }
+ *   PATCH  { id, flatType?, areaSqm?, floor?, purchasePrice?, purchaseMonth? }  -> { item }
  *   DELETE { id }       -> { ok }
  */
 
