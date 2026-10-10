@@ -44,7 +44,6 @@ export function BlockNearby({ rows, hasCoords, radiusM }: { rows: NearbyBlockRow
                 ),
               },
               { key: "distance", header: <T k="hdb.col.distance" fallback="Distance" />, cell: (r) => formatDistance(r.distanceM), align: "right" },
-              { key: "lease", header: <T k="hdb.col.leaseStart" fallback="Lease from" />, cell: (r) => r.leaseCommenceYear ?? "—", align: "right" },
               { key: "psf", header: <T k="hdb.col.medianPsf" fallback="Median psf (12m)" />, cell: (r) => formatPsf(r.medianPsf12m), align: "right" },
               {
                 key: "last",
@@ -59,6 +58,7 @@ export function BlockNearby({ rows, hasCoords, radiusM }: { rows: NearbyBlockRow
                   ),
                 align: "right",
               },
+              { key: "lease", header: <T k="hdb.col.leaseStart" fallback="Lease from" />, cell: (r) => r.leaseCommenceYear ?? "—", align: "right" },
             ]}
           />
         </CardBody>

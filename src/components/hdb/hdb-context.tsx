@@ -132,6 +132,8 @@ export function HdbRentalDemand({ slug }: { slug: string }) {
             empty={t("hdb.rent.noYield", "No flat types to compare yet.")}
             columns={[
               { key: "type", header: t("hdb.col.flatType", "Flat type"), cell: (r) => flatTypeLabel(r.flatType) },
+              { key: "yield", header: t("hdb.col.blockYield", "Block yield"), cell: (r) => yieldPct(r.grossYield), align: "right", className: "font-medium" },
+              { key: "townYield", header: t("hdb.col.townYield", "{town} yield", { town }), cell: (r) => yieldPct(r.townGrossYield), align: "right" },
               {
                 key: "price",
                 header: t("hdb.col.blockPrice", "Block median price"),
@@ -144,9 +146,7 @@ export function HdbRentalDemand({ slug }: { slug: string }) {
                 cell: (r) => (r.medianRent == null ? "—" : `${formatSgd(r.medianRent)} (${r.rentCount})`),
                 align: "right",
               },
-              { key: "yield", header: t("hdb.col.blockYield", "Block yield"), cell: (r) => yieldPct(r.grossYield), align: "right", className: "font-medium" },
               { key: "townRent", header: t("hdb.col.townRent", "{town} median rent", { town }), cell: (r) => (r.townMedianRent == null ? "—" : formatSgd(r.townMedianRent)), align: "right" },
-              { key: "townYield", header: t("hdb.col.townYield", "{town} yield", { town }), cell: (r) => yieldPct(r.townGrossYield), align: "right" },
             ]}
           />
           <p className="px-3 pb-1 pt-2 text-xs text-muted">
@@ -284,10 +284,12 @@ export function HdbCompetingSupply({ slug }: { slug: string }) {
         </CardBody>
       </Card>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
-        <Scale className="size-5 text-brand-700" aria-hidden />
-        <p className="min-w-0 flex-1 text-sm text-ink">{t("hdb.supply.sdPitch", "Compare the HDB upgrader pool around this block with competing private supply, year by year.")}</p>
-        <Link href={`/supply-demand/${slug}/`} className={buttonClass("outline", "sm")}>
+      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface px-4 py-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <Scale className="mt-0.5 size-5 shrink-0 text-brand-700" aria-hidden />
+          <p className="text-sm text-ink">{t("hdb.supply.sdPitch", "Compare the HDB upgrader pool around this block with competing private supply, year by year.")}</p>
+        </div>
+        <Link href={`/supply-demand/${slug}/`} className={buttonClass("outline", "sm", "self-start sm:self-auto")}>
           {t("hdb.supply.sdCta", "Demand vs supply")}
           <PlusBadge />
         </Link>

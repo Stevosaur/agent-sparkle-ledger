@@ -402,6 +402,8 @@ Relevant `QUERYNAME`s from a 2026 `getAllThemesInfo` dump (168 themes; `sanjeevr
 7. Community-club extra properties, library feature count, bus stop property names, childcare GeoJSON style.
 8. URA Sale Sites property names and freshness; Vacant Sites Sold columns; STB publication of collective-sale applications.
 9. Meaning of CHAS `LICENCE_TYPE` codes.
+10. (added 2026-10-10) Pre-2022 reserved-place history (20/20 from 2014; half/half post-2A split), and whether the 1/3 to 2B, 2/3 to 2C split still applies from 2027. Whether the 12 two-track schools reserve 60 Phase 2C places.
+11. (added 2026-10-10) OneMap `retrieveTheme` `extents` format and Bearer vs raw token; the URA media-release annex URL pattern; the HDB Miltonia Close news URL; "now SFA" for the supermarket licence dataset; the SLA once-a-year refresh cadence.
 
 ## 6. Sources
 

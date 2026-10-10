@@ -208,7 +208,11 @@ export default async function CondoPage({ params }: Props) {
                 value={p.rentals?.medianRent12m != null ? `${formatSgd(p.rentals.medianRent12m)}/mo` : "—"}
                 sub={
                   p.rentals?.medianRent12m != null ? (
-                    <T k="private.stat.contracts" fallback="{n} contracts" vars={{ n: formatInt(p.rentals.count12m) }} />
+                    p.rentals.count12m === 1 ? (
+                      <T k="private.stat.contract1" fallback="1 contract" />
+                    ) : (
+                      <T k="private.stat.contracts" fallback="{n} contracts" vars={{ n: formatInt(p.rentals.count12m) }} />
+                    )
                   ) : (
                     <T k="private.stat.noRent" fallback="No contracts in 12 months" />
                   )
@@ -228,7 +232,7 @@ export default async function CondoPage({ params }: Props) {
               <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Detail label={<T k="private.details.tenure" fallback="Tenure" />}>
                   <TenureLabel tenure={tenure} />
-                  {p.tenure?.raw ? <span className="block text-xs text-muted">{p.tenure.raw}</span> : null}
+                  {p.tenure?.kind === "leasehold" && p.tenure.raw ? <span className="block text-xs text-muted">{p.tenure.raw}</span> : null}
                 </Detail>
                 <Detail label={<T k="private.details.district" fallback="District / segment" />}>
                   {formatDistrict(p.district)}
@@ -260,7 +264,9 @@ export default async function CondoPage({ params }: Props) {
                   )}
                 </Detail>
                 <Detail label={<T k="private.details.records" fallback="Sales on record" />}>
-                  {p.tx.count ? (
+                  {p.tx.count === 1 ? (
+                    <T k="private.details.records1" fallback="1 sale, {m}" vars={{ m: formatMonth(p.tx.last) }} />
+                  ) : p.tx.count ? (
                     <T k="private.details.recordsRange" fallback="{n} sales, {from} to {to}" vars={{ n: formatInt(p.tx.count), from: formatMonth(p.tx.first), to: formatMonth(p.tx.last) }} />
                   ) : (
                     "—"
@@ -434,7 +440,11 @@ export default async function CondoPage({ params }: Props) {
             <CardBody className="pt-0">
               {units.excludedBulk ? (
                 <p className="mt-3 text-xs text-muted">
-                  <T k="private.mix.bulk" fallback="{n} bulk purchases (several units in one caveat) are excluded." vars={{ n: units.excludedBulk }} />
+                  {units.excludedBulk === 1 ? (
+                    <T k="private.mix.bulk1" fallback="1 bulk purchase (several units in one caveat) is excluded." />
+                  ) : (
+                    <T k="private.mix.bulk" fallback="{n} bulk purchases (several units in one caveat) are excluded." vars={{ n: units.excludedBulk }} />
+                  )}
                 </p>
               ) : null}
               <SourceLine>

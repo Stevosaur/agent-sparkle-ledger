@@ -7,10 +7,7 @@ import { flatTypeLabel, storeyLabel, type HdbSaleRow } from "@/lib/hdb-insights"
 export const saleColumns: Column<HdbSaleRow>[] = [
   { key: "month", header: <T k="hdb.col.month" fallback="Month" />, cell: (r) => formatMonth(r.month) },
   { key: "flatType", header: <T k="hdb.col.flatType" fallback="Flat type" />, cell: (r) => flatTypeLabel(r.flatType) },
-  { key: "storey", header: <T k="hdb.col.storey" fallback="Storey" />, cell: (r) => storeyLabel(r.storeyRange) },
-  { key: "area", header: <T k="hdb.col.area" fallback="Floor area" />, cell: (r) => formatArea(r.floorAreaSqm), align: "right" },
   { key: "price", header: <T k="hdb.col.price" fallback="Price" />, cell: (r) => formatSgd(r.price), align: "right", className: "font-medium" },
-  { key: "psf", header: <T k="hdb.col.psf" fallback="PSF" />, cell: (r) => formatSgd(r.psf), align: "right" },
   {
     key: "lease",
     header: <T k="hdb.col.leaseAtSale" fallback="Lease left at sale" />,
@@ -29,6 +26,9 @@ export const saleColumns: Column<HdbSaleRow>[] = [
       ),
     align: "right",
   },
+  { key: "storey", header: <T k="hdb.col.storey" fallback="Storey" />, cell: (r) => storeyLabel(r.storeyRange) },
+  { key: "area", header: <T k="hdb.col.area" fallback="Floor area" />, cell: (r) => formatArea(r.floorAreaSqm), align: "right" },
+  { key: "psf", header: <T k="hdb.col.psf" fallback="PSF" />, cell: (r) => formatSgd(r.psf), align: "right" },
 ];
 
 /** Footnote explaining the "est." marker in the lease column. */

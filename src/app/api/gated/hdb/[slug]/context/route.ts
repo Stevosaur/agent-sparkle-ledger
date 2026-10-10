@@ -21,6 +21,10 @@ function toMonthIndex(label: string | null | undefined): number | null {
   }
 }
 
+function maxOrNull(a: number | null, b: number | null): number | null {
+  return a == null ? b : b == null ? a : Math.max(a, b);
+}
+
 /**
  * GET /api/gated/hdb/<slug>/context/
  * Rental demand (block rentals, yields, town rents) and competing supply (nearby MOP cohort, new launches)
@@ -41,9 +45,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   const town = getTown(block.townSlug);
 
   // Windows end at the dataset's latest month (the pipeline's convention for TxSummary.count12m and
-  // HdbBlock.rentals), not at today's date. Fall back to this town's newest record when meta lacks it.
+  // HdbBlock.rentals), not at today's date. Without the rentals source's latest period, the later of this
+  // town's newest rental and the resale data's latest month stands in for the dataset-wide rental month.
   const salesLatestMonth = toMonthIndex(meta.latestMonth.hdb) ?? sales[0]?.monthIndex ?? null;
-  const rentalsLatestMonth = toMonthIndex(meta.sources.find((s) => s.id === "hdb-rentals")?.latestPeriod) ?? getTownRentals(block.townSlug)[0]?.monthIndex ?? null;
+  const rentalsLatestMonth =
+    toMonthIndex(meta.sources.find((s) => s.id === "hdb-rentals")?.latestPeriod) ?? maxOrNull(getTownRentals(block.townSlug)[0]?.monthIndex ?? null, salesLatestMonth);
 
   const rentalSummary = summariseRentals(rentals, rentalsLatestMonth, RENTAL_MONTHS);
   const yieldRows = yieldsByFlatType({

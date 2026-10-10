@@ -43,7 +43,7 @@ const FALLBACK_MODELS = new Set(["claude-fable-5-1", "claude-opus-5-5", "claude-
 export const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 
 /** Server-side refusal fallback is on by default for supported models; ANTHROPIC_FALLBACKS=off disables it. */
-export function useRefusalFallbacks(model: string): boolean {
+export function refusalFallbacksEnabled(model: string): boolean {
   if (process.env.ANTHROPIC_FALLBACKS?.trim().toLowerCase() === "off") return false;
   return FALLBACK_MODELS.has(model);
 }

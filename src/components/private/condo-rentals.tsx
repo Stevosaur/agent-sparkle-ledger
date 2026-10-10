@@ -30,8 +30,12 @@ export function CondoRentals({ slug }: { slug: string }) {
     <div className="space-y-5">
       <p className="text-sm text-muted">
         {data.window === "12m"
-          ? t("private.rent.window12m", "Medians use the {n} contracts that started since {since}.", { n: data.windowCount, since: formatMonth(data.sinceMonth) })
-          : t("private.rent.windowAll", "No contracts started in the last 12 months, so medians use all {n} recorded contracts.", { n: data.windowCount })}
+          ? data.windowCount === 1
+            ? t("private.rent.window12m1", "Medians use the 1 contract that started since {since}.", { since: formatMonth(data.sinceMonth) })
+            : t("private.rent.window12m", "Medians use the {n} contracts that started since {since}.", { n: formatInt(data.windowCount), since: formatMonth(data.sinceMonth) })
+          : data.windowCount === 1
+            ? t("private.rent.windowAll1", "No contracts started in the last 12 months, so medians use the 1 recorded contract.")
+            : t("private.rent.windowAll", "No contracts started in the last 12 months, so medians use all {n} recorded contracts.", { n: formatInt(data.windowCount) })}
       </p>
       <div className="grid gap-5 md:grid-cols-2">
         <div>

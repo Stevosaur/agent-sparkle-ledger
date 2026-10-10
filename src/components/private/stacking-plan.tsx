@@ -32,9 +32,9 @@ export function StackingPlan({ slug }: { slug: string }) {
     <div>
       <p className="mb-3 text-sm text-muted">
         {data.mode === "unit"
-          ? t("private.stack.unitIntro", "Latest recorded psf for each unit ({n} units), by stack and floor.", { n: data.units })
+          ? t("private.stack.unitIntro", "Latest recorded psf for each unit ({n} units), by stack and floor.", { n: formatInt(data.units) })
           : t("private.stack.gridIntro", "Median psf by floor range and unit size for {n} sales since {since}; the small number is the count of sales.", {
-              n: data.sales,
+              n: formatInt(data.sales),
               since: formatMonth(data.sinceMonth),
             })}
       </p>
@@ -76,7 +76,7 @@ export function StackingPlan({ slug }: { slug: string }) {
                       <div className="rounded-md px-2 py-1 text-center" style={{ background: shade(psf, min, max) }}>
                         <div className="font-medium text-ink">{formatSgd(psf)}</div>
                         <div className="text-[11px] text-ink/70">
-                          {"count" in cell ? t("private.stack.sales", "{n} sales", { n: formatInt(cell.count) }) : formatMonth(cell.month)}
+                          {"count" in cell ? (cell.count === 1 ? t("private.stack.sale1", "1 sale") : t("private.stack.sales", "{n} sales", { n: formatInt(cell.count) })) : formatMonth(cell.month)}
                         </div>
                       </div>
                     </td>

@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getMeta } from "@/lib/data/meta";
 import { resolveProperty } from "@/lib/data/resolve";
 import { formatPropertyRef } from "@/lib/property-ref";
-import { FALLBACK_BETA, MAX_TOKENS, MAX_TOOL_ROUNDS, aiEffort, aiModel, useRefusalFallbacks, type Effort } from "./config";
+import { FALLBACK_BETA, MAX_TOKENS, MAX_TOOL_ROUNDS, aiEffort, aiModel, refusalFallbacksEnabled, type Effort } from "./config";
 import { dynamicContext, systemPrompt } from "./prompt";
 import { executeTool, toolDefinitions, type ToolContext } from "./tools";
 import type { AskContext, AskStreamEvent, AskTurn } from "./protocol";
@@ -80,7 +80,7 @@ export async function runAsk(opts: RunAskOptions): Promise<RunAskResult> {
   const now = opts.now ?? new Date();
   const model = opts.model ?? aiModel();
   const effort = opts.effort === undefined ? aiEffort(model) : opts.effort;
-  const fallbacks = opts.fallbacks ?? useRefusalFallbacks(model);
+  const fallbacks = opts.fallbacks ?? refusalFallbacksEnabled(model);
   const meta = getMeta();
   const toolCtx: ToolContext = { maxSales: opts.maxSales, now };
   const tools = toolDefinitions();

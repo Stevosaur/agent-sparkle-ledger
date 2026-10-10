@@ -321,23 +321,29 @@ export interface TimeAdjustedEstimate {
   fromLevel: number;
   toLevel: number;
   saleMonth: string;
+  /** latest month of the index used (may be earlier than the requested as-of month in thin districts) */
   asOfMonth: string;
 }
 
 /**
  * Latest sale price moved by the change in a market index (e.g. the district's median psf series) between the
- * sale month and `asOfMonth`. This is an ESTIMATE: it assumes the home moved with its district.
+ * sale month and the index's latest reading at or before `asOfMonth`. Returns null when either end has no index
+ * data, or when the latest reading is more than `maxStaleMonths` old. This is an ESTIMATE: it assumes the home
+ * moved with its district.
  */
 export function timeAdjustedEstimate(
   sale: { monthIndex: number; price: number },
   points: readonly MonthlyStat[],
   asOfMonth: number,
-  opts: { window?: number; roundTo?: number } = {},
+  opts: { window?: number; roundTo?: number; maxStaleMonths?: number } = {},
 ): TimeAdjustedEstimate | null {
-  const { window = 6, roundTo = 10_000 } = opts;
+  const { window = 6, roundTo = 10_000, maxStaleMonths = 12 } = opts;
   if (!(sale.price > 0) || sale.monthIndex > asOfMonth) return null;
-  const fromLevel = seriesLevel(points, sale.monthIndex, window);
-  const toLevel = seriesLevel(points, asOfMonth, window);
+  let anchor: number | null = null;
+  for (const p of points) if (p.m <= asOfMonth && p.medianPsf > 0 && p.count > 0 && (anchor == null || p.m > anchor)) anchor = p.m;
+  if (anchor == null || asOfMonth - anchor > maxStaleMonths) return null;
+  const fromLevel = seriesLevel(points, Math.min(sale.monthIndex, anchor), window);
+  const toLevel = seriesLevel(points, anchor, window);
   if (fromLevel == null || toLevel == null) return null;
   const factor = toLevel / fromLevel;
   return {
@@ -346,7 +352,7 @@ export function timeAdjustedEstimate(
     fromLevel,
     toLevel,
     saleMonth: monthLabel(sale.monthIndex),
-    asOfMonth: monthLabel(asOfMonth),
+    asOfMonth: monthLabel(Math.max(anchor, sale.monthIndex)),
   };
 }
 

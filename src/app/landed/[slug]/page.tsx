@@ -218,7 +218,7 @@ export default async function LandedAddressPage({ params }: Props) {
                 </Detail>
                 <Detail label={<T k="private.details.tenure" fallback="Tenure" />}>
                   <TenureLabel tenure={tenure} />
-                  {a.tenure?.raw ? <span className="block text-xs text-muted">{a.tenure.raw}</span> : null}
+                  {a.tenure?.kind === "leasehold" && a.tenure.raw ? <span className="block text-xs text-muted">{a.tenure.raw}</span> : null}
                 </Detail>
                 <Detail label={<T k="private.landed.propertyType" fallback="Property type" />}>{a.propertyType ?? "—"}</Detail>
                 <Detail label={<T k="private.details.district" fallback="District / segment" />}>
@@ -304,7 +304,7 @@ export default async function LandedAddressPage({ params }: Props) {
                     <Stat label={<T k="private.landed.count" fallback="Sales" />} value={formatInt(district12.count)} />
                     <Stat
                       label={<T k="private.landed.range" fallback="Price range" />}
-                      value={`${formatSgd(district12.minPrice)} – ${formatSgd(district12.maxPrice)}`}
+                      value={district12.minPrice === district12.maxPrice ? formatSgd(district12.minPrice) : `${formatSgd(district12.minPrice)} – ${formatSgd(district12.maxPrice)}`}
                       className="col-span-2 sm:col-span-1"
                     />
                     <Stat label={<T k="private.landed.medianPrice" fallback="Median price" />} value={formatSgd(district12.medianPrice)} />

@@ -222,7 +222,9 @@ export default async function LandedStreetPage({ params }: Props) {
           className={SECTION}
           title={<T k="private.street.addressesTitle" fallback="Addresses on this street" />}
           description={
-            addresses.length ? (
+            addresses.length === 1 ? (
+              <T k="private.street.addressesDesc1" fallback="1 address with recorded sales." />
+            ) : addresses.length ? (
               <T k="private.street.addressesDesc" fallback="{n} addresses with recorded sales." vars={{ n: formatInt(addresses.length) }} />
             ) : undefined
           }
