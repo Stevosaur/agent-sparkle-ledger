@@ -15,7 +15,7 @@ import { Stat, StatGrid } from "@/components/ui/stat";
 import { DataTable } from "@/components/ui/table";
 import { useFeature } from "@/lib/auth/viewer-context";
 import { useT } from "@/lib/i18n/provider";
-import { formatDistance, formatMonth, formatPsf, formatSgd, SQFT_PER_SQM } from "@/lib/format";
+import { formatArea, formatDistance, formatMonth, formatPsf, formatSgd, SQFT_PER_SQM } from "@/lib/format";
 import { formatPropertyRef } from "@/lib/property-ref";
 import { refFromHref } from "@/lib/tools/refs";
 import type { SearchEntry, SearchKind } from "@/lib/data/types";
@@ -51,11 +51,14 @@ export function ValuationTool({
   subject,
   initialType,
   unresolved,
+  approximate = null,
   privateAvailable,
 }: {
   subject: ValuationSubject | null;
   initialType: ValuationKind;
   unresolved: string | null;
+  /** the deep-link name when `subject` is only the closest search match for it */
+  approximate?: string | null;
   /** false when no URA private transactions are loaded (condo / landed estimates impossible) */
   privateAvailable: boolean;
 }) {
@@ -131,6 +134,7 @@ export function ValuationTool({
               {t("tools.val.unresolved", "We could not find “{q}”. Search for it above.", { q: unresolved })}
             </Notice>
           ) : null}
+          {active && approximate ? <Notice tone="info">{t("tools.val.approximate", "Showing the closest match for “{q}”. If this is not the right home, search for it above.", { q: approximate })}</Notice> : null}
           {active ? (
             <div className="rounded-lg bg-canvas px-4 py-3">
               <Link href={active.href} className="font-semibold text-brand-800 hover:underline">
@@ -192,6 +196,13 @@ function ValuationForm({ subject }: { subject: ValuationSubject }) {
       return t("tools.val.areaEnter", "Enter your floor area from your title deed or HDB records.");
     }
     if (subject.condo) return subject.condo.typicalAreaSqm != null ? t("tools.val.areaFromProject", "Prefilled with the median size of recent sales here. Enter your unit's strata area.") : t("tools.val.areaEnterUnit", "Enter your unit's strata area.");
+    if (subject.landed?.areaBasis === "strata") {
+      return subject.landed.landAreaFrom === "address"
+        ? t("tools.val.strataFromAddress", "Prefilled with the strata area recorded at this address's latest sale.")
+        : subject.landed.landAreaFrom === "street"
+          ? t("tools.val.strataFromStreet", "Prefilled with the median strata area of sales on this street. Enter your own strata area.")
+          : t("tools.val.strataEnter", "Enter your strata area: strata landed homes are sold by strata area, not land area.");
+    }
     return subject.landed?.landAreaFrom === "address"
       ? t("tools.val.landFromAddress", "Prefilled with the land area recorded at this address's latest sale.")
       : subject.landed?.landAreaFrom === "street"
@@ -206,7 +217,11 @@ function ValuationForm({ subject }: { subject: ValuationSubject }) {
     return { ref: subject.ref, areaSqm: Math.round(areaSqm * 10) / 10 };
   }, [areaSqm, hdb, flatType, storey, subject.ref, subject.condo, floorNum]);
 
-  const areaLabel = subject.landed ? t("tools.val.landArea", "Land area") : t("tools.val.floorArea", "Floor area");
+  const areaLabel = subject.landed
+    ? subject.landed.areaBasis === "strata"
+      ? t("tools.val.strataArea", "Strata area")
+      : t("tools.val.landArea", "Land area")
+    : t("tools.val.floorArea", "Floor area");
 
   return (
     <>
@@ -425,7 +440,7 @@ export function ValuationResult({ data, compact }: { data: ValuationResponse; co
               ),
             },
             { key: "dist", header: t("tools.val.colDistance", "Distance"), cell: distanceText },
-            { key: "area", header: t("tools.val.colArea", "Area"), align: "right", cell: (c) => `${Math.round(c.areaSqm)} sqm` },
+            { key: "area", header: t("tools.val.colArea", "Area"), align: "right", cell: (c) => <span className="whitespace-nowrap">{formatArea(c.areaSqm)}</span> },
             { key: "price", header: t("tools.val.colPrice", "Price"), align: "right", cell: (c) => formatSgd(c.price) },
             { key: "psf", header: t("tools.val.colPsf", "psf"), align: "right", cell: (c) => formatSgd(c.psf) },
             { key: "adj", header: t("tools.val.colAdjPsf", "Adjusted psf"), align: "right", cell: (c) => formatSgd(c.adjustedPsf) },

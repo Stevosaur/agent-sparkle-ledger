@@ -22,7 +22,9 @@ export interface WalkAwayToolProps {
   defaultRateSource: string | null;
 }
 
-const MAX_LTV_PCT = BANK_LTV[0].standard * 100;
+const MAX_LTV_PCT = Math.round(BANK_LTV[0].standard * 100);
+/** MAS: a first housing loan with a tenure over the threshold (30 years for private property) gets the reduced LTV. */
+const REDUCED_LTV_PCT = Math.round(BANK_LTV[0].reduced * 100);
 const SSD_YEARS = SSD_FROM_2025_07_04.rates.length;
 
 const num = (s: string): number => (s.trim() === "" ? Number.NaN : Number(s));
@@ -81,7 +83,9 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
     } else if (!ok) errors[k] = message;
   };
   check("price", values.price >= 10_000, t("launches.walk.err.price", "Enter a price of at least S$10,000."));
-  check("loanPct", values.loanPct >= 0 && values.loanPct <= MAX_LTV_PCT, t("launches.walk.err.loan", "Between 0% and {max}%.", { max: MAX_LTV_PCT }));
+  const longTenure = values.tenure > LTV_TENURE_THRESHOLD.private;
+  const maxLoanPct = longTenure ? REDUCED_LTV_PCT : MAX_LTV_PCT;
+  check("loanPct", values.loanPct >= 0 && values.loanPct <= maxLoanPct, t("launches.walk.err.loan", "Between 0% and {max}%.", { max: maxLoanPct }));
   check("rate", values.rate >= 0 && values.rate <= 20, t("launches.walk.err.rate", "Between 0% and 20%."));
   check("tenure", values.tenure >= 1 && values.tenure <= BANK_MAX_TENURE.private, t("launches.walk.err.tenure", "Between 1 and {max} years.", { max: BANK_MAX_TENURE.private }));
   check("holding", values.holding >= 0.5 && values.holding <= 50, t("launches.walk.err.holding", "Between 0.5 and 50 years."));
@@ -188,8 +192,16 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
             />
             {err("price")}
           </Field>
-          <Field label={t("launches.walk.loan", "Loan (% of price)")} htmlFor={fid("loan")} hint={t("launches.walk.loanHint", "MAS limit: {max}% for a first housing loan.", { max: MAX_LTV_PCT })}>
-            <Input id={fid("loan")} type="number" inputMode="decimal" min={0} max={MAX_LTV_PCT} step={5} value={loanPct} onChange={(e) => setLoanPct(e.target.value)} {...invalidProps("loanPct")} />
+          <Field
+            label={t("launches.walk.loan", "Loan (% of price)")}
+            htmlFor={fid("loan")}
+            hint={
+              longTenure
+                ? t("launches.walk.loanHintLong", "MAS limit: {max}% for a first housing loan with a tenure over {years} years.", { max: REDUCED_LTV_PCT, years: LTV_TENURE_THRESHOLD.private })
+                : t("launches.walk.loanHint", "MAS limit: {max}% for a first housing loan.", { max: MAX_LTV_PCT })
+            }
+          >
+            <Input id={fid("loan")} type="number" inputMode="decimal" min={0} max={maxLoanPct} step={5} value={loanPct} onChange={(e) => setLoanPct(e.target.value)} {...invalidProps("loanPct")} />
             {err("loanPct")}
           </Field>
           <Field

@@ -102,6 +102,7 @@ export const insights: Messages = {
     // insights page
     "insights.page.eyebrow": "Market insights",
     "insights.page.title": "Singapore property market insights",
+    "insights.page.modules": "Market modules",
     "insights.page.intro": "Charts and short readings computed from HDB, URA and data.gov.sg records. The first six modules are free; the rest are part of Plus.",
     "insights.towns.title": "HDB towns",
     "insights.towns.desc": "Prices, rents, yields and every block in each town.",
@@ -326,6 +327,7 @@ export const insights: Messages = {
     // insights page
     "insights.page.eyebrow": "市场洞察",
     "insights.page.title": "新加坡房地产市场洞察",
+    "insights.page.modules": "市场模块",
     "insights.page.intro": "根据建屋局、市建局及 data.gov.sg 记录计算的图表与简要解读。前六个模块免费，其余属于会员功能。",
     "insights.towns.title": "组屋市镇",
     "insights.towns.desc": "各市镇的价格、租金、回报率及所有楼座。",

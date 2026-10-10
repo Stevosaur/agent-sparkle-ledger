@@ -247,8 +247,8 @@ export interface OpenApiDocument {
 }
 
 export function buildOpenApiDocument(baseUrl: string = site.url): OpenApiDocument {
-  const schemas: Record<string, JsonSchema> = { Error: toJsonSchema(ErrorSchema) };
-  for (const [name, schema] of Object.entries(RESPONSE_SCHEMAS)) schemas[name] = toJsonSchema(schema);
+  const schemas: Record<string, JsonSchema> = { Error: toJsonSchema(ErrorSchema, "output", { openObjects: true }) };
+  for (const [name, schema] of Object.entries(RESPONSE_SCHEMAS)) schemas[name] = toJsonSchema(schema, "output", { openObjects: true });
 
   const errorResponse = (description: string) => ({
     description,

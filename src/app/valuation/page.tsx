@@ -44,7 +44,7 @@ export default async function ValuationPage({ searchParams }: { searchParams: Se
         }
       />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <ValuationTool subject={link.subject} initialType={link.type} unresolved={link.unresolved} privateAvailable={coverage.private} />
+        <ValuationTool subject={link.subject} initialType={link.type} unresolved={link.unresolved} approximate={link.approximate} privateAvailable={coverage.private} />
         <aside className="space-y-4">
           <Section title={<T k="tools.val.howTitle" fallback="How it works" />}>
             <Card>

@@ -1,12 +1,13 @@
 import type { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveProperty } from "@/lib/data/resolve";
 import { parsePropertyRef, type PropertyKind } from "@/lib/property-ref";
 import { site } from "@/lib/config/site";
 import { dbError, errorJson, guardAccount, json, readJsonBody, rejectCrossOrigin } from "@/lib/account/http";
-import { estimateHome } from "@/lib/account/estimate";
-import { checkTrackedLimit, isWithinLimit, TRACKED_MAX, trackedHomesLimit } from "@/lib/account/limits";
+import { estimateHome, estimateSourceKey } from "@/lib/account/estimate";
+import { checkTrackedLimit, idsWithinLimit, isWithinLimit, TRACKED_MAX, trackedHomesLimit } from "@/lib/account/limits";
 import { parseId, parseIdBody, parseTrackedHomeInput } from "@/lib/account/validation";
-import type { TrackedHomeView, TrackedListResponse } from "@/lib/account/types";
+import type { HomeEstimate, TrackedHomeView, TrackedListResponse } from "@/lib/account/types";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,8 @@ function num(v: number | string | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function toView(row: TrackedRow): TrackedHomeView {
+/** `withinLimit` false: the home is beyond the account's tracked-homes limit, so no estimate is computed or sent. */
+function toView(row: TrackedRow, withinLimit = true): TrackedHomeView {
   const ref = parsePropertyRef(row.ref);
   const resolved = ref ? resolveProperty(ref) : null;
   const base = {
@@ -56,10 +58,19 @@ function toView(row: TrackedRow): TrackedHomeView {
     purchaseMonth: row.purchase_month,
     createdAt: row.created_at,
   };
-  const estimate = ref
-    ? estimateHome({ ref, flatType: base.flatType, areaSqm: base.areaSqm, purchasePrice: base.purchasePrice, purchaseMonth: base.purchaseMonth })
-    : ({ status: "unavailable", reason: "not-found" } as const);
+  const estimate: HomeEstimate = !withinLimit
+    ? { status: "unavailable", reason: "over-limit" }
+    : ref
+      ? estimateHome({ ref, flatType: base.flatType, areaSqm: base.areaSqm, purchasePrice: base.purchasePrice, purchaseMonth: base.purchaseMonth })
+      : { status: "unavailable", reason: "not-found" };
   return { ...base, estimate };
+}
+
+/** Ids of the user's homes that may show an estimate: the oldest `limit` (rows kept in id order). */
+async function allowedIds(supabase: SupabaseClient, userId: string, limit: number): Promise<{ ok: true; ids: Set<number> } | { ok: false; error: unknown }> {
+  const { data, error } = await supabase.from("tracked_homes").select("id").eq("user_id", userId).order("id", { ascending: true }).limit(TRACKED_MAX);
+  if (error) return { ok: false, error };
+  return { ok: true, ids: idsWithinLimit(((data ?? []) as { id: number | string }[]).map((r) => Number(r.id)), limit) };
 }
 
 export async function GET() {
@@ -70,9 +81,20 @@ export async function GET() {
   if (error) return dbError("tracked.list", error);
   const rows = (data ?? []) as TrackedRow[];
   const unlimited = Boolean(viewer.features["tracking.unlimited"]);
+  const max = trackedHomesLimit(unlimited, site.freeTrackedHomes);
+  // Homes beyond the limit (kept after a Plus subscription lapsed) are listed without an estimate.
+  const allowed = idsWithinLimit(rows.map((r) => Number(r.id)), max);
+  // Estimate grouped by transaction file (HDB town / private district): the data layer caches only a few.
+  const items: TrackedHomeView[] = new Array(rows.length);
+  const order = rows.map((row, i) => {
+    const ref = parsePropertyRef(row.ref);
+    return { i, key: ref ? estimateSourceKey(ref) : "" };
+  });
+  order.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : a.i - b.i));
+  for (const { i } of order) items[i] = toView(rows[i], allowed.has(Number(rows[i].id)));
   const body: TrackedListResponse = {
-    items: rows.map(toView),
-    limit: { max: trackedHomesLimit(unlimited, site.freeTrackedHomes), used: rows.length, unlimited, freeLimit: site.freeTrackedHomes },
+    items,
+    limit: { max, used: rows.length, unlimited, freeLimit: site.freeTrackedHomes },
   };
   return json(body);
 }
@@ -157,7 +179,9 @@ export async function PATCH(req: NextRequest) {
     .maybeSingle();
   if (error) return dbError("tracked.update", error);
   if (!data) return errorJson("not_found", 404);
-  return json({ item: toView(data as TrackedRow) });
+  const allowed = await allowedIds(supabase, viewer.userId, trackedHomesLimit(Boolean(viewer.features["tracking.unlimited"]), site.freeTrackedHomes));
+  if (!allowed.ok) return dbError("tracked.limit", allowed.error);
+  return json({ item: toView(data as TrackedRow, allowed.ids.has(id.value)) });
 }
 
 export async function DELETE(req: NextRequest) {

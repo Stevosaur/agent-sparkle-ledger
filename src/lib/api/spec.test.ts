@@ -80,6 +80,8 @@ describe("OpenAPI document", () => {
     const json = JSON.stringify(doc.components.schemas);
     expect(json).not.toContain("$schema");
     expect(json).not.toContain("9007199254740991");
+    // responses may gain fields over time
+    expect(json).not.toContain('"additionalProperties":false');
     expect(Object.keys(API_ERRORS).map(Number)).toEqual(expect.arrayContaining([400, 404, 429, 500, 503]));
   });
 

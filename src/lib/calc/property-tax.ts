@@ -58,11 +58,11 @@ export interface PropertyTaxResult {
 export function residentialPropertyTax(annualValue: number, opts: { ownerOccupied: boolean; year?: number }): PropertyTaxResult | null {
   const year = opts.year ?? 2025;
   if (!Number.isFinite(year) || year < 2024 || !(annualValue >= 0)) return null;
-  const [tiers, table, latest] = opts.ownerOccupied
+  const [tiers, table]: [Tier[], string] = opts.ownerOccupied
     ? year >= 2025
-      ? [PROPERTY_TAX_OWNER_OCCUPIED_2025, "owner-occupied 2025 bands", 2025]
-      : [PROPERTY_TAX_OWNER_OCCUPIED_2024, "owner-occupied 2024 bands", 2024]
-    : [PROPERTY_TAX_NON_OWNER_OCCUPIED_2024, "non-owner-occupied 2024 bands", 2024];
+      ? [PROPERTY_TAX_OWNER_OCCUPIED_2025, "owner-occupied 2025 bands"]
+      : [PROPERTY_TAX_OWNER_OCCUPIED_2024, "owner-occupied 2024 bands"]
+    : [PROPERTY_TAX_NON_OWNER_OCCUPIED_2024, "non-owner-occupied 2024 bands"];
   const avCents = Math.round(annualValue * 100);
   const out: PropertyTaxResult["tiers"] = [];
   let lower = 0;
@@ -80,8 +80,8 @@ export function residentialPropertyTax(annualValue: number, opts: { ownerOccupie
     tax: units / 1_000_000,
     tiers: out,
     table,
+    // owner-occupier bands for 2026 are unknown; non-owner-occupier rates are "believed unchanged" through 2026
     extrapolated: opts.ownerOccupied ? year > 2025 : year > 2026,
     status: (opts.ownerOccupied ? RULE_META.propertyTaxOwnerOccupied : RULE_META.propertyTaxNonOwnerOccupied).status,
-  } satisfies PropertyTaxResult & { tax: number };
-  void latest;
+  };
 }

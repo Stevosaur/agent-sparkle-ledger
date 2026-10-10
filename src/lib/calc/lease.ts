@@ -103,6 +103,17 @@ export function balaRatio(nYears: number, mYears: number): number | null {
   return a / b;
 }
 
+/**
+ * Remaining lease estimated from HDB's `lease_commence_date` (a YEAR only) at a transaction month, per hdb-rules.md §4:
+ *   99.5 − (txnYear + (txnMonth − 1) / 12 − leaseCommenceYear)
+ * The plain "99 − …" form is biased low by about half a year (the lease starts inside the commencement year); this form
+ * is within ±0.5 years of HDB's published `remaining_lease` for 99.6% of 2017–2023 resale rows. Label it an estimate.
+ * Worked check: lease 1979, Jan 2017 → 61.5 (published "61 years 04 months" = 61.33).
+ */
+export function estimateRemainingLease(leaseCommenceYear: number, txnYear: number, txnMonth: number, leaseYears = HDB_LEASE_YEARS): number {
+  return Math.max(0, leaseYears + 0.5 - (txnYear + (txnMonth - 1) / 12 - leaseCommenceYear));
+}
+
 /** Remaining lease in years at `atYear` (fractional) for a 99-year lease that commenced in `leaseCommenceYear`. */
 export function remainingLeaseYears(leaseCommenceYear: number, atYear: number, leaseYears = HDB_LEASE_YEARS): number {
   return Math.max(0, leaseYears - (atYear - leaseCommenceYear));

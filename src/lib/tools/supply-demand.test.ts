@@ -66,7 +66,23 @@ describe("valuation subject and deep links", () => {
     expect(resolveValuationDeepLink({ ref: "hdb:blk-872a-tampines-st-86" }).subject?.kind).toBe("hdb");
     const miss = resolveValuationDeepLink({ type: "condo", project: "THE HILLFORD" });
     expect(miss).toMatchObject({ type: "condo", subject: null, unresolved: "THE HILLFORD" });
-    expect(resolveValuationDeepLink({})).toEqual({ type: "hdb", subject: null, unresolved: null });
+    expect(resolveValuationDeepLink({})).toEqual({ type: "hdb", subject: null, unresolved: null, approximate: null });
+  });
+
+  it("never swaps in a different block or house number from a fuzzy search", () => {
+    // search matches word prefixes, so "872" alone would find Blk 872A and "1" would find No. 15
+    expect(resolveValuationDeepLink({ type: "hdb", block: "872", street: "TAMPINES ST 86" })).toMatchObject({ subject: null, unresolved: "Blk 872 TAMPINES ST 86" });
+    expect(resolveValuationDeepLink({ type: "landed", address: "1 SAMPLE LANE" })).toMatchObject({ subject: null, unresolved: "1 SAMPLE LANE" });
+    // a differently spelt street still finds the right block, flagged as the closest match
+    const street = resolveValuationDeepLink({ type: "hdb", block: "872A", street: "TAMPINES STREET 86" });
+    expect(street.subject?.ref).toBe("hdb:blk-872a-tampines-st-86");
+  });
+
+  it("flags a project found only by a partial name as the closest match", () => {
+    const partial = resolveValuationDeepLink({ type: "condo", project: "SAMPLE PARK" });
+    expect(partial.subject?.ref).toBe("condo:sample-park-condo");
+    expect(partial.approximate).toBe("SAMPLE PARK");
+    expect(resolveValuationDeepLink({ type: "condo", project: "SAMPLE PARK CONDO" }).approximate).toBeNull();
   });
 
   it("builds HDB storey bands", () => {

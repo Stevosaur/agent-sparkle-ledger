@@ -231,7 +231,10 @@ function PackageResults({ results, horizon, sora3m }: { results: PackageComparis
               date: sora3m.date,
             })
           : null}{" "}
-        {t("tools.mr.cmpNote", "Interest is computed on a standard monthly amortising loan. Costs are the one-off amounts you entered.")}
+        {t(
+          "tools.mr.cmpNote",
+          "Interest is computed on a standard monthly amortising loan, with each package's rate applied for the whole period, including any years after its lock-in or fixed term (most packages reprice then). Costs are the one-off amounts you entered.",
+        )}
       </p>
     </div>
   );

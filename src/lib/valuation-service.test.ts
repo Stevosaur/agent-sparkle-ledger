@@ -11,6 +11,7 @@ import {
   NEARBY_RADIUS_M,
   PRIVATE_LOOKBACK_MONTHS,
   estimateValuation,
+  landedAreaBasis,
   landedSubjectFor,
   selectCondoComparables,
   selectHdbComparables,
@@ -111,6 +112,17 @@ describe("landed comparable selection", () => {
     expect(sel.comps.every((c) => c.detail.startsWith("Semi-detached"))).toBe(true);
   });
 
+  it("compares like with like: land-area sales for land-titled homes, strata-area sales for strata landed", () => {
+    expect(landedAreaBasis(["Terrace", "Semi-detached"])).toBe("land");
+    expect(landedAreaBasis(["Strata Terrace"])).toBe("strata");
+    expect(landedAreaBasis(["Terrace", "Strata Terrace"])).toBeNull();
+    expect(landedAreaBasis([])).toBeNull();
+    const subject = landedSubjectFor({ kind: "landed", slug: "15-sample-ln" })!;
+    const strata = selectLandedComparables({ ...subject, propertyTypes: ["Strata Terrace"] }, AS_OF);
+    // every fixture landed sale reports land area, so none can be used for a strata subject
+    expect(strata.comps.length).toBe(0);
+  });
+
   it("accepts a landed street as the subject", () => {
     const subject = landedSubjectFor({ kind: "landed-street", slug: "sample-ln" })!;
     expect(subject.streetSlug).toBe("sample-ln");
@@ -149,6 +161,19 @@ describe("estimateValuation", () => {
     const landed = estimateValuation({ ref: { kind: "landed", slug: "15-sample-ln" }, areaSqm: 160 });
     expect(landed.ok).toBe(true);
     if (landed.ok) expect(landed.valuation.comparables.every((c) => c.areaSqm === 160)).toBe(true);
+  });
+
+  it("says so when the index cannot time-adjust prices", () => {
+    // the fixture landed index (private:OCR:Landed) has no sales within 6 months of 2026-08
+    const landed = estimateValuation({ ref: { kind: "landed", slug: "15-sample-ln" }, areaSqm: 160 });
+    if (!landed.ok) throw new Error("expected an estimate");
+    expect(landed.valuation.comparables.every((c) => c.adjustedPsf === c.psf)).toBe(true);
+    expect(landed.valuation.method.some((m) => m.includes("not time-adjusted"))).toBe(true);
+    expect(landed.valuation.method.some((m) => m.startsWith("Each sale's price per square foot is moved"))).toBe(false);
+    // the HDB index does cover the latest month
+    const hdb = estimateValuation({ ref: { kind: "hdb", slug: "blk-872a-tampines-st-86" }, flatType: "4 ROOM", storeyRange: "07 TO 09", areaSqm: 93 });
+    if (!hdb.ok) throw new Error("expected an estimate");
+    expect(hdb.valuation.method.some((m) => m.startsWith("Each sale's price per square foot is moved"))).toBe(true);
   });
 
   it("rejects unknown properties, missing inputs and thin data", () => {

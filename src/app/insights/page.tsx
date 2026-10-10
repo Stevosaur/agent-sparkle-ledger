@@ -69,24 +69,29 @@ export default function InsightsPage() {
           <T k="insights.empty.modules" fallback="Market modules appear once HDB resale records from data.gov.sg (and, for private modules, URA data) are in the dataset." />
         </EmptyState>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-2">
-          {modules.map((m) => {
-            if (m.free) {
-              const result = getInsight(m.id);
-              if (!result) return null;
+        <>
+          <h2 className="sr-only">
+            <T k="insights.page.modules" fallback="Market modules" />
+          </h2>
+          <div className="grid gap-5 lg:grid-cols-2">
+            {modules.map((m) => {
+              if (m.free) {
+                const result = getInsight(m.id);
+                if (!result) return null;
+                return (
+                  <InsightCard key={m.id} id={m.id} title={m.title} teaser={m.teaser}>
+                    <InsightBody result={result} />
+                  </InsightCard>
+                );
+              }
               return (
-                <InsightCard key={m.id} id={m.id} title={m.title} teaser={m.teaser}>
-                  <InsightBody result={result} />
+                <InsightCard key={m.id} id={m.id} title={m.title} teaser={m.teaser} badge={<PlusBadge />}>
+                  <GatedInsight id={m.id} />
                 </InsightCard>
               );
-            }
-            return (
-              <InsightCard key={m.id} id={m.id} title={m.title} teaser={m.teaser} badge={<PlusBadge />}>
-                <GatedInsight id={m.id} />
-              </InsightCard>
-            );
-          })}
-        </div>
+            })}
+          </div>
+        </>
       )}
 
       {hidden > 0 && missing.length > 0 ? (

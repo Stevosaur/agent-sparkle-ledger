@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BALA_TABLE, BALA_TABLE_STATUS, balaLookup, balaPct, balaRatio, balaRowStatus, cpfLimits, cpfUsage, remainingLeaseYears } from "./lease";
+import { BALA_TABLE, BALA_TABLE_STATUS, balaLookup, balaPct, balaRatio, balaRowStatus, cpfLimits, cpfUsage, estimateRemainingLease, remainingLeaseYears } from "./lease";
 
 describe("Bala's Table (docs/research/bala-table.md)", () => {
   it("has all 99 whole-year rows, strictly increasing", () => {
@@ -115,5 +115,26 @@ describe("CPF usage with remaining lease (loan-rules.md §4, UNVERIFIED rules)",
   it("Valuation Limit is the lower of price and valuation", () => {
     expect(cpfLimits(500_000, 70, 30, 480_000).valuationLimit).toBe(480_000);
     expect(cpfLimits(500_000, 70, 30, 520_000).valuationLimit).toBe(500_000);
+  });
+});
+
+describe("remaining-lease estimate from the commencement year (hdb-rules.md §4)", () => {
+  it("99.5 − (year + (month − 1)/12 − lcd): lease 1979, Jan 2017 → 61.5 vs published 61 y 4 m (within ±0.5)", () => {
+    const est = estimateRemainingLease(1979, 2017, 1);
+    expect(est).toBe(61.5);
+    expect(Math.abs(est - (61 + 4 / 12))).toBeLessThanOrEqual(0.5);
+    // the plain 99-year form is biased low: 61.0, and the published value minus it lies in [0, +1]
+    expect(61 + 4 / 12 - remainingLeaseYears(1979, 2017)).toBeGreaterThanOrEqual(0);
+    expect(estimateRemainingLease(1900, 2026, 6)).toBe(0);
+  });
+});
+
+describe("annuity check on the table's shape (bala-table.md §1)", () => {
+  it("no single discount rate reproduces both 96% at 99 years and 80% at 60 years", () => {
+    const annuity = (r: number, n: number) => 1 - Math.pow(1 + r, -n);
+    expect(annuity(0.035, 99) * 100).toBeCloseTo(96.68, 2);
+    expect(annuity(0.035, 60) * 100).toBeCloseTo(87.31, 2);
+    expect(annuity(0.02719, 60) * 100).toBeCloseTo(80.0, 1);
+    expect(annuity(0.02719, 99) * 100).toBeCloseTo(92.97, 1);
   });
 });

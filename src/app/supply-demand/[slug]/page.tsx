@@ -91,10 +91,17 @@ export default async function SupplyDemandPage({ params }: { params: Params }) {
               <div className="tabular text-3xl font-bold text-ink">{formatInt(headline.units)}</div>
               <p className="text-sm text-muted">
                 {headline.units > 0 ? (
-                  <T k="tools.sd.headlineBlocks" fallback="In {n} blocks completed {a}–{b}. Once the minimum occupation period ends, owners may sell or buy private property." vars={{ n: headline.blocks, a: headline.fromYear - HDB_MOP_YEARS, b: headline.toYear - HDB_MOP_YEARS }} />
+                  <T
+                    k="tools.sd.headlineBlocks"
+                    fallback="Blocks counted: {n}, completed {a}–{b}. Once the minimum occupation period ends, owners may sell or buy private property."
+                    vars={{ n: headline.blocks, a: headline.fromYear - HDB_MOP_YEARS, b: headline.toYear - HDB_MOP_YEARS }}
+                  />
                 ) : (
                   <T k="tools.sd.headlineNone" fallback="No HDB blocks within this distance reach their minimum occupation period in these years." />
                 )}
+              </p>
+              <p className="text-xs text-muted">
+                <T k="tools.sd.headlineUnits" fallback="Counts are each block's total dwelling units, which include any HDB rental flats in the block (rental flats have no MOP)." />
               </p>
               <p className="text-xs text-muted">
                 <T k="common.source" fallback="Source" />: <T k="tools.sd.headlineSource" fallback="HDB property information (year completed, dwelling units), data.gov.sg." />

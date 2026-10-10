@@ -7,7 +7,7 @@ import { median } from "@/lib/stats-math";
 import { formatPropertyRef, parsePropertyRef, type PropertyRef } from "@/lib/property-ref";
 import { hdbBlockSlug, landedAddressSlug, landedStreetSlug, projectSlug, titleCase } from "@/lib/slug";
 import { refFromHref } from "./refs";
-import type { ValuationKind } from "@/lib/valuation-service";
+import { landedAreaBasis, type LandedAreaBasis, type ValuationKind } from "@/lib/valuation-service";
 
 /**
  * Free (non-gated) facts the valuation form needs to prefill itself: flat types with typical areas,
@@ -31,7 +31,14 @@ export interface ValuationSubject {
   detail: string;
   hdb?: { flatTypes: HdbFlatTypeOption[]; storeyRanges: string[]; defaultStoreyRange: string | null };
   condo?: { typicalAreaSqm: number | null; typicalFloor: number | null; maxFloor: number | null; sales: number };
-  landed?: { landAreaSqm: number | null; landAreaFrom: "address" | "street" | null; propertyType: string | null; sales: number };
+  landed?: {
+    landAreaSqm: number | null;
+    landAreaFrom: "address" | "street" | null;
+    propertyType: string | null;
+    /** "strata" for strata (cluster) landed homes, whose sales report strata area rather than land area */
+    areaBasis: LandedAreaBasis | null;
+    sales: number;
+  };
 }
 
 export const VALUATION_SEARCH_KINDS: Record<ValuationKind, SearchKind[]> = {
@@ -133,7 +140,13 @@ function landedSubject(ref: PropertyRef): ValuationSubject | null {
       label: titleCase(a.address),
       href: `/landed/${a.slug}/`,
       detail: bits.join(" · "),
-      landed: { landAreaSqm: a.landAreaSqm, landAreaFrom: a.landAreaSqm != null ? "address" : null, propertyType: a.propertyType, sales: tx.length },
+      landed: {
+        landAreaSqm: a.landAreaSqm,
+        landAreaFrom: a.landAreaSqm != null ? "address" : null,
+        propertyType: a.propertyType,
+        areaBasis: landedAreaBasis(a.propertyType ? [a.propertyType] : []),
+        sales: tx.length,
+      },
     };
   }
   if (ref.kind === "landed-street") {
@@ -152,6 +165,7 @@ function landedSubject(ref: PropertyRef): ValuationSubject | null {
         landAreaSqm: recent.length ? round1(median(recent.map((t) => t.areaSqm))) : null,
         landAreaFrom: recent.length ? "street" : null,
         propertyType: s.propertyTypes.length === 1 ? s.propertyTypes[0] : null,
+        areaBasis: landedAreaBasis(s.propertyTypes),
         sales: tx.length,
       },
     };
@@ -180,12 +194,22 @@ function norm(s: string | undefined): string {
   return (s ?? "").replace(/\+/g, " ").replace(/\s+/g, " ").trim().slice(0, 120);
 }
 
-function firstRefFromSearch(q: string, kinds: SearchKind[]): PropertyRef | null {
+function squash(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/**
+ * Best search hit for a deep-link name. Search matches word prefixes ("872" also finds "872A"), so `accept` lets the
+ * caller insist on the part that identifies the home (block or house number). `exact` is false when the hit's label
+ * is not the name that was asked for, so the page can say it is showing the closest match.
+ */
+function firstRefFromSearch(q: string, kinds: SearchKind[], accept: (label: string) => boolean = () => true): { ref: PropertyRef; exact: boolean } | null {
   if (!q) return null;
-  const hits = search(q, { limit: 5, kinds });
-  const exact = hits.find((h) => h.label.toLowerCase() === q.toLowerCase());
+  const hits = search(q, { limit: 10, kinds }).filter((h) => accept(h.label));
+  const exact = hits.find((h) => squash(h.label) === squash(q));
   const hit = exact ?? hits[0];
-  return hit ? refFromHref(hit.href) : null;
+  const ref = hit ? refFromHref(hit.href) : null;
+  return ref ? { ref, exact: Boolean(exact) } : null;
 }
 
 export interface ValuationDeepLink {
@@ -193,6 +217,8 @@ export interface ValuationDeepLink {
   subject: ValuationSubject | null;
   /** human description of a deep link that could not be resolved */
   unresolved: string | null;
+  /** the name asked for when `subject` is only the closest search match for it */
+  approximate: string | null;
 }
 
 /**
@@ -209,12 +235,12 @@ export function resolveValuationDeepLink(params: Record<string, string | undefin
   if (params.ref) {
     const ref = parsePropertyRef(params.ref);
     const subject = ref ? getValuationSubject(ref) : null;
-    if (subject) return { type: subject.kind, subject, unresolved: null };
+    if (subject) return { type: subject.kind, subject, unresolved: null, approximate: null };
     if (ref) type = ref.kind === "condo" || ref.kind === "launch" ? "condo" : ref.kind === "hdb" ? "hdb" : "landed";
-    return { type, subject: null, unresolved: norm(params.ref) };
+    return { type, subject: null, unresolved: norm(params.ref), approximate: null };
   }
 
-  let ref: PropertyRef | null = null;
+  let hit: { ref: PropertyRef; exact: boolean } | null = null;
   let asked = "";
   if (type === "hdb") {
     const block = norm(params.block).toUpperCase();
@@ -223,10 +249,15 @@ export function resolveValuationDeepLink(params: Record<string, string | undefin
     if (block && street) {
       asked = `Blk ${block} ${street}`;
       const slug = hdbBlockSlug(block, street);
-      ref = getHdbBlock(slug) ? { kind: "hdb", slug } : firstRefFromSearch(`${block} ${street}`, VALUATION_SEARCH_KINDS.hdb);
+      // the street may be spelt differently (e.g. "STREET" for "ST"), but the block number must match exactly
+      const blockLabel = new RegExp(`^blk ${squash(block).replace(/ /g, "\\s+")} `);
+      hit = getHdbBlock(slug)
+        ? { ref: { kind: "hdb", slug }, exact: true }
+        : firstRefFromSearch(`${block} ${street}`, VALUATION_SEARCH_KINDS.hdb, (label) => blockLabel.test(`${squash(label)} `));
     } else if (/^\d{6}$/.test(postal)) {
       asked = postal;
-      ref = firstRefFromSearch(postal, VALUATION_SEARCH_KINDS.hdb);
+      const found = firstRefFromSearch(postal, VALUATION_SEARCH_KINDS.hdb);
+      hit = found ? { ref: found.ref, exact: true } : null; // a postal code identifies one block
     }
   } else if (type === "condo") {
     const name = norm(params.project);
@@ -234,7 +265,7 @@ export function resolveValuationDeepLink(params: Record<string, string | undefin
       asked = name;
       const slug = projectSlug(name);
       const p = getProject(slug);
-      ref = p && !p.isLanded ? { kind: "condo", slug } : firstRefFromSearch(name, VALUATION_SEARCH_KINDS.condo);
+      hit = p && !p.isLanded ? { ref: { kind: "condo", slug }, exact: true } : firstRefFromSearch(name, VALUATION_SEARCH_KINDS.condo);
     }
   } else {
     const address = norm(params.address).toUpperCase();
@@ -243,14 +274,19 @@ export function resolveValuationDeepLink(params: Record<string, string | undefin
       asked = address;
       const m = /^(\S+)\s+(.+)$/.exec(address);
       const slug = m ? landedAddressSlug(m[1], m[2]) : null;
-      ref = slug && getLandedAddress(slug) ? { kind: "landed", slug } : firstRefFromSearch(address, ["landed"]);
+      if (slug && getLandedAddress(slug)) hit = { ref: { kind: "landed", slug }, exact: true };
+      else if (m) {
+        // the house number must match exactly; only the street name may be spelt differently
+        const houseNo = `${squash(m[1])} `;
+        hit = firstRefFromSearch(address, ["landed"], (label) => `${squash(label)} `.startsWith(houseNo));
+      }
     } else if (street) {
       asked = street;
       const slug = landedStreetSlug(street);
-      ref = getLandedStreet(slug) ? { kind: "landed-street", slug } : firstRefFromSearch(street, ["landed-street"]);
+      hit = getLandedStreet(slug) ? { ref: { kind: "landed-street", slug }, exact: true } : firstRefFromSearch(street, ["landed-street"]);
     }
   }
-  if (!asked) return { type, subject: null, unresolved: null };
-  const subject = ref ? getValuationSubject(ref) : null;
-  return { type: subject?.kind ?? type, subject, unresolved: subject ? null : asked };
+  if (!asked) return { type, subject: null, unresolved: null, approximate: null };
+  const subject = hit ? getValuationSubject(hit.ref) : null;
+  return { type: subject?.kind ?? type, subject, unresolved: subject ? null : asked, approximate: subject && hit && !hit.exact ? asked : null };
 }

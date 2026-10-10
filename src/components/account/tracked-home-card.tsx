@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { useT } from "@/lib/i18n/provider";
+import { site } from "@/lib/config/site";
 import { formatArea, formatMonth, formatPct, formatPctSigned, formatSgd } from "@/lib/format";
 import { monthIndex } from "@/lib/data/months";
 import type { HomeEstimate, TrackedHomeView } from "@/lib/account/types";
@@ -59,6 +60,16 @@ function MethodNote({ home, estimate }: { home: TrackedHomeView; estimate: Extra
 
 function Unavailable({ reason }: { reason: Extract<HomeEstimate, { status: "unavailable" }>["reason"] }) {
   const t = useT();
+  if (reason === "over-limit") {
+    return (
+      <p className="rounded-lg bg-canvas px-3 py-3 text-sm text-muted">
+        {t("account.tracked.na.overLimit", "Free accounts see estimates for {free} home. Upgrade to {plus} to see this one again.", { free: site.freeTrackedHomes, plus: site.plusName })}{" "}
+        <Link href="/plus/" className="font-medium text-brand-700 hover:underline">
+          {t("account.plus.upgrade", "Upgrade to {plus}", { plus: site.plusName })}
+        </Link>
+      </p>
+    );
+  }
   const text = {
     "not-found": t("account.tracked.na.notFound", "This property is no longer in our dataset, so we can't estimate its value."),
     "no-private-data": t("account.tracked.na.noPrivate", "Private property transactions (URA) aren't loaded on this deployment, so condo and landed estimates are unavailable."),

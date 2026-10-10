@@ -98,6 +98,9 @@ function Included({ yes }: { yes: boolean }) {
 /** Plan comparison: fixed layout so the feature names wrap and all three plan columns stay visible at 360px. */
 function ComparisonTable({ rows }: { rows: FeatureRow[] }) {
   const th = "px-2 py-2 text-xs font-medium uppercase tracking-wide text-muted sm:px-3";
+  // Plan columns are 4rem wide on phones: smaller sentence-case headings that may wrap anywhere, so a long
+  // plan name (site.plusName) wraps instead of being clipped by the card.
+  const planTh = "px-1 py-2 text-[11px] font-medium leading-tight text-muted [overflow-wrap:anywhere] sm:px-3 sm:text-xs sm:uppercase sm:tracking-wide";
   return (
     <table className="w-full table-fixed border-collapse text-sm">
       <caption className="sr-only">
@@ -114,13 +117,13 @@ function ComparisonTable({ rows }: { rows: FeatureRow[] }) {
           <th scope="col" className={`${th} text-left`}>
             <T k="account.plus.colFeature" fallback="Feature" />
           </th>
-          <th scope="col" className={`${th} text-center`}>
+          <th scope="col" className={`${planTh} text-center`}>
             <T k="account.plus.colVisitor" fallback="Visitor" />
           </th>
-          <th scope="col" className={`${th} text-center`}>
+          <th scope="col" className={`${planTh} text-center`}>
             <T k="account.plus.colFree" fallback="Free account" />
           </th>
-          <th scope="col" className={`${th} text-center text-plus-700`}>
+          <th scope="col" className={`${planTh} text-center text-plus-700`}>
             {site.plusName}
           </th>
         </tr>

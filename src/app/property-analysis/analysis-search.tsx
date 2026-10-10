@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Search } from "lucide-react";
 import { SearchBox } from "@/components/search/search-box";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import { useT } from "@/lib/i18n/provider";
  */
 export function AnalysisSearch({ initialQuery }: { initialQuery: string }) {
   const t = useT();
-  const [query, setQuery] = useState(initialQuery);
 
   return (
     <form
@@ -23,16 +21,12 @@ export function AnalysisSearch({ initialQuery }: { initialQuery: string }) {
       method="get"
       aria-label={t("home.analysis.searchLabel", "Search properties")}
       className="flex flex-col gap-2 sm:flex-row sm:items-center"
-      onInput={(e) => {
-        const target = e.target as HTMLInputElement;
-        if (target.type === "search") setQuery(target.value);
-      }}
       onSubmit={(e) => {
-        if (!query.trim()) e.preventDefault();
+        const q = new FormData(e.currentTarget).get("q");
+        if (typeof q !== "string" || !q.trim()) e.preventDefault();
       }}
     >
-      <input type="hidden" name="q" value={query} />
-      <SearchBox size="lg" className="sm:flex-1" />
+      <SearchBox size="lg" className="sm:flex-1" name="q" defaultValue={initialQuery} />
       <Button type="submit" size="lg" variant="primary" className="sm:w-auto">
         <Search className="size-4" aria-hidden />
         {t("home.analysis.submit", "Show all results")}

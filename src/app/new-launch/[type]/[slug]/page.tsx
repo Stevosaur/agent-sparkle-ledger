@@ -547,7 +547,7 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
                       <Stat
                         label={<T k="launches.resale.premium" fallback="Launch vs resale" />}
                         value={formatPctSigned(premium)}
-                        sub={premium > 0 ? <T k="launches.resale.above" fallback="above nearby resale" /> : <T k="launches.resale.below" fallback="below nearby resale" />}
+                        sub={premium > 0 ? <T k="launches.resale.above" fallback="above nearby resale" /> : premium < 0 ? <T k="launches.resale.below" fallback="below nearby resale" /> : undefined}
                       />
                     ) : null}
                   </StatGrid>

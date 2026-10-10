@@ -43,6 +43,23 @@ function build(method: EstimateMethod, quarters: QuarterMedian[], toValue: (medi
   };
 }
 
+/**
+ * The transaction file an estimate reads (HDB town or private district). The data layer caches only a few
+ * of these files, so callers estimating many homes should process them grouped by this key.
+ */
+export function estimateSourceKey(ref: PropertyRef): string {
+  switch (ref.kind) {
+    case "hdb":
+      return `hdb:${getHdbBlock(ref.slug)?.townSlug ?? ""}`;
+    case "condo":
+      return `d:${getProject(ref.slug)?.district ?? ""}`;
+    case "landed":
+      return `d:${getLandedAddress(ref.slug)?.district ?? ""}`;
+    default:
+      return "";
+  }
+}
+
 export function estimateHome(input: EstimateInput): HomeEstimate {
   const { ref } = input;
   switch (ref.kind) {

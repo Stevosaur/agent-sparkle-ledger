@@ -22,6 +22,14 @@ export function checkTrackedLimit(count: number, unlimited: boolean, freeLimit: 
 }
 
 /**
+ * Ids (of rows sorted by id ascending) whose estimates the account may see: the oldest `limit` homes. A
+ * lapsed Plus subscriber keeps every row, but only the first `limit` get estimates until they renew.
+ */
+export function idsWithinLimit(idsAscending: readonly number[], limit: number): Set<number> {
+  return new Set(idsAscending.slice(0, Math.max(0, limit)));
+}
+
+/**
  * Race-safe re-check after an insert: rows are kept in id order, so the new row is allowed only when it is
  * among the first `limit` ids. Two concurrent inserts by a free account therefore keep the older row and
  * reject the newer one instead of both succeeding.

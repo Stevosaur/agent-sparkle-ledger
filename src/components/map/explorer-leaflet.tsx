@@ -192,13 +192,12 @@ export default function ExplorerLeaflet({ layers, visible }: { layers: ExplorerL
                 radius={style.radius}
                 pathOptions={style}
                 bubblingMouseEvents={false}
-              eventHandlers={{ click: () => setSelection({ kind: "launch", item: l }) }}
+                eventHandlers={{ click: () => setSelection({ kind: "launch", item: l }) }}
               />
             );
           })}
         </LayerGroup>
       ) : null}
-
 
       {selection && selectionVisible(selection, visible) ? <SelectionPopup key={`${selection.kind}-${selection.item.lat}-${selection.item.lng}-${selection.item.name}`} selection={selection} onClose={close} /> : null}
     </MapContainer>

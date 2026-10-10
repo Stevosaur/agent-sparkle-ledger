@@ -8,9 +8,9 @@ import { Stat, StatGrid } from "@/components/ui/stat";
 import { T } from "@/components/i18n/t";
 import { TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { UnitsPicker } from "@/components/tools/compare-pickers";
-import { compareColumn, PSF_LOOKBACK_MONTHS, salesForUnits, type CompareColumn, type SaleRow } from "@/lib/tools/compare";
+import { compareColumn, PSF_LOOKBACK_MONTHS, PSF_POINTS_CAP, salesForUnits, type CompareColumn, type SaleRow } from "@/lib/tools/compare";
 import { firstParam } from "@/lib/tools/refs";
-import { formatMonth, formatPsf, formatSgd } from "@/lib/format";
+import { formatArea, formatMonth, formatPsf, formatSgd } from "@/lib/format";
 import { parsePropertyRef, type PropertyRef } from "@/lib/property-ref";
 import { pageMetadata } from "@/lib/seo";
 
@@ -45,7 +45,7 @@ function SalesTable({ rows }: { rows: SaleRow[] }) {
       columns={[
         { key: "m", header: <T k="tools.val.colMonth" fallback="Month" />, cell: (r) => formatMonth(r.month) },
         { key: "d", header: <T k="tools.cmp.colUnit" fallback="Unit" />, cell: (r) => <span className="whitespace-normal text-xs">{r.detail}</span> },
-        { key: "a", header: <T k="tools.val.colArea" fallback="Area" />, align: "right", cell: (r) => `${Math.round(r.areaSqm)} sqm` },
+        { key: "a", header: <T k="tools.val.colArea" fallback="Area" />, align: "right", cell: (r) => <span className="whitespace-nowrap">{formatArea(r.areaSqm)}</span> },
         { key: "p", header: <T k="tools.val.colPrice" fallback="Price" />, align: "right", cell: (r) => formatSgd(r.price) },
         { key: "psf", header: <T k="tools.val.colPsf" fallback="psf" />, align: "right", cell: (r) => formatSgd(r.psf) },
       ]}
@@ -131,7 +131,13 @@ export default async function CompareUnitsPage({ searchParams }: { searchParams:
 
       <Section
         title={<T k="tools.cmp.psfChart" fallback="Price per square foot" />}
-        description={<T k="tools.cmp.psfChartDesc" fallback="Each dot is one recorded sale in the last {n} years of each property's records." vars={{ n: PSF_LOOKBACK_MONTHS / 12 }} />}
+        description={
+          <T
+            k="tools.cmp.psfChartDesc"
+            fallback="Each dot is one recorded sale in the last {n} years of each property's records (up to the latest {cap} per property)."
+            vars={{ n: PSF_LOOKBACK_MONTHS / 12, cap: PSF_POINTS_CAP }}
+          />
+        }
       >
         <Card>
           <CardBody>

@@ -82,15 +82,17 @@ export function fairValueForListing(listing: Pick<HomeListing, "ref" | "listingT
 
     const townRent = getTownRentals(block.townSlug);
     if (townRent.length === 0) return { ok: false, reason: getCoverage().rentals ? "no-recent-records" : "no-rentals", source };
-    const latest = townRent[0].monthIndex;
+    // Window ends at the dataset's latest rental month (not this town's newest record), so "latest 12 months" is the same everywhere.
+    const latest = safeMonthIndex(getMeta().latestMonth.hdbRentals) ?? townRent[0].monthIndex;
     const from = latest - (WINDOW_MONTHS - 1);
     const window = { from: monthLabel(from), to: monthLabel(latest) };
+    const inWindow = (r: { monthIndex: number }) => r.monthIndex >= from && r.monthIndex <= latest;
     const blockRents = getBlockRentals(block.slug)
-      .filter((r) => r.flatType === flatType && r.monthIndex >= from)
+      .filter((r) => r.flatType === flatType && inWindow(r))
       .map((r) => r.monthlyRent);
     const local = rangeFromPrices(blockRents, "rent", MIN_LOCAL_SAMPLE);
     if (local) return ok({ basis, method: "block-iqr", ...local, psf: null, sampleSize: local.n, ...window, scope: `${blockLabel} · ${flatType}`, source }, listing.askingPrice);
-    const townRents = townRent.filter((r) => r.flatType === flatType && r.monthIndex >= from).map((r) => r.monthlyRent);
+    const townRents = townRent.filter((r) => r.flatType === flatType && inWindow(r)).map((r) => r.monthlyRent);
     const wide = rangeFromPrices(townRents, "rent", MIN_WIDE_SAMPLE);
     if (wide) return ok({ basis, method: "town-iqr", ...wide, psf: null, sampleSize: wide.n, ...window, scope: `${townLabel} · ${flatType}`, source }, listing.askingPrice);
     const q = quartiles(townRents);
@@ -132,15 +134,15 @@ export function fairValueForListing(listing: Pick<HomeListing, "ref" | "listingT
 
     const districtRent = project.district != null ? getDistrictRentals(project.district) : [];
     if (districtRent.length === 0) return { ok: false, reason: coverage.privateRentals ? "no-recent-records" : "no-rentals", source };
-    const latest = districtRent[0].monthIndex;
+    const latest = safeMonthIndex(getMeta().latestMonth.privateRentals) ?? districtRent[0].monthIndex;
     const from = latest - (WINDOW_MONTHS - 1);
     const window = { from: monthLabel(from), to: monthLabel(latest) };
-    const rents = getProjectRentals(project.slug).filter((r) => r.monthIndex >= from && r.monthlyRent > 0);
+    const rents = getProjectRentals(project.slug).filter((r) => r.monthIndex >= from && r.monthIndex <= latest && r.monthlyRent > 0);
     const byBeds = listing.bedrooms != null ? rents.filter((r) => r.bedrooms === listing.bedrooms) : [];
     const area = listing.areaSqm;
     const byArea = area != null ? rents.filter((r) => r.areaSqmLow != null && r.areaSqmHigh != null && area >= r.areaSqmLow && area <= r.areaSqmHigh) : [];
     const candidates: [typeof rents, string][] = [
-      [byBeds, `${projectLabel} · ${listing.bedrooms}-bedroom`],
+      [byBeds, `${projectLabel} · ${listing.bedrooms === 0 ? "studio" : `${listing.bedrooms}-bedroom`}`],
       [byArea, `${projectLabel} · similar size`],
       [rents, projectLabel],
     ];

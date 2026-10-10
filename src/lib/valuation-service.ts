@@ -1,5 +1,5 @@
 import "server-only";
-import { getHdbBlock, getNearbyBlocks, getTownTransactions } from "@/lib/data/hdb";
+import { estimateRemainingLeaseMonths, getHdbBlock, getNearbyBlocks, getTownTransactions } from "@/lib/data/hdb";
 import {
   LANDED_TYPES,
   getDistrictTransactions,
@@ -12,11 +12,11 @@ import {
 } from "@/lib/data/private";
 import { getSeries } from "@/lib/data/stats";
 import { getMeta } from "@/lib/data/meta";
-import { monthIndex, monthLabel, monthToYearFraction } from "@/lib/data/months";
+import { monthIndex, monthLabel } from "@/lib/data/months";
 import type { HdbBlock, HdbTransaction, MonthlyStat, PrivateProject, PrivateTransaction, StatSeries } from "@/lib/data/types";
 import { haversineM } from "@/lib/geo-math";
-import { valueByComparables, type ComparableInput } from "@/lib/calc/valuation";
-import { BALA_TABLE_STATUS, balaPct, remainingLeaseYears } from "@/lib/calc/lease";
+import { indexAt, valueByComparables, type ComparableInput } from "@/lib/calc/valuation";
+import { BALA_TABLE_STATUS, balaPct } from "@/lib/calc/lease";
 import { formatPropertyRef, type PropertyRef } from "@/lib/property-ref";
 import { landedAddressSlug, titleCase } from "@/lib/slug";
 import { isEcProject } from "@/lib/tools/fit";
@@ -292,6 +292,18 @@ export function selectCondoComparables(project: PrivateProject, asOf: number): C
   return last!;
 }
 
+/** Which area URA reports for a landed sale: land area, or strata area for strata (cluster) landed homes. */
+export type LandedAreaBasis = "land" | "strata";
+
+/** Area basis for a set of landed property types: null when mixed or unknown (no filtering). */
+export function landedAreaBasis(propertyTypes: string[]): LandedAreaBasis | null {
+  if (propertyTypes.length === 0) return null;
+  const strata = propertyTypes.map((t) => /^strata /i.test(t));
+  if (strata.every(Boolean)) return "strata";
+  if (strata.every((x) => !x)) return "land";
+  return null;
+}
+
 export interface LandedSubject {
   label: string;
   href: string;
@@ -366,9 +378,20 @@ function landedCandidate(t: PrivateTransaction, label: string, href: string | nu
   };
 }
 
-/** Landed: same street (36 months), widening to same-type landed sales in the district, then 60 months. */
+/** A sale whose reported area is on a different basis (land vs strata) from the subject cannot be compared per sq ft. */
+function sameAreaBasis(t: PrivateTransaction, basis: LandedAreaBasis | null): boolean {
+  if (basis === "land") return t.typeOfArea !== "Strata";
+  if (basis === "strata") return t.typeOfArea !== "Land";
+  return true;
+}
+
+/**
+ * Landed: same street (36 months), widening to same-type landed sales in the district, then 60 months.
+ * Sales whose area is on a different basis (land vs strata area) from the subject are left out.
+ */
 export function selectLandedComparables(subject: LandedSubject, asOf: number): ComparableSelection {
-  const streetTx = getLandedStreetTransactions(subject.streetSlug).filter(usablePrivateTx);
+  const basis = landedAreaBasis(subject.propertyTypes);
+  const streetTx = getLandedStreetTransactions(subject.streetSlug).filter((t) => usablePrivateTx(t) && sameAreaBasis(t, basis));
   const street = getLandedStreet(subject.streetSlug);
   const streetProjects = new Set(street?.projects ?? []);
   const types = new Set(subject.propertyTypes);
@@ -383,7 +406,7 @@ export function selectLandedComparables(subject: LandedSubject, asOf: number): C
       widened = true;
       const projectCache = new Map<string, PrivateProject | null>();
       for (const t of getDistrictTransactions(subject.district)) {
-        if (!isLandedTx(t) || streetProjects.has(t.projectSlug) || !usablePrivateTx(t) || !inWindow(t.monthIndex, asOf, lookback)) continue;
+        if (!isLandedTx(t) || streetProjects.has(t.projectSlug) || !usablePrivateTx(t) || !sameAreaBasis(t, basis) || !inWindow(t.monthIndex, asOf, lookback)) continue;
         if (types.size > 0 && !types.has(t.propertyType)) continue;
         if (!projectCache.has(t.projectSlug)) projectCache.set(t.projectSlug, getProject(t.projectSlug));
         const p = projectCache.get(t.projectSlug) ?? null;
@@ -473,10 +496,18 @@ function run(args: RunArgs): ValuationOutcome {
   const same = comparables.filter((c) => c.sameSite).length;
   const leaseAdjusted = Boolean(args.leaseValue) && result.comparables.some((c) => c.leaseFactor !== 1);
   const method = args.describe({ used: comparables.length, same, nearby: comparables.length - same, lookback: selection.lookbackMonths });
+  // Say what the time adjustment actually did: the index can have no data near the latest month or near a sale's month,
+  // in which case valueByComparables leaves that sale's price unadjusted.
+  const indexNow = index ? indexAt(points, asOf) : null;
+  const notTimeAdjusted = indexNow == null ? result.comparables.length : result.comparables.filter((c) => indexAt(points, c.monthIndex) == null).length;
   method.push(
-    index
-      ? `Each sale's price per square foot is moved to ${monthLabel(asOf)} using the ${index.label} median psf index (3-month smoothed).`
-      : "No market index is available for this segment, so sale prices are not time-adjusted.",
+    !index
+      ? "No market index is available for this segment, so sale prices are not time-adjusted."
+      : indexNow == null
+        ? `The ${index.label} index has no sales near ${monthLabel(asOf)}, so sale prices are not time-adjusted.`
+        : `Each sale's price per square foot is moved to ${monthLabel(asOf)} using the ${index.label} median psf index (3-month smoothed)${
+            notTimeAdjusted > 0 ? `; ${plural(notTimeAdjusted, "sale")} with no index data near ${notTimeAdjusted === 1 ? "its" : "their"} month ${notTimeAdjusted === 1 ? "is" : "are"} left unadjusted` : ""
+          }.`,
   );
   if (args.target.floor != null && args.kind !== "landed") {
     method.push(`Floor adjustment: ${pctText(FLOOR_PREMIUM_PER_LEVEL)} per level between each sale's floor mid-point and yours (a model assumption, not an official rate).`);
@@ -487,7 +518,7 @@ function run(args: RunArgs): ValuationOutcome {
         ? `Remaining-lease differences are adjusted with Bala's Table (leasehold land value as a share of freehold, used here as a proxy for flats)${
             BALA_TABLE_STATUS.verified ? "" : `. ${BALA_TABLE_STATUS.label}`
           }.`
-        : "Remaining-lease differences between sales are not adjusted for.",
+        : `Remaining-lease differences between sales are not adjusted for${args.target.leaseYears == null ? " (this block's lease start year is unknown)" : ""}.`,
     );
   }
   method.push(
@@ -542,14 +573,15 @@ export function valueHdb(req: ValuationRequest): ValuationOutcome {
     target: {
       areaSqm: req.areaSqm,
       floor: storeyMid,
-      leaseYears: block.leaseCommenceYear != null ? remainingLeaseYears(block.leaseCommenceYear, monthToYearFraction(asOf)) : null,
+      // same convention as the sales' estimated remaining lease (99 years from the middle of the commencement year)
+      leaseYears: block.leaseCommenceYear != null ? estimateRemainingLeaseMonths(block.leaseCommenceYear, asOf) / 12 : null,
     },
     index,
     asOf,
     leaseValue: useLease ? (y) => balaPct(y) : undefined,
     input: { flatType, storeyRange: req.storeyRange ?? null, floor: storeyMid, areaSqm: req.areaSqm },
     describe: ({ used, same, nearby, lookback }) => [
-      `Comparables: ${plural(used, `${flatType} resale`)} registered in the ${lookback} months to ${monthLabel(asOf)}: ${same} in this block${
+      `Comparables: ${plural(used, "resale")} of ${flatType} flats registered in the ${lookback} months to ${monthLabel(asOf)}: ${same} in this block${
         selection.widened ? (nearby > 0 ? ` and ${nearby} in other blocks within ${NEARBY_RADIUS_M / 1000} km` : `; no ${flatType} resales were found in other blocks within ${NEARBY_RADIUS_M / 1000} km`) : ""
       }.${selection.note ? ` ${selection.note}` : ""}`,
     ],
@@ -599,6 +631,7 @@ export function valueLanded(req: ValuationRequest): ValuationOutcome {
   if (asOf == null) return { ok: false, status: 422, error: "no_data", message: "Private transaction data (URA) is not loaded on this deployment." };
   const selection = selectLandedComparables(subject, asOf);
   const typesText = subject.propertyTypes.length ? subject.propertyTypes.join(" / ").toLowerCase() : "landed";
+  const basisText = landedAreaBasis(subject.propertyTypes) === "strata" ? "strata area" : "land area";
   const index = firstSeries([
     subject.segment ? `private:${subject.segment}:Landed` : "",
     "private:ALL:Landed",
@@ -619,7 +652,7 @@ export function valueLanded(req: ValuationRequest): ValuationOutcome {
             ? ` and ${nearby} ${typesText} sales elsewhere in District ${subject.district}`
             : `; no other ${typesText} sales were found in District ${subject.district}`
           : ""
-      }. Prices are compared per square foot of land area.${selection.note ? ` ${selection.note}` : ""}`,
+      }. Prices are compared per square foot of ${basisText}.${selection.note ? ` ${selection.note}` : ""}`,
     ],
     source: "URA private residential transactions (landed)",
   });

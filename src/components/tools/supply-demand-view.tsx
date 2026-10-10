@@ -120,6 +120,12 @@ function Result({ data, currentYear }: { data: Response; currentYear: number }) 
           <li>{t("tools.sd.limit1", "MOP year is estimated as the block's completion year + 5. Prime Location Housing, Plus and Prime flats carry a 10-year MOP but are not flagged in the public data, so they reach it later than shown.")}</li>
           <li>{t("tools.sd.limit2", "Not every owner upgrades at MOP; the count is the pool of flats that become eligible, not buyers.")}</li>
           <li>
+            {t(
+              "tools.sd.limit6",
+              "Unit counts are each block's total dwelling units, which include any HDB rental flats in the block; rental flats have no MOP, so the count can be slightly high.",
+            )}
+          </li>
+          <li>
             {t("tools.sd.limit3", "Supply counts only projects in our new-launch list with a known completion year and unit count ({usable} of {total} listed), placed at their mapped location.", {
               usable: data.coverage.launchesUsable,
               total: data.coverage.launchesTotal,

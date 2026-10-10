@@ -30,6 +30,11 @@ export type EstimateUnavailableReason =
   | "needs-area"
   /** an HDB flat type is needed */
   | "needs-flat-type"
+  /**
+   * beyond the account's tracked-homes limit (e.g. a lapsed Plus subscriber keeping more homes than a free
+   * account may track): the estimate is withheld until the account has "tracking.unlimited" again
+   */
+  | "over-limit"
   | "unsupported";
 
 export interface EstimatePoint {

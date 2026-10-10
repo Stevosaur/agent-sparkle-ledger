@@ -18,7 +18,7 @@ import {
   type RuleStatus,
 } from "./rules";
 
-const STATUSES: RuleStatus[] = ["verified-search", "verified-secondary", "unverified-high-confidence", "unverified", "unverified-conflict", "unverified-reproduction"];
+const STATUSES: RuleStatus[] = ["verified-search", "verified-secondary", "verified-data", "unverified-high-confidence", "unverified", "unverified-conflict", "unverified-reproduction"];
 
 describe("rules registry", () => {
   it("every rule has a known status, a source URL and a research reference", () => {

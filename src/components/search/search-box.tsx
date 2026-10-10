@@ -28,6 +28,8 @@ export function SearchBox({
   autoFocus,
   onSelect,
   className,
+  name,
+  defaultValue,
 }: {
   size?: "md" | "lg";
   placeholder?: string;
@@ -35,11 +37,17 @@ export function SearchBox({
   autoFocus?: boolean;
   onSelect?: (entry: SearchEntry) => void;
   className?: string;
+  /** form field name, so the box can submit a GET form (e.g. /property-analysis/?q=) */
+  name?: string;
+  /** initial text, e.g. the current ?q= */
+  defaultValue?: string;
 }) {
   const t = useT();
   const router = useRouter();
   const listId = useId();
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(defaultValue ?? "");
+  // only fetch suggestions once the user has typed (not for a prefilled defaultValue)
+  const [dirty, setDirty] = useState(false);
   const [results, setResults] = useState<SearchEntry[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,7 +56,7 @@ export function SearchBox({
 
   useEffect(() => {
     const term = q.trim();
-    if (term.length < 2) return;
+    if (term.length < 2 || !dirty) return;
     const ctrl = new AbortController();
     const timer = window.setTimeout(() => {
       setLoading(true);
@@ -68,7 +76,7 @@ export function SearchBox({
       ctrl.abort();
       window.clearTimeout(timer);
     };
-  }, [q, kinds]);
+  }, [q, kinds, dirty]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -94,6 +102,7 @@ export function SearchBox({
         <Search className={cn("shrink-0 text-muted", size === "lg" ? "size-5" : "size-4")} aria-hidden />
         <input
           type="search"
+          name={name}
           role="combobox"
           aria-expanded={open && visible.length > 0}
           aria-controls={listId}
@@ -101,7 +110,10 @@ export function SearchBox({
           aria-label={placeholder ?? t("search.placeholder")}
           autoFocus={autoFocus}
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setDirty(true);
+          }}
           onFocus={() => visible.length > 0 && setOpen(true)}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
@@ -110,7 +122,7 @@ export function SearchBox({
             } else if (e.key === "ArrowUp") {
               e.preventDefault();
               setActive((a) => Math.max(a - 1, 0));
-            } else if (e.key === "Enter" && visible[active]) {
+            } else if (e.key === "Enter" && open && visible[active]) {
               e.preventDefault();
               choose(visible[active]);
             } else if (e.key === "Escape") setOpen(false);

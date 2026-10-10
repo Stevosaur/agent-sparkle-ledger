@@ -10,6 +10,7 @@
  *   (stamp-duty.md "VERIFIED (search)", loan-rules.md "[PRIMARY]", hdb-rules.md "[PRIMARY]"). The full page was
  *   not read: no primary page could be opened during research.
  * - "verified-secondary": confirmed only through law-firm, bank or industry summaries.
+ * - "verified-data": checked against the government dataset itself (hdb-rules.md "[DATA]").
  * - "unverified-high-confidence": long-standing rule from prior knowledge, not re-confirmed.
  * - "unverified": best understanding only; a real risk.
  * - "unverified-conflict": sources disagree; the value used is the research's recommended interim choice.
@@ -353,6 +354,7 @@ export const HDB_LEASE_YEARS = 99;
 export type RuleStatus =
   | "verified-search"
   | "verified-secondary"
+  | "verified-data"
   | "unverified-high-confidence"
   | "unverified"
   | "unverified-conflict"
@@ -424,6 +426,15 @@ export const RULE_META = {
   cpfProration: { status: "unverified", effectiveFrom: "2019-05-10", source: CPF_HOME, research: "loan-rules.md §4", note: "Formula remaining lease ÷ (95 − youngest age) is the research's best understanding." },
   cpfWithdrawalLimit: { status: "unverified", effectiveFrom: null, source: CPF_HOME, research: "loan-rules.md §4" },
   hdbMop: { status: "verified-search", effectiveFrom: null, source: "https://www.hdb.gov.sg/cs/infoweb/residential/selling-a-flat/eligibility/", research: "hdb-rules.md §1.1", note: "5 years Standard / pre-Oct-2024 / resale; 10 years Plus, Prime (PLH: unverified-high-confidence); 20 years Fresh Start." },
+  propertyTaxOwnerOccupied: { status: "unverified", effectiveFrom: "2025-01-01", source: "https://www.iras.gov.sg/taxes/property-tax/property-owners/property-tax-rates/residential-property", research: "loan-rules.md §5.1", note: "2026 bands unknown; rebates not modelled." },
+  propertyTaxNonOwnerOccupied: { status: "unverified", effectiveFrom: "2024-01-01", source: "https://www.iras.gov.sg/taxes/property-tax/property-owners/property-tax-rates/residential-property", research: "loan-rules.md §5.2" },
+  remainingLeaseEstimate: {
+    status: "verified-data",
+    effectiveFrom: null,
+    source: "https://data.gov.sg/",
+    research: "hdb-rules.md §4",
+    note: "Estimate 99.5 − years since the lease commencement year; checked against 146,965 HDB resale rows (within ±0.5 years for 99.6%).",
+  },
   hdbLease: { status: "unverified-high-confidence", effectiveFrom: null, source: "https://www.hdb.gov.sg/residential/buying-a-flat/finding-a-flat/types-of-flats", research: "hdb-rules.md §4" },
   bala: {
     status: "unverified-reproduction",

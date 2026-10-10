@@ -151,6 +151,30 @@ describe("/api/tracked/ limit enforcement", () => {
     expect((await call(tracked.GET())).body.limit).toMatchObject({ used: 3, unlimited: true });
   });
 
+  it("withholds estimates for homes beyond the free limit once Plus lapses", async () => {
+    state.viewer = viewerFor("plus");
+    const refs = ["hdb:blk-872a-tampines-st-86", "hdb:blk-201-tampines-st-21", "hdb:blk-455-tampines-st-42"];
+    for (const ref of refs) expect((await call(tracked.POST(req("POST", "/api/tracked/", { ...home, ref })))).status).toBe(201);
+    state.viewer = viewerFor("free");
+    const list = await call(tracked.GET());
+    const items = list.body.items as { id: number; ref: string; estimate: { status: string; reason?: string } }[];
+    expect(items.map((i) => i.ref)).toEqual(refs);
+    items.forEach((item, i) => {
+      if (i < site.freeTrackedHomes) expect(item.estimate.status).toBe("ok");
+      else expect(item.estimate).toEqual({ status: "unavailable", reason: "over-limit" });
+    });
+    expect(list.body.limit).toMatchObject({ max: site.freeTrackedHomes, used: 3, unlimited: false });
+    // editing a locked home does not reveal its estimate either
+    const locked = items[items.length - 1];
+    const edited = await call(tracked.PATCH(req("PATCH", "/api/tracked/", { id: locked.id, flatType: "5 ROOM" })));
+    expect(edited).toMatchObject({ status: 200, body: { item: { id: locked.id, flatType: "5 ROOM", estimate: { status: "unavailable", reason: "over-limit" } } } });
+    expect((await call(tracked.POST(req("POST", "/api/tracked/", home)))).status).toBe(402);
+    // renewing restores every estimate
+    state.viewer = viewerFor("plus");
+    const renewed = (await call(tracked.GET())).body.items as { estimate: { status: string } }[];
+    expect(renewed.every((i) => i.estimate.status === "ok")).toBe(true);
+  });
+
   it("validates input and edits / removes only the user's own homes", async () => {
     expect(await call(tracked.POST(req("POST", "/api/tracked/", { ref: home.ref })))).toMatchObject({ status: 400, body: { error: "flat_type_required", field: "flatType" } });
     expect(await call(tracked.POST(req("POST", "/api/tracked/", { ref: "condo:sample-park-condo" })))).toMatchObject({ status: 400, body: { error: "area_required" } });

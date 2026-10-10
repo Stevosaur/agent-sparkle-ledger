@@ -9,7 +9,7 @@ import { formatPct, formatSgd } from "@/lib/format";
 import { affordability, type AffordabilityInput, type AffordabilityResult } from "@/lib/calc/affordability";
 import { bankLtv, hdbLoanLtv, hdbLoanMaxTenure, maxBankTenure, maxServiceableLoan, maxTenureForStandardLtv, msrApplies, type PropertyClass } from "@/lib/calc/loan";
 import { monthlyPayment } from "@/lib/calc/mortgage";
-import { BANK_STRESS_RATE_PCT, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, MSR_LIMIT, TDSR_LIMIT, type BuyerProfile } from "@/lib/calc/rules";
+import { BANK_STRESS_RATE_PCT, HDB_LOAN_AGE_LIMIT, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, MSR_LIMIT, TDSR_LIMIT, type BuyerProfile } from "@/lib/calc/rules";
 import { BreakdownRow, NumberField, parseNum, Segmented } from "./controls";
 import { HomesThatFit } from "./homes-that-fit";
 import { SaveCalculation } from "./save-calculation";
@@ -48,7 +48,9 @@ export function AffordabilityTool({ defaults }: { defaults: AffordabilityDefault
   const lender: "hdb" | "bank" = cls === "hdb" ? lenderPick : "bank";
   const ageNum = Math.min(Math.max(21, Math.round(num(age, 35))), 99);
   // HDB loans run at most 25 years and end by age 65; bank loans 30 (HDB flat) / 35 years
-  const maxTenure = lender === "hdb" ? Math.max(1, hdbLoanMaxTenure(HDB_LOAN_MAX_TENURE, ageNum)) : maxBankTenure(cls);
+  const hdbTenureCap = hdbLoanMaxTenure(HDB_LOAN_MAX_TENURE, ageNum);
+  const hdbLoanTooOld = lender === "hdb" && hdbTenureCap <= 0;
+  const maxTenure = lender === "hdb" ? Math.max(1, hdbTenureCap) : maxBankTenure(cls);
   const tenureYears = Math.min(Math.max(1, Math.round(num(tenure, 25))), maxTenure);
   const ratePct = lender === "hdb" ? HDB_LOAN_RATE_PCT : num(rate, defaultBankRate);
   const outstandingNum = Math.min(2, Math.max(0, Math.round(num(outstanding, 0))));
@@ -119,7 +121,7 @@ export function AffordabilityTool({ defaults }: { defaults: AffordabilityDefault
         min={1}
         max={maxTenure}
         step={1}
-        hint={t("tools.aff.tenureHint", "Up to {n} years for this loan.", { n: maxTenure })}
+        hint={t("tools.aff.tenureHint", "Up to {n} years for this loan.", { n: hdbLoanTooOld ? 0 : maxTenure })}
       />
       <NumberField
         id="aff-rate"
@@ -204,6 +206,9 @@ export function AffordabilityTool({ defaults }: { defaults: AffordabilityDefault
             {incomeSection}
             {loanSection}
             {eligibilityWarning ? <Notice tone="warn">{eligibilityWarning}</Notice> : null}
+            {hdbLoanTooOld ? (
+              <Notice tone="warn">{t("tools.aff.hdbLoanAge", "An HDB loan must be repaid by age {age}, so it is not available at this age. Choose a bank loan instead.", { age: HDB_LOAN_AGE_LIMIT })}</Notice>
+            ) : null}
           </CardBody>
         </Card>
 
