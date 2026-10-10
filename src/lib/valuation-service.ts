@@ -28,7 +28,7 @@ import { isEcProject } from "@/lib/tools/fit";
  *         blocks within 1 km (same flat type). Index hdb:<TOWN>:<FLAT TYPE>. Storey premium per level.
  *         Lease adjustment via Bala's Table when the table is loaded (balaPct returns non-null).
  * Condo:  same project in the last 36 months; widen to projects within 1 km in the same market segment
- *         (ECs only against ECs). Index private-d:<district>:ALL.
+ *         (ECs only against ECs). Index private-d:<district>:NonLanded (falls back to :ALL).
  * Landed: same street in the last 36 months; widen to landed sales of the same type in the district.
  *         Index private:<segment>:Landed.
  * When fewer than MIN_COMPARABLES are found the lookback is extended to EXTENDED_LOOKBACK_MONTHS.
@@ -604,6 +604,7 @@ export function valueCondo(req: ValuationRequest): ValuationOutcome {
   const selection = selectCondoComparables(project, asOf);
   const ec = isEcProject(project);
   const index = firstSeries([
+    project.district != null ? `private-d:${project.district}:NonLanded` : "",
     project.district != null ? `private-d:${project.district}:ALL` : "",
     project.segment ? `private:${project.segment}:${ec ? "EC" : "Condo"}` : "",
     `private:ALL:${ec ? "EC" : "Condo"}`,
@@ -642,6 +643,7 @@ export function valueLanded(req: ValuationRequest): ValuationOutcome {
   const index = firstSeries([
     subject.segment ? `private:${subject.segment}:Landed` : "",
     "private:ALL:Landed",
+    subject.district != null ? `private-d:${subject.district}:Landed` : "",
     subject.district != null ? `private-d:${subject.district}:ALL` : "",
   ].filter(Boolean), asOf);
   return run({

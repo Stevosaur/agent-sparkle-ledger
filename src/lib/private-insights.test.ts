@@ -37,7 +37,7 @@ import { monthIndex } from "@/lib/data/months";
 import { getProject, getProjectRentals, getProjectTransactions, getLandedStreetTransactions } from "@/lib/data/private";
 import type { MonthlyStat, PrivateRental, PrivateTransaction } from "@/lib/data/types";
 
-const SQFT = 10.7639;
+const SQFT = 10.764;
 
 function tx(over: Partial<PrivateTransaction> & { month: string }): PrivateTransaction {
   const areaSqm = over.areaSqm ?? 100;

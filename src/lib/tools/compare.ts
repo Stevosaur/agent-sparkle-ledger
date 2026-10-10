@@ -131,7 +131,7 @@ function projectColumn(base: Pick<CompareColumn, "ref" | "kind" | "label" | "hre
   const ec = isEcProject(p);
   const medianPrice = median12m(getProjectTransactions(p.slug).filter(singleUnit), latest);
   const rent = p.rentals?.medianRent12m ?? null;
-  const series = firstSeries([p.district != null ? `private-d:${p.district}:ALL` : null, p.segment ? `private:${p.segment}:ALL` : null]);
+  const series = firstSeries([p.district != null ? `private-d:${p.district}:NonLanded` : null, p.district != null ? `private-d:${p.district}:ALL` : null, p.segment ? `private:${p.segment}:ALL` : null]);
   const { growth, label } = growthFrom(series);
   const notes: string[] = [];
   if (p.tx.count === 0) notes.push("No sales recorded");
@@ -256,7 +256,7 @@ export function compareColumn(ref: PropertyRef): CompareColumn | null {
       const typeLabel = `New launch (${l.status === "upcoming" ? "upcoming" : "launched"}${l.type === "ec" ? ", EC" : l.type === "landed" ? ", landed" : ""})`;
       const p = l.projectSlug ? getProject(l.projectSlug) : null;
       if (p) return { ...projectColumn(base, p, typeLabel), tenure: tenureText(l.tenure) ?? tenureText(p.tenure) };
-      const series = firstSeries([l.district != null ? `private-d:${l.district}:ALL` : null, l.segment ? `private:${l.segment}:ALL` : null]);
+      const series = firstSeries([l.district != null ? `private-d:${l.district}:${l.type === "landed" ? "Landed" : "NonLanded"}` : null, l.district != null ? `private-d:${l.district}:ALL` : null, l.segment ? `private:${l.segment}:ALL` : null]);
       const { growth, label } = growthFrom(series);
       return {
         ...base,

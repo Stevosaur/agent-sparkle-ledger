@@ -98,7 +98,7 @@ export default async function LandedAddressPage({ params }: Props) {
   const near = point ? nearbyContext(point) : null;
 
   // District context: landed sales in the last 12 months + the district's median psf series.
-  const districtSeries = a.district != null ? getSeries(`private-d:${a.district}:ALL`) : null;
+  const districtSeries = a.district != null ? (getSeries(`private-d:${a.district}:Landed`) ?? getSeries(`private-d:${a.district}:ALL`)) : null;
   const landed12 =
     a.district != null && asOf != null ? getDistrictTransactions(a.district).filter((t) => LANDED_TYPES.has(t.propertyType) && t.monthIndex > asOf - 12) : [];
   // median land psf only from caveats that record land area (strata landed homes record floor area)
@@ -325,7 +325,7 @@ export default async function LandedAddressPage({ params }: Props) {
                 <p className="mt-3 text-xs text-muted">
                   <T
                     k="private.landed.chartNote"
-                    fallback="The district median mixes every private sale (strata psf for apartments, land psf for houses), so read it as a market trend, not a like-for-like price."
+                    fallback="The district line is the median land price psf of landed-house sales in the district (all private sales where there are too few), so read it as a market trend, not a like-for-like price."
                   />
                 </p>
               </CardBody>
@@ -348,7 +348,7 @@ export default async function LandedAddressPage({ params }: Props) {
               </Notice>
             ) : null}
             <SourceLine>
-              <T k="private.source.uraStats" fallback="URA private residential transactions; district median from all private sales in the district" />
+              <T k="private.source.uraStats" fallback="URA private residential transactions; district medians computed separately for landed and non-landed sales" />
               {asOf != null ? ` · ${formatMonth(monthLabel(asOf))}` : ""}
             </SourceLine>
           </div>

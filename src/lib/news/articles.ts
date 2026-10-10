@@ -379,7 +379,7 @@ function readingRecords(): Article {
         ],
       ),
       h("Price per square foot"),
-      p(`We convert floor area at 10.7639 sq ft per square metre and divide the price by it. An example record of ${sqm} square metres sold for ${formatSgd(price)} is ${Math.round(sqft).toLocaleString("en-SG")} sq ft, or ${formatSgd(psf)} psf. When we group sales by height, we use the middle of the storey band, for example 5 for '04 TO 06'.`),
+      p(`We convert floor area at 10.764 sq ft per square metre (the factor URA uses for its own psf figures) and divide the price by it. An example record of ${sqm} square metres sold for ${formatSgd(price)} is ${Math.round(sqft).toLocaleString("en-SG")} sq ft, or ${formatSgd(psf)} psf. When we group sales by height, we use the middle of the storey band, for example 5 for '04 TO 06'.`),
       h("Private records (URA)"),
       table(
         ["Field", "What it means"],

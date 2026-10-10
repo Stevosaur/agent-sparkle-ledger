@@ -26,7 +26,9 @@ export function GatedPanel({ feature, children, teaser, className, minHeight = 1
   if (allowed) return <>{children}</>;
   const level = FEATURES[feature];
   const needsAccount = level === "account" || !viewer?.signedIn;
-  const next = encodeURIComponent(pathname ?? "/");
+  // The prompt only renders on the client (viewer state loads after hydration), so the full URL including
+  // the query string is available here and the visitor returns to exactly this page after signing in.
+  const next = encodeURIComponent(typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : (pathname ?? "/"));
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-line bg-surface", className)} style={{ minHeight }}>
       {teaser ? <div className="pointer-events-none select-none opacity-40 blur-[3px]" aria-hidden>{teaser}</div> : null}

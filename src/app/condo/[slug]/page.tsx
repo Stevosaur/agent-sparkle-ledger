@@ -131,7 +131,7 @@ export default async function CondoPage({ params }: Props) {
   const scatterSample = asOf != null ? salesScatterSample(txs, asOf - 59) : { points: [], total: 0 };
   const scatter = scatterSample.points;
   const chartFrom = Math.min(line[0]?.x ?? Number.POSITIVE_INFINITY, scatter[0]?.x ?? Number.POSITIVE_INFINITY);
-  const districtSeries = p.district != null ? getSeries(`private-d:${p.district}:ALL`) : null;
+  const districtSeries = p.district != null ? (getSeries(`private-d:${p.district}:NonLanded`) ?? getSeries(`private-d:${p.district}:ALL`)) : null;
   const districtPts = Number.isFinite(chartFrom) ? seriesPsfPoints(districtSeries?.points, chartFrom, asOf ?? undefined) : [];
   const chartSeries: TimeSeries[] = (
     [
@@ -381,7 +381,7 @@ export default async function CondoPage({ params }: Props) {
                 </EmptyState>
               )}
               <SourceLine>
-                <T k="private.source.uraStats" fallback="URA private residential transactions; district median from all private sales in the district" />
+                <T k="private.source.uraStats" fallback="URA private residential transactions; district medians computed separately for landed and non-landed sales" />
               </SourceLine>
             </CardBody>
           </Card>

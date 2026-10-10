@@ -48,7 +48,7 @@ export interface ValuationResult {
   asOfMonth: number;
 }
 
-const SQFT = 10.7639;
+const SQFT = 10.764;
 
 /** Smoothed index value at month m (median psf of months m-1..m+1 that exist). */
 export function indexAt(index: MonthlyStat[], m: number): number | null {

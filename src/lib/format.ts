@@ -1,6 +1,7 @@
 import { monthLabel } from "@/lib/data/months";
 
-export const SQFT_PER_SQM = 10.7639;
+/** sq ft per sq m: URA uses 10.764 for its published sqft and psf figures, so we match it exactly. */
+export const SQFT_PER_SQM = 10.764;
 
 export function sqmToSqft(sqm: number): number {
   return sqm * SQFT_PER_SQM;

@@ -41,5 +41,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/login/:path*", "/auth/:path*", "/profile/:path*", "/my-property/:path*", "/plus/:path*"],
+  // the public read-only API (/api/v1/) never needs a session refresh
+  matcher: ["/api/((?!v1/).*)", "/login/:path*", "/auth/:path*", "/profile/:path*", "/my-property/:path*", "/plus/:path*"],
 };

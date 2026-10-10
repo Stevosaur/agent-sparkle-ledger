@@ -34,7 +34,7 @@ import type {
 } from "../../src/lib/data/types";
 import { hdbGeoKey, type RawHdbSale, type RawLaunch, type RawPrivateRental, type RawPrivateSale, type SnapshotInput } from "./types";
 
-const SQFT_PER_SQM = 10.7639;
+const SQFT_PER_SQM = 10.764;
 
 /* ------------------------------------------------------------------ */
 /* Static reference data                                               */
@@ -777,7 +777,11 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
         push(`private:${seg}:ALL`, row);
         push(`private:${seg}:${g}`, row);
       }
-      if (s.district) push(`private-d:${s.district}:ALL`, row);
+      if (s.district) {
+        push(`private-d:${s.district}:ALL`, row);
+        // separate indices so condo psf (strata area) and landed psf (land area) are not mixed in one median
+        push(`private-d:${s.district}:${g === "Landed" ? "Landed" : "NonLanded"}`, row);
+      }
     }
     for (const r of input.privateRentals) {
       const row = { m: monthIndex(r.month), price: r.monthlyRent, psf: Number.NaN };
@@ -790,7 +794,7 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
         kind === "private"
           ? `Private · ${where === "ALL" ? "All segments" : where} · ${what === "ALL" ? "all types" : what}`
           : kind === "private-d"
-            ? `Private · District ${where}`
+            ? `Private · District ${where}${what === "Landed" ? " · landed" : what === "NonLanded" ? " · non-landed" : ""}`
             : kind === "rent-private"
               ? `Private rent · All`
               : `Private rent · District ${where}`;

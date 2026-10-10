@@ -157,7 +157,7 @@ describe("estimateValuation", () => {
 
   it("values condos and landed homes", () => {
     const condo = estimateValuation({ ref: { kind: "condo", slug: "sample-park-condo" }, floor: 8, areaSqm: 100 });
-    expect(condo.ok && condo.valuation.index?.key).toBe("private-d:20:ALL");
+    expect(condo.ok && condo.valuation.index?.key).toBe("private-d:20:NonLanded");
     const landed = estimateValuation({ ref: { kind: "landed", slug: "15-sample-ln" }, areaSqm: 160 });
     expect(landed.ok).toBe(true);
     if (landed.ok) expect(landed.valuation.comparables.every((c) => c.areaSqm === 160)).toBe(true);

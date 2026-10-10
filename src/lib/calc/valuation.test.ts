@@ -3,7 +3,7 @@ import type { MonthlyStat } from "@/lib/data/types";
 import { indexAt, valueByComparables, type ComparableInput } from "./valuation";
 import { balaPct } from "./lease";
 
-const SQFT = 10.7639;
+const SQFT = 10.764;
 const stat = (m: number, medianPsf: number): MonthlyStat => ({ m, count: 10, medianPrice: 0, medianPsf });
 /** Index: 500 psf around month 100, 550 psf around month 112 */
 const index = [stat(99, 500), stat(100, 500), stat(101, 500), stat(111, 550), stat(112, 550), stat(113, 550)];

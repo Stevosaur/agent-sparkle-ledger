@@ -82,7 +82,7 @@ export function ValuationReport({ body }: { body: ValuationRequestBody }) {
                 d.input.flatType,
                 d.input.storeyRange ? `${t("tools.val.storey", "Storey range")} ${d.input.storeyRange}` : null,
                 d.input.floor != null && !d.input.storeyRange ? `${t("tools.val.floor", "Floor")} ${d.input.floor}` : null,
-                `${Math.round(d.input.areaSqm)} sqm (${Math.round(d.input.areaSqm * 10.7639)} sqft)`,
+                `${Math.round(d.input.areaSqm)} sqm (${Math.round(d.input.areaSqm * 10.764)} sqft)`,
               ]
                 .filter(Boolean)
                 .join(" · ")}

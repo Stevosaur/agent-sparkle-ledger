@@ -1,13 +1,15 @@
 /** SORA from the MAS APIMG gateway (docs/research/rates-data.md §1.3, §1.8) with a dated fallback (§1.7). */
 import { fetchJson, log } from "../http";
 import type { DatedValue, RatesSnapshot } from "../../../src/lib/data/types";
+import { HDB_LOAN_RATE_PCT } from "../../../src/lib/calc/rules";
 
 const MAS_URL =
   "https://eservices.mas.gov.sg/apimg-gw/server/monthly_statistical_bulletin_non610mssql/domestic_interest_rates_daily/views/domestic_interest_rates_daily";
 
 /** Fixed policy rates (constants with a verification date; no machine-readable source exists). */
 export const POLICY_RATES = {
-  hdbConcessionaryRate: { value: 2.6, date: "2026-10-01", source: "HDB concessionary loan rate (CPF OA rate + 0.1%), reviewed quarterly" },
+  // single source of truth with the calculators (src/lib/calc/rules.ts)
+  hdbConcessionaryRate: { value: HDB_LOAN_RATE_PCT, date: "2026-10-01", source: "HDB concessionary loan rate (CPF OA rate + 0.1%), reviewed quarterly" },
   cpfOaRate: { value: 2.5, date: "2026-10-01", source: "CPF Board, Ordinary Account interest rate (legislated minimum 2.5%)" },
 };
 

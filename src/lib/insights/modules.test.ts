@@ -85,7 +85,7 @@ describe("private helpers", () => {
     expect(privateGroupOf("Apartment")).toBe("Condo");
   });
   it("computes approximate rent psf from an area band", () => {
-    expect(rentPsfFromBand(3000, 70, 80)).toBeCloseTo(3000 / (75 * 10.7639));
+    expect(rentPsfFromBand(3000, 70, 80)).toBeCloseTo(3000 / (75 * 10.764));
     expect(rentPsfFromBand(3000, null, 80)).toBeNull();
     expect(rentPsfFromBand(0, 70, 80)).toBeNull();
   });

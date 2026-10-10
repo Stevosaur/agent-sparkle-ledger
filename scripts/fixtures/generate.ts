@@ -184,13 +184,13 @@ for (const p of projectsSpec) {
       typeOfSale: m < monthIndex("2022-06") && p.propertyType === "Executive Condominium" ? 1 : 3,
       typeOfArea: "Strata",
       noOfUnits: 1,
-      price: Math.round((psf * sqm * 10.7639) / 1000) * 1000,
+      price: Math.round((psf * sqm * 10.764) / 1000) * 1000,
       lat: p.lat,
       lng: p.lng,
     });
     if (rand() < 0.6) {
       const lo = Math.floor(sqm / 10) * 10;
-      privateRentals.push({ project: p.project, street: p.street, district: p.district, propertyType: "Non-landed Properties", month: monthLabel(m), monthlyRent: Math.round((p.basePsf * sqm * 0.0037) / 50) * 50, areaSqmLow: lo, areaSqmHigh: lo + 10, bedrooms: sqm < 60 ? 1 : sqm < 90 ? 2 : 3, lat: p.lat, lng: p.lng });
+      privateRentals.push({ project: p.project, street: p.street, district: p.district, propertyType: "Non-landed Properties", month: monthLabel(m), monthlyRent: Math.round((p.basePsf * sqm * 10.764 * 0.0037) / 50) * 50, areaSqmLow: lo, areaSqmHigh: lo + 10, bedrooms: sqm < 60 ? 1 : sqm < 90 ? 2 : 3, lat: p.lat, lng: p.lng });
     }
   }
 }
@@ -218,7 +218,7 @@ for (const l of landed) {
       typeOfSale: 3,
       typeOfArea: "Land",
       noOfUnits: 1,
-      price: Math.round((land * 10.7639 * between(1700, 2000)) / 10_000) * 10_000,
+      price: Math.round((land * 10.764 * between(1700, 2000)) / 10_000) * 10_000,
       lat: l.lat,
       lng: l.lng,
       address: `${house} ${l.street}`,

@@ -89,7 +89,7 @@ export default async function LandedStreetPage({ params }: Props) {
   const coverage = getCoverage();
   const point = pointOf(s);
   const near = point ? nearbyContext(point) : null;
-  const districtSeries = s.district != null ? getSeries(`private-d:${s.district}:ALL`) : null;
+  const districtSeries = s.district != null ? (getSeries(`private-d:${s.district}:Landed`) ?? getSeries(`private-d:${s.district}:ALL`)) : null;
 
   const rows: AddressRow[] = addresses.slice(0, MAX_ADDRESSES).map((a) => {
     let estimate: TimeAdjustedEstimate | null = null;
@@ -311,11 +311,11 @@ export default async function LandedStreetPage({ params }: Props) {
               <p className="mt-3 text-xs text-muted">
                 <T
                   k="private.landed.chartNote"
-                  fallback="The district median mixes every private sale (strata psf for apartments, land psf for houses), so read it as a market trend, not a like-for-like price."
+                  fallback="The district line is the median land price psf of landed-house sales in the district (all private sales where there are too few), so read it as a market trend, not a like-for-like price."
                 />
               </p>
               <SourceLine>
-                <T k="private.source.uraStats" fallback="URA private residential transactions; district median from all private sales in the district" />
+                <T k="private.source.uraStats" fallback="URA private residential transactions; district medians computed separately for landed and non-landed sales" />
               </SourceLine>
             </CardBody>
           </Card>
