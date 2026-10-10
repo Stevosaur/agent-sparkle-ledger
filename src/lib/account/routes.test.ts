@@ -401,13 +401,46 @@ describe("/api/cron/alerts/", () => {
       { id: 4, user_id: USER, ref: "hdb:blk-201-tampines-st-21", kind: "new-sale", channel: "telegram", active: false, last_checked_month: "2020-01" },
     );
     const res = await call(cron.GET(req("GET", "/api/cron/alerts/", undefined, { authorization: "Bearer s3cret" })));
-    expect(res).toMatchObject({ status: 200, body: { ok: true, complete: true, checked: 3, sent: 1, failed: 0, skipped: { "no-change": 1, "not-entitled": 1 } } });
+    expect(res).toMatchObject({ status: 200, body: { ok: true, complete: true, checked: 3, sent: 1, messages: 1, failed: 0, skipped: { "no-change": 1, "not-entitled": 1 } } });
     expect(sent).toHaveLength(1);
     expect(sent[0].chat_id).toBe("111");
     expect(sent[0].text).toContain("Blk 872A Tampines St 86");
     const rows = db.rows("alerts");
     expect(rows.find((a) => a.id === 1)?.last_checked_month).toBe("2026-08");
     expect(rows.find((a) => a.id === 3)?.last_checked_month).toBe("2026-07");
+  });
+
+  it("sends one message per chat for several fired alerts, and unlinks chats that blocked the bot", async () => {
+    vi.stubEnv("CRON_SECRET", "s3cret");
+    vi.stubEnv("TELEGRAM_BOT_TOKEN", "123:abc");
+    vi.stubEnv("GATING_MODE", "enforce");
+    const sent: { chat_id: string; text: string }[] = [];
+    vi.stubGlobal("fetch", async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { chat_id: string; text: string };
+      sent.push(body);
+      return body.chat_id === "222"
+        ? new Response(JSON.stringify({ ok: false, description: "Forbidden: bot was blocked by the user" }), { status: 403 })
+        : new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    const db = state.db;
+    db.rows("profiles").push({ id: USER, telegram_chat_id: "111" }, { id: OTHER, telegram_chat_id: "222" });
+    db.rows("subscriptions").push({ user_id: USER, status: "active", current_period_end: "2099-01-01T00:00:00Z" }, { user_id: OTHER, status: "trialing", current_period_end: "2099-01-01T00:00:00Z" });
+    db.rows("alerts").push(
+      { id: 1, user_id: USER, ref: "hdb:blk-872a-tampines-st-86", kind: "new-sale", channel: "telegram", active: true, last_checked_month: "2026-07" },
+      { id: 2, user_id: USER, ref: "launch:condo/aurora-fixture-residences", kind: "new-launch", channel: "telegram", active: true, last_checked_month: "2026-01" },
+      { id: 3, user_id: OTHER, ref: "hdb:blk-872a-tampines-st-86", kind: "new-sale", channel: "telegram", active: true, last_checked_month: "2026-07" },
+    );
+    const res = await call(cron.GET(req("GET", "/api/cron/alerts/", undefined, { authorization: "Bearer s3cret" })));
+    expect(res).toMatchObject({ status: 200, body: { sent: 2, messages: 1, failed: 1 } });
+    expect(sent.filter((m) => m.chat_id === "111")).toHaveLength(1);
+    expect(sent.find((m) => m.chat_id === "111")?.text).toMatch(/Blk 872A Tampines St 86[\s\S]*Aurora Fixture Residences/);
+    const rows = db.rows("alerts");
+    expect(rows.find((a) => a.id === 1)?.last_checked_month).toBe("2026-08");
+    expect(rows.find((a) => a.id === 2)?.last_checked_month).toBe("2026-08");
+    // the blocked chat is unlinked and its alert is kept for when the user links again
+    expect(rows.find((a) => a.id === 3)?.last_checked_month).toBe("2026-07");
+    expect(db.rows("profiles").find((p) => p.id === OTHER)?.telegram_chat_id).toBeNull();
+    expect(db.rows("profiles").find((p) => p.id === USER)?.telegram_chat_id).toBe("111");
   });
 });
 

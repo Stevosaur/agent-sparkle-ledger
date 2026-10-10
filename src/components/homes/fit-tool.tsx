@@ -200,7 +200,15 @@ export function FitTool() {
               <Notice>{t("homes.fit.propertiesMode", "No homes are listed right now, so this ranks HDB blocks and condos with at least one sale in the latest 12 months.")}</Notice>
             ) : null}
             {data.results.length === 0 ? (
-              <EmptyState title={t("homes.fit.noResults", "No homes with a known location to rank")} />
+              <EmptyState
+                title={
+                  data.mode === "listings" && listingType && data.candidates === 0
+                    ? listingType === "rent"
+                      ? t("homes.fit.noRentListings", "No homes for rent are listed right now")
+                      : t("homes.fit.noSaleListings", "No homes for sale are listed right now")
+                    : t("homes.fit.noResults", "No homes with a known location to rank")
+                }
+              />
             ) : (
               <ol className="space-y-2">
                 {data.results.map((r, i) => (
@@ -214,6 +222,7 @@ export function FitTool() {
                               {r.label}
                             </Link>
                             {r.kind === "listing" && r.listingType ? <Badge tone={r.listingType === "sale" ? "brand" : "info"}>{r.listingType === "sale" ? t("homes.type.sale", "For sale") : t("homes.type.rent", "For rent")}</Badge> : null}
+                            {r.sample ? <Badge tone="warn">{t("homes.sample", "Sample")}</Badge> : null}
                           </div>
                           {r.sub ? <p className="truncate text-xs text-muted">{r.sub}</p> : null}
                           <p className="text-sm text-ink">

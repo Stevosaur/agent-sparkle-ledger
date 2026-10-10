@@ -389,7 +389,7 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
           </fieldset>
 
           {type === "services" ? (
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label htmlFor={id("postal")} className="block text-sm font-medium text-ink">
                   {t("homes.lead.postal", "Postal code")}
@@ -430,7 +430,8 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
                 </Select>
                 {errors.service ? <ErrorText id={id("service-error")}>{errorFor("service")}</ErrorText> : null}
               </div>
-              <div className="space-y-1.5">
+              {/* own row: a date input is unreadable at a third of a sidebar-width form */}
+              <div className="space-y-1.5 sm:col-span-2">
                 <label htmlFor={id("preferredDate")} className="block text-sm font-medium text-ink">
                   {t("homes.lead.dateOptional", "Preferred date (optional)")}
                 </label>

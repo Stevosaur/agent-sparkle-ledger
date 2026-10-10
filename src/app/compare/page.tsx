@@ -140,8 +140,11 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
                         <Link href={col.href} className="text-sm font-semibold text-brand-800 hover:underline">
                           {col.label}
                         </Link>
-                        <Link href={withoutRef(refs, i)} className="rounded p-0.5 text-muted hover:bg-canvas hover:text-down" aria-label={`Remove ${col.label}`} scroll={false}>
+                        <Link href={withoutRef(refs, i)} className="rounded p-0.5 text-muted hover:bg-canvas hover:text-down" scroll={false}>
                           <X className="size-4" aria-hidden />
+                          <span className="sr-only">
+                            <T k="tools.cmp.remove" fallback="Remove {name}" vars={{ name: col.label }} />
+                          </span>
                         </Link>
                       </div>
                     ),

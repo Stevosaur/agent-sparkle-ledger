@@ -293,3 +293,27 @@ drop trigger if exists home_listings_touch_updated_at on public.home_listings;
 create trigger home_listings_touch_updated_at
   before update on public.home_listings
   for each row execute function public.touch_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- Table privileges. Supabase usually grants these through default privileges on the
+-- public schema; they are repeated here so the app also works on projects where those
+-- defaults were removed. Row level security still decides which rows each role sees,
+-- and the revokes above (profiles, subscriptions, leads) are not widened.
+-- ---------------------------------------------------------------------------
+grant usage on schema public to anon, authenticated, service_role;
+
+grant select on public.profiles, public.subscriptions to authenticated;
+grant select, insert, update, delete on public.watchlist, public.tracked_homes, public.saved_calculations, public.alerts to authenticated;
+grant usage, select on sequence public.watchlist_id_seq, public.tracked_homes_id_seq, public.saved_calculations_id_seq, public.alerts_id_seq to authenticated;
+grant select on public.home_listings to anon, authenticated;
+grant insert, update, delete on public.home_listings to authenticated;
+
+-- The server key (service_role) bypasses RLS but still needs table privileges.
+grant select, insert, update, delete on
+  public.profiles, public.subscriptions, public.watchlist, public.tracked_homes,
+  public.saved_calculations, public.alerts, public.leads, public.home_listings
+  to service_role;
+grant usage, select on sequence
+  public.watchlist_id_seq, public.tracked_homes_id_seq, public.saved_calculations_id_seq,
+  public.alerts_id_seq, public.leads_id_seq
+  to service_role;

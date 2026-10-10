@@ -6,7 +6,7 @@ import { absoluteUrl } from "@/lib/seo";
 import { parsePropertyRef } from "@/lib/property-ref";
 import { errorJson, json } from "@/lib/account/http";
 import { getPropertyActivity } from "@/lib/account/activity";
-import { planAlertDispatch, type AlertRowLite, type PropertyActivity } from "@/lib/account/alerts-math";
+import { batchByChat, planAlertDispatch, type AlertRowLite, type PropertyActivity } from "@/lib/account/alerts-math";
 import { safeEqual, sendTelegramMessage, telegramBotToken } from "@/lib/account/telegram";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +15,8 @@ export const maxDuration = 60;
 /**
  * Daily alert job (vercel.json cron, "Authorization: Bearer <CRON_SECRET>").
  * For every active alert, compares the property's latest recorded month (tx.last, or the latest launch
- * sales report) with alerts.last_checked_month and, when newer, sends a Telegram message and advances
- * last_checked_month.
+ * sales report) with alerts.last_checked_month and, when newer, sends a Telegram message (one per chat,
+ * covering all of that user's fired alerts) and advances last_checked_month.
  */
 
 const PAGE = 500;
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   const enforce = gatingMode() === "enforce";
   const manageUrl = absoluteUrl("/profile/");
   const activityCache = new Map<string, PropertyActivity | null>();
-  const totals = { checked: 0, sent: 0, failed: 0, skipped: {} as Record<string, number> };
+  const totals = { checked: 0, sent: 0, messages: 0, failed: 0, skipped: {} as Record<string, number> };
   let lastId = 0;
   let complete = true;
 
@@ -103,22 +103,35 @@ export async function GET(req: NextRequest) {
     const plan = planAlertDispatch(alerts, activityCache, chatIdByUser, entitled, site.name, manageUrl);
     for (const s of plan.skipped) totals.skipped[s.reason] = (totals.skipped[s.reason] ?? 0) + 1;
 
-    for (const batch of chunk(plan.sends, SEND_CONCURRENCY)) {
+    // One message per chat (Telegram rate-limits each chat), several chats in parallel.
+    for (const batch of chunk(batchByChat(plan.sends, manageUrl), SEND_CONCURRENCY)) {
       if (Date.now() - started > TIME_BUDGET_MS) {
         complete = false;
         break;
       }
       await Promise.all(
-        batch.map(async (send) => {
-          const result = await sendTelegramMessage(token, send.chatId, send.text);
+        batch.map(async (message) => {
+          const ids = message.alerts.map((a) => a.alertId).join(",");
+          const result = await sendTelegramMessage(token, message.chatId, message.text);
           if (!result.ok) {
-            totals.failed += 1;
-            console.warn(`[cron/alerts] telegram send failed for alert ${send.alertId}: ${result.status} ${result.description ?? ""}`);
+            totals.failed += message.alerts.length;
+            console.warn(`[cron/alerts] telegram send failed for alerts ${ids}: ${result.status} ${result.description ?? ""}`);
+            // 403: the user blocked the bot or deleted their account. Unlink the chat (as /stop does) so the
+            // alerts wait as "not linked" instead of failing every day; the profile then offers to link again.
+            if (result.status === 403) {
+              const { error: unlinkError } = await admin.from("profiles").update({ telegram_chat_id: null }).eq("telegram_chat_id", message.chatId);
+              if (unlinkError) console.error("[cron/alerts] could not unlink a blocked chat:", unlinkError);
+            }
             return;
           }
-          totals.sent += 1;
-          const { error: updateError } = await admin.from("alerts").update({ last_checked_month: send.month }).eq("id", send.alertId);
-          if (updateError) console.error(`[cron/alerts] could not advance alert ${send.alertId}:`, updateError);
+          totals.sent += message.alerts.length;
+          totals.messages += 1;
+          await Promise.all(
+            message.alerts.map(async (a) => {
+              const { error: updateError } = await admin.from("alerts").update({ last_checked_month: a.month }).eq("id", a.alertId);
+              if (updateError) console.error(`[cron/alerts] could not advance alert ${a.alertId}:`, updateError);
+            }),
+          );
         }),
       );
     }

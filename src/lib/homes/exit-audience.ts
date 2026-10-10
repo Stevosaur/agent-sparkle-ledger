@@ -1,6 +1,5 @@
 import { haversineM } from "@/lib/geo-math";
-import { HDB_MOP_YEARS } from "@/lib/calc/rules";
-import { mopCohorts, type MopBlock } from "@/lib/calc/supply-demand";
+import { mopCohorts, mopYear, type MopBlock } from "@/lib/calc/supply-demand";
 import type { ExitAudience } from "./types";
 
 /**
@@ -51,7 +50,8 @@ export function computeExitAudience(
   }
   const cohorts = mopCohorts(inRadius, center, radiusM, fromYear, toYear);
   const topBlocks = inRadius
-    .map((b) => ({ slug: b.slug, label: b.label, town: b.town, distanceM: b.distanceM, mopYear: (b.yearCompleted as number) + HDB_MOP_YEARS, units: b.dwellingUnits as number }))
+    // same MOP rule as the cohorts (mopYear honours a block's own mopYears, default 5)
+    .map((b) => ({ slug: b.slug, label: b.label, town: b.town, distanceM: b.distanceM, mopYear: mopYear(b) as number, units: b.dwellingUnits as number }))
     .filter((b) => b.mopYear >= fromYear && b.mopYear <= toYear)
     .sort((a, b) => b.units - a.units || a.distanceM - b.distanceM)
     .slice(0, topN);

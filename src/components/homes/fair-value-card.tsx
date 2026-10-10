@@ -43,6 +43,20 @@ const POSITION_COPY: Record<ListingType, Record<"below" | "within" | "above", [s
   },
 };
 
+/** Position copy when there are too few records for a range and only the median is shown. */
+const MEDIAN_POSITION_COPY: Record<ListingType, Record<"below" | "within" | "above", [string, string]>> = {
+  sale: {
+    below: ["homes.fv.pos.saleBelowMedian", "Asking price is below the median"],
+    within: ["homes.fv.pos.saleAtMedian", "Asking price is at the median"],
+    above: ["homes.fv.pos.saleAboveMedian", "Asking price is above the median"],
+  },
+  rent: {
+    below: ["homes.fv.pos.rentBelowMedian", "Asking rent is below the median"],
+    within: ["homes.fv.pos.rentAtMedian", "Asking rent is at the median"],
+    above: ["homes.fv.pos.rentAboveMedian", "Asking rent is above the median"],
+  },
+};
+
 /**
  * "Fair-value range (estimate)" for a listing, with the method, sample, window and source. Server data
  * only (public records), so it renders in the page HTML.
@@ -78,7 +92,7 @@ export function FairValueCard({ outcome, askingPrice, listingType, propertyHref 
   const min = lo - pad;
   const max = hi + pad;
   const [mk, mfb] = METHOD_COPY[`${range.method}:${range.basis}`] ?? METHOD_COPY[`${range.method}:sale`] ?? ["homes.fv.method.generic", "Middle 50% of {n} comparable records for {scope}, {from} to {to}."];
-  const [pk, pfb] = POSITION_COPY[listingType][position];
+  const [pk, pfb] = (isRange ? POSITION_COPY : MEDIAN_POSITION_COPY)[listingType][position];
 
   return (
     <Card>
@@ -102,7 +116,7 @@ export function FairValueCard({ outcome, askingPrice, listingType, propertyHref 
 
         <div
           role="img"
-          aria-label={`Fair-value range ${fmt(range.low)} to ${fmt(range.high)}; asking ${formatAsking(askingPrice, listingType)}`}
+          aria-label={`${isRange ? `Fair-value range ${fmt(range.low)} to ${fmt(range.high)}` : `Median ${fmt(range.mid)}`}; asking ${formatAsking(askingPrice, listingType)}`}
           className="relative h-12"
         >
           <div className="absolute inset-x-0 top-3 h-2 rounded-full bg-canvas" />

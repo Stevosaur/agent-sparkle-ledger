@@ -138,12 +138,19 @@ function inWindow(m: number, asOf: number, lookback: number): boolean {
   return m <= asOf && m > asOf - lookback;
 }
 
-function firstSeries(keys: string[]): StatSeries | null {
+/**
+ * First index series in preference order that has data near `asOf` (so it can time-adjust prices); when none does,
+ * the first non-empty one (the method note then says prices were not time-adjusted).
+ */
+function firstSeries(keys: string[], asOf: number): StatSeries | null {
+  let fallback: StatSeries | null = null;
   for (const k of keys) {
     const s = getSeries(k);
-    if (s && s.points.length > 0) return s;
+    if (!s || s.points.length === 0) continue;
+    if (indexAt(s.points, asOf) != null) return s;
+    fallback ??= s;
   }
-  return null;
+  return fallback;
 }
 
 function hdbBlockLabel(b: Pick<HdbBlock, "block" | "street">): string {
@@ -564,7 +571,7 @@ export function valueHdb(req: ValuationRequest): ValuationOutcome {
   const asOf = latestMonth("hdb");
   if (asOf == null) return { ok: false, status: 422, error: "no_data", message: "HDB resale data is not loaded on this deployment." };
   const selection = selectHdbComparables(block, flatType, asOf);
-  const index = firstSeries([`hdb:${block.town}:${flatType}`, `hdb:${block.town}:ALL`, `hdb:ALL:${flatType}`, `hdb:ALL:ALL`]);
+  const index = firstSeries([`hdb:${block.town}:${flatType}`, `hdb:${block.town}:ALL`, `hdb:ALL:${flatType}`, `hdb:ALL:ALL`], asOf);
   const useLease = leaseAdjustmentAvailable() && block.leaseCommenceYear != null;
   return run({
     kind: "hdb",
@@ -601,7 +608,7 @@ export function valueCondo(req: ValuationRequest): ValuationOutcome {
     project.segment ? `private:${project.segment}:${ec ? "EC" : "Condo"}` : "",
     `private:ALL:${ec ? "EC" : "Condo"}`,
     "private:ALL:ALL",
-  ].filter(Boolean));
+  ].filter(Boolean), asOf);
   const floor = req.floor != null && Number.isFinite(req.floor) ? req.floor : null;
   return run({
     kind: "condo",
@@ -636,7 +643,7 @@ export function valueLanded(req: ValuationRequest): ValuationOutcome {
     subject.segment ? `private:${subject.segment}:Landed` : "",
     "private:ALL:Landed",
     subject.district != null ? `private-d:${subject.district}:ALL` : "",
-  ].filter(Boolean));
+  ].filter(Boolean), asOf);
   return run({
     kind: "landed",
     subject: { ref: subject.ref, label: subject.label, href: subject.href },

@@ -222,7 +222,7 @@ export default async function ListingPage({ params }: Params) {
                   />
                 ) : null}
                 {listing.floorLevel != null ? <Stat label={<T k="homes.detail.floor" fallback="Floor" />} value={listing.floorLevel} /> : null}
-                {listing.bedrooms != null ? <Stat label={<T k="homes.detail.beds" fallback="Bedrooms" />} value={listing.bedrooms === 0 ? "Studio" : listing.bedrooms} /> : null}
+                {listing.bedrooms != null ? <Stat label={<T k="homes.detail.beds" fallback="Bedrooms" />} value={listing.bedrooms === 0 ? <T k="homes.card.studio" fallback="Studio" /> : listing.bedrooms} /> : null}
                 {listing.bathrooms != null ? <Stat label={<T k="homes.detail.baths" fallback="Bathrooms" />} value={listing.bathrooms} /> : null}
                 <Stat label={<T k="homes.detail.listed" fallback="Listed" />} value={formatListedDate(listing.createdAt)} />
               </StatGrid>
@@ -249,9 +249,8 @@ export default async function ListingPage({ params }: Params) {
             </Section>
           ) : null}
 
-          <Section id="ask" title={<T k="homes.detail.ask" fallback="Ask about this home" />}>
-            <AskPanel context={prop ? prop.ref : { kind: "general" }} />
-          </Section>
+          {/* AskPanel renders its own heading, and nothing at all when the assistant is not configured. */}
+          <AskPanel context={prop ? prop.ref : { kind: "general" }} />
 
           <Section
             id="exit-audience"

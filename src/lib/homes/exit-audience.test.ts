@@ -62,6 +62,14 @@ describe("exit audience heuristic", () => {
     expect(excluded.topBlocks).toHaveLength(1);
   });
 
+  it("lists blocks with the same MOP year the cohorts use (a block's own mopYears)", () => {
+    // completed 2017 with a 10-year MOP (e.g. PLH): MOP 2027, not 2022
+    const plh = { ...block("plh-2027", 0.004, 2017, 400), mopYears: 10 };
+    const r = computeExitAudience([plh], center, "hdb", 2026, { radiusM: 2000 });
+    expect(r.cohorts.find((c) => c.year === 2027)).toMatchObject({ units: 400, blocks: 1 });
+    expect(r.topBlocks).toEqual([expect.objectContaining({ slug: "plh-2027", mopYear: 2027 })]);
+  });
+
   it("returns an empty audience when nothing qualifies", () => {
     const r = computeExitAudience([], center, "hdb", 2026, { radiusM: 2000 });
     expect(r.totalUnits).toBe(0);

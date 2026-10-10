@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { quantile } from "@/lib/stats-math";
 import { getBlockRentals, getBlockTransactions, getHdbBlock, getTownTransactions } from "@/lib/data/hdb";
-import { getProjectTransactions } from "@/lib/data/private";
+import { getProjectRentals, getProjectTransactions } from "@/lib/data/private";
 import { monthIndex } from "@/lib/data/months";
 import { getMeta } from "@/lib/data/meta";
 import { sqmToSqft } from "@/lib/format";
@@ -81,6 +81,30 @@ describe("fairValueForListing (fixture snapshot)", () => {
     expect(out.range.basis).toBe("rent");
     expect(out.range.source).toMatch(/renting out of flats/);
     expect(out.range.low % 10).toBe(0);
+  });
+
+  it("ends rent windows at the dataset's latest rental month, not the area's newest record", () => {
+    const hdbRentLatest = getMeta().latestMonth.hdbRentals!;
+    const hdb = fairValueForListing({ ref: "hdb:blk-872a-tampines-st-86", listingType: "rent", flatType: "4 ROOM", areaSqm: null, bedrooms: 3, askingPrice: 2_500 });
+    expect(hdb.ok).toBe(true);
+    if (hdb.ok) expect(hdb.range.to).toBe(hdbRentLatest);
+
+    const latest = monthIndex(getMeta().latestMonth.privateRentals!);
+    const slug = "aurora-fixture-residences";
+    const all = getProjectRentals(slug);
+    const inWindow = all.filter((r) => r.monthIndex > latest - 12 && r.monthIndex <= latest && r.monthlyRent > 0);
+    // older contracts exist but must not count as "latest 12 months"
+    expect(all.length).toBeGreaterThan(inWindow.length);
+    const condo = fairValueForListing({ ref: `condo:${slug}`, listingType: "rent", flatType: null, areaSqm: null, bedrooms: null, askingPrice: 3_000 });
+    if (inWindow.length >= 3) {
+      expect(condo.ok).toBe(true);
+      if (condo.ok) {
+        expect(condo.range.to).toBe(getMeta().latestMonth.privateRentals);
+        expect(condo.range.sampleSize).toBe(inWindow.length);
+      }
+    } else {
+      expect(condo).toMatchObject({ ok: false, reason: "no-recent-records" });
+    }
   });
 
   it("uses the project's 12-month psf IQR x floor area for condos", () => {

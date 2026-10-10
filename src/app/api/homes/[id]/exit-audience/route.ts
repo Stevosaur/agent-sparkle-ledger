@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireFeature } from "@/lib/auth/require";
 import { getHdbBlocks } from "@/lib/data/hdb";
 import { titleCase } from "@/lib/slug";
+import { parsePropertyRef } from "@/lib/property-ref";
 import { singaporeToday } from "@/lib/leads/validate";
 import { isListingId } from "@/lib/homes/filters";
 import { getListing } from "@/lib/homes/listings";
@@ -31,7 +32,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   const property = resolveListingProperty(listing.ref);
   const lat = listing.lat ?? property?.lat ?? null;
   const lng = listing.lng ?? property?.lng ?? null;
-  const audience = property?.kind === "hdb" ? "hdb" : "private";
+  // From the listing's own reference, so an HDB listing whose block no longer resolves is still treated as HDB.
+  const audience = (property?.kind ?? parsePropertyRef(listing.ref)?.kind) === "hdb" ? "hdb" : "private";
 
   let result: ExitAudienceResult;
   const raw = getHdbBlocks();

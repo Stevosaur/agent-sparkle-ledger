@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkTrackedLimit, isWithinLimit, TRACKED_MAX, trackedHomesLimit } from "./limits";
+import { checkTrackedLimit, idsWithinLimit, isWithinLimit, TRACKED_MAX, trackedHomesLimit } from "./limits";
 import { featureRows, FEATURE_LABELS, includedIn } from "./features";
 import { FEATURES, type FeatureKey } from "@/lib/auth/entitlements";
 import { site } from "@/lib/config/site";
@@ -31,6 +31,13 @@ describe("tracked-homes limit", () => {
     // an id that is not present (already deleted) is never within the limit
     expect(isWithinLimit([41], 99, 1)).toBe(false);
     expect(isWithinLimit([1, 2, 3], 3, 3)).toBe(true);
+  });
+
+  it("shows estimates only for the oldest homes within the limit (e.g. after Plus lapses)", () => {
+    expect([...idsWithinLimit([4, 7, 9], 1)]).toEqual([4]);
+    expect([...idsWithinLimit([4, 7, 9], TRACKED_MAX)]).toEqual([4, 7, 9]);
+    expect(idsWithinLimit([4, 7], 0).size).toBe(0);
+    expect(idsWithinLimit([4, 7], -2).size).toBe(0);
   });
 });
 

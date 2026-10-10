@@ -51,14 +51,16 @@ backfills profiles for users that already exist.
 *Authentication → URL Configuration*:
 
 - **Site URL:** your production URL, e.g. `https://plotline.sg`
-- **Redirect URLs** (add each):
-  - `https://plotline.sg/auth/callback/`
-  - `http://localhost:3000/auth/callback/` (local development)
-  - `https://*-<your-vercel-team>.vercel.app/auth/callback/` (Vercel preview deployments, optional)
+- **Redirect URLs** (add each; note the `**` at the end):
+  - `https://plotline.sg/auth/callback/**`
+  - `http://localhost:3000/auth/callback/**` (local development)
+  - `https://*-<your-vercel-team>.vercel.app/auth/callback/**` (Vercel preview deployments, optional)
 
-The trailing slash matters: the site uses `trailingSlash: true`, and the login form sends
-`<origin>/auth/callback/?next=<path>` as the redirect. A redirect URL that is not allow-listed makes
-Supabase fall back to the Site URL, and sign-in appears to do nothing.
+The login form sends `<origin>/auth/callback/?next=<path>` as the redirect (with the trailing slash: the
+site uses `trailingSlash: true`). Supabase matches the **whole** URL, query string included, against these
+patterns, so an entry without the trailing `**` does not match and Supabase silently falls back to the Site
+URL: on localhost or a preview deployment the link then lands on production and sign-in appears to do
+nothing. (Redirects to the Site URL's own host are always allowed.)
 
 **Email (magic link):** *Authentication → Sign In / Providers → Email* must be enabled. The default
 "Magic Link" template works as is (`{{ .ConfirmationURL }}` returns to `/auth/callback/?code=...`).

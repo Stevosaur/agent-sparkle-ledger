@@ -38,8 +38,10 @@ export function resolvePlace(ref: string): Omit<FitPlace, "weight"> | null {
 }
 
 /**
- * Rank active listings by weighted distance to the places; when there are no active listings, rank HDB
- * blocks and condo / EC projects with at least one sale in the latest 12 months instead.
+ * Rank active listings by weighted distance to the places; when there are no active listings at all, rank
+ * HDB blocks and condo / EC projects with at least one sale in the latest 12 months instead. The sale /
+ * rent filter only narrows the listings: an empty type does not switch to properties mode, so the client
+ * keeps showing the filter and can switch back.
  */
 export async function computeFit(input: { ref: string; weight: number }[], opts: { listingType?: ListingType | null } = {}): Promise<FitResponse> {
   const places: FitPlace[] = [];
@@ -50,8 +52,9 @@ export async function computeFit(input: { ref: string; weight: number }[], opts:
     else unresolved.push(p.ref);
   }
 
-  const { listings } = await getActiveListings(opts.listingType ? { type: opts.listingType } : {});
-  if (listings.length > 0) {
+  const { listings: allListings } = await getActiveListings();
+  if (allListings.length > 0) {
+    const listings = opts.listingType ? allListings.filter((l) => l.listingType === opts.listingType) : allListings;
     const candidates = listings.map((l) => {
       const prop = resolveListingProperty(l.ref);
       const s = toSummary(l);
@@ -68,6 +71,7 @@ export async function computeFit(input: { ref: string; weight: number }[], opts:
       distances,
       listingType: item.l.listingType,
       askingPrice: item.l.askingPrice,
+      sample: Boolean(item.l.sample),
     }));
     return { mode: "listings", places, unresolved, results, candidates: candidates.filter((c) => c.lat != null && c.lng != null).length };
   }

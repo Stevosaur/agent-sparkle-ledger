@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAlertMessage, isNewerMonth, planAlertDispatch, type AlertRowLite, type PropertyActivity } from "./alerts-math";
+import { batchByChat, buildAlertMessage, isNewerMonth, planAlertDispatch, TELEGRAM_MAX_TEXT, type AlertRowLite, type PropertyActivity } from "./alerts-math";
 import { getPropertyActivity } from "./activity";
 import { generateLinkCode, LINK_CODE_RE, parseBotCommand, safeEqual, sendTelegramMessage, telegramDeepLink } from "./telegram";
 
@@ -76,6 +76,39 @@ describe("planAlertDispatch", () => {
       { alertId: 5, reason: "channel-unavailable" },
     ]);
     expect(plan.sends.map((s) => s.alertId)).toEqual([6]);
+  });
+});
+
+describe("batchByChat", () => {
+  const send = (alertId: number, chatId: string, label: string) => {
+    const activity = { ...sale, label };
+    const plan = planAlertDispatch([{ id: alertId, user_id: `u${chatId}`, ref: "r", kind: "new-sale", channel: "telegram", last_checked_month: null }], new Map([["r", activity]]), new Map([[`u${chatId}`, chatId]]), null, "Plotline", "https://example.com/profile/");
+    return plan.sends[0];
+  };
+
+  it("sends a single alert exactly as its own message", () => {
+    const s = send(1, "111", "Blk 1");
+    expect(batchByChat([s], "https://example.com/profile/")).toEqual([{ chatId: "111", alerts: [{ alertId: 1, month: "2026-08" }], text: s.text }]);
+  });
+
+  it("combines a chat's alerts into one message with one footer", () => {
+    const messages = batchByChat([send(1, "111", "Blk 1"), send(2, "222", "Blk 2"), send(3, "111", "Blk 3")], "https://example.com/profile/");
+    expect(messages.map((m) => [m.chatId, m.alerts.map((a) => a.alertId)])).toEqual([
+      ["111", [1, 3]],
+      ["222", [2]],
+    ]);
+    expect(messages[0].text).toContain("new sale recorded at Blk 1");
+    expect(messages[0].text).toContain("new sale recorded at Blk 3");
+    expect(messages[0].text.match(/Manage alerts:/g)).toHaveLength(1);
+    expect(messages[0].text.endsWith("Manage alerts: https://example.com/profile/")).toBe(true);
+  });
+
+  it("splits a chat's alerts only when a message would pass Telegram's length limit", () => {
+    const sends = Array.from({ length: 40 }, (_, i) => send(i + 1, "111", `Blk ${i + 1} ${"x".repeat(150)}`));
+    const messages = batchByChat(sends, "https://example.com/profile/");
+    expect(messages.length).toBeGreaterThan(1);
+    for (const m of messages) expect(m.text.length).toBeLessThanOrEqual(TELEGRAM_MAX_TEXT);
+    expect(messages.flatMap((m) => m.alerts.map((a) => a.alertId))).toEqual(sends.map((s) => s.alertId));
   });
 });
 

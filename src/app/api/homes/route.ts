@@ -41,11 +41,6 @@ export async function POST(req: NextRequest) {
   if (!(req.headers.get("content-type") ?? "").toLowerCase().includes("application/json")) {
     return NextResponse.json({ error: "unsupported_media_type" }, { status: 415, headers: NO_STORE });
   }
-  const rate = createLimiter.check(gate.viewer.userId);
-  if (!rate.allowed) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { ...NO_STORE, "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) } });
-  }
-
   let body: unknown;
   try {
     const text = await req.text();
@@ -63,6 +58,12 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "listings_disabled" }, { status: 503, headers: NO_STORE });
+
+  // Counted only for valid submissions that reach the database, so fixing a form error never uses up the allowance.
+  const rate = createLimiter.check(gate.viewer.userId);
+  if (!rate.allowed) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { ...NO_STORE, "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) } });
+  }
 
   const { data, error } = await supabase
     .from(LISTING_TABLE)

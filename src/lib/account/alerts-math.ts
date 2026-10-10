@@ -32,7 +32,8 @@ export function isNewerMonth(latest: string | null, lastChecked: string | null):
   return latest > lastChecked;
 }
 
-export function buildAlertMessage(activity: PropertyActivity, siteName: string, manageUrl: string): string {
+/** The lines describing one property's new activity, ending with its page URL (no footer). */
+export function alertSection(activity: PropertyActivity, siteName: string): string {
   const month = formatMonth(activity.month);
   const lines =
     activity.kind === "launch"
@@ -46,13 +47,22 @@ export function buildAlertMessage(activity: PropertyActivity, siteName: string, 
           `${siteName} alert: new sale recorded at ${activity.label}.`,
           activity.lastPrice != null ? `Latest sale: ${formatSgd(activity.lastPrice)} (${month}).` : `Latest sale: ${month}.`,
         ];
-  return [...lines, activity.url, "", `Manage alerts: ${manageUrl}`].join("\n");
+  return [...lines, activity.url].join("\n");
+}
+
+function manageFooter(manageUrl: string): string {
+  return `\n\nManage alerts: ${manageUrl}`;
+}
+
+export function buildAlertMessage(activity: PropertyActivity, siteName: string, manageUrl: string): string {
+  return alertSection(activity, siteName) + manageFooter(manageUrl);
 }
 
 export type SkipReason = "no-change" | "not-found" | "not-entitled" | "not-linked" | "channel-unavailable";
 
 export interface AlertDispatchPlan {
-  sends: { alertId: number; userId: string; chatId: string; text: string; month: string }[];
+  /** `text` is the alert as a message of its own; `section` the same without the footer, for batching */
+  sends: { alertId: number; userId: string; chatId: string; text: string; section: string; month: string }[];
   skipped: { alertId: number; reason: SkipReason }[];
 }
 
@@ -94,7 +104,58 @@ export function planAlertDispatch(
       plan.skipped.push({ alertId: a.id, reason: "not-linked" });
       continue;
     }
-    plan.sends.push({ alertId: a.id, userId: a.user_id, chatId, text: buildAlertMessage(activity, siteName, manageUrl), month: activity.month! });
+    plan.sends.push({
+      alertId: a.id,
+      userId: a.user_id,
+      chatId,
+      text: buildAlertMessage(activity, siteName, manageUrl),
+      section: alertSection(activity, siteName),
+      month: activity.month!,
+    });
   }
   return plan;
+}
+
+/** Telegram's sendMessage text limit. */
+export const TELEGRAM_MAX_TEXT = 4096;
+
+export interface ChatMessage {
+  chatId: string;
+  /** alerts covered by this message, with the month to store as last_checked_month once it is delivered */
+  alerts: { alertId: number; month: string }[];
+  text: string;
+}
+
+/**
+ * Combine the planned sends into one message per chat (split only when a message would pass Telegram's
+ * length limit). Telegram rate-limits each chat to about one message per second, so a monthly data drop
+ * that fires many alerts for one user must not become a burst of separate messages.
+ */
+export function batchByChat(sends: AlertDispatchPlan["sends"], manageUrl: string, maxLength: number = TELEGRAM_MAX_TEXT): ChatMessage[] {
+  const footer = manageFooter(manageUrl);
+  const byChat = new Map<string, AlertDispatchPlan["sends"]>();
+  for (const s of sends) {
+    const list = byChat.get(s.chatId);
+    if (list) list.push(s);
+    else byChat.set(s.chatId, [s]);
+  }
+  const out: ChatMessage[] = [];
+  for (const [chatId, list] of byChat) {
+    let current: ChatMessage | null = null;
+    for (const s of list) {
+      if (current && current.text.length + 2 + s.section.length + footer.length > maxLength) {
+        current.text += footer;
+        out.push(current);
+        current = null;
+      }
+      current ??= { chatId, alerts: [], text: "" };
+      current.text += (current.text ? "\n\n" : "") + s.section;
+      current.alerts.push({ alertId: s.alertId, month: s.month });
+    }
+    if (current) {
+      current.text += footer;
+      out.push(current);
+    }
+  }
+  return out;
 }

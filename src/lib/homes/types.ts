@@ -64,7 +64,7 @@ export interface ListingFilters {
   area: string | null;
   minPrice: number | null;
   maxPrice: number | null;
-  /** minimum bedrooms; 5 means "5 or more" */
+  /** exact bedroom count; 5 means "5 or more" */
   bedrooms: number | null;
 }
 
@@ -174,6 +174,8 @@ export interface FitResultRow {
   distances: number[];
   listingType?: ListingType;
   askingPrice?: number;
+  /** demo listing from the synthetic fixture dataset (see sample-listings.ts) */
+  sample?: boolean;
   medianPsf12m?: number | null;
   count12m?: number;
   lastPrice?: number | null;

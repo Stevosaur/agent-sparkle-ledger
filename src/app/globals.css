@@ -52,6 +52,22 @@ body {
   font-feature-settings: "tnum" 1, "cv11" 1;
 }
 
+@layer base {
+  /* Grid items default to min-width:auto, so a wide table or chart inside one widens the whole page on phones.
+     Let grid children shrink; wide content then scrolls inside its own overflow container.
+     (Base layer: any explicit min-w-* / position utility still wins.) */
+  .grid > * {
+    min-width: 0;
+  }
+  /* Absolutely positioned descendants (e.g. sr-only labels in table cells) are only clipped by a scroll
+     container that is their containing block, otherwise they stretch the page sideways. */
+  .overflow-x-auto,
+  .overflow-auto,
+  .overflow-x-scroll {
+    position: relative;
+  }
+}
+
 /* numbers line up in tables and stats */
 .tabular {
   font-variant-numeric: tabular-nums;
