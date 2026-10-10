@@ -3,6 +3,7 @@ import { isSupabaseConfigured } from "@/lib/auth/config";
 import { requireUser } from "@/lib/auth/require";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { saveCalculationSchema } from "@/lib/tools/save-schema";
+import { rejectCrossOrigin } from "@/lib/account/http";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,8 @@ const MAX_BODY_BYTES = 8192;
  * 503 when accounts (Supabase) are not configured on this deployment.
  */
 export async function POST(req: NextRequest) {
+  const crossOrigin = rejectCrossOrigin(req);
+  if (crossOrigin) return crossOrigin;
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: "saving_unavailable", message: "Saving is unavailable: accounts are not connected on this deployment." }, { status: 503, headers: NO_STORE });
   }

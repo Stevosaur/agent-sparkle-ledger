@@ -71,3 +71,10 @@ describe("firstParam", () => {
     expect(firstParam(undefined)).toBeUndefined();
   });
 });
+
+describe("safeNextPath dot-segment bypasses", () => {
+  it.each(["/.//evil.com", "/..//evil.com", "/%2e//evil.com", "/a/..//evil.com", "/.//evil.com/"])("rejects %s", (value) => {
+    expect(safeNextPath(value)).toBe(DEFAULT_NEXT_PATH);
+  });
+});
+

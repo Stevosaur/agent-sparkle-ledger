@@ -27,6 +27,8 @@ export function safeNextPath(raw: string | null | undefined, fallback: string = 
   }
   if (url.origin !== PROBE_ORIGIN) return fallback;
   let path = url.pathname;
+  // Dot segments are resolved by the URL parser ("/.//evil.com" -> "//evil.com"): re-check after normalising.
+  if (path.startsWith("//")) return fallback;
   // Site convention: trailingSlash URLs. Add the slash to page paths (not files such as /sitemap.xml).
   if (!path.endsWith("/") && !/\.[a-z0-9]+$/i.test(path)) path = `${path}/`;
   const lower = path.toLowerCase();

@@ -29,6 +29,8 @@ import { AskPanel } from "@/components/ai/ask-panel";
 import { WhatsNext } from "@/components/property/whats-next";
 import { T } from "@/components/i18n/t";
 import { SalesTable } from "@/components/private/sales-table";
+import { SalesHistory } from "@/components/private/sales-history";
+import { GatedPanel } from "@/components/gating/gated-panel";
 import { NearbyAmenities } from "@/components/private/nearby";
 import { RebuildCost } from "@/components/private/rebuild-cost";
 import { SectionNav } from "@/components/private/section-nav";
@@ -236,7 +238,14 @@ export default async function LandedAddressPage({ params }: Props) {
 
         <Section id="sales" className={SECTION} title={<T k="private.landed.salesTitle" fallback="Sales of this property" />}>
           <Card>
-            <SalesTable rows={own.map((t) => toSaleRow(t))} variant="landed" showAddress={false} />
+            <SalesTable rows={own.slice(0, 10).map((t) => toSaleRow(t))} variant="landed" showAddress={false} />
+            {own.length > 10 ? (
+              <CardBody>
+                <GatedPanel feature="sales.full">
+                  <SalesHistory endpoint={`/api/gated/private/landed/${a.slug}/sales/`} variant="landed" showAddress={false} />
+                </GatedPanel>
+              </CardBody>
+            ) : null}
             <CardBody className="pt-0">
               <SourceLine>
                 <T k="private.source.uraUnit" fallback="URA private residential transactions with unit-level (REALIS-style) records" />

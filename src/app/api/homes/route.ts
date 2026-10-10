@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/require";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { rejectCrossOrigin } from "@/lib/account/http";
 import { parseListingFilters } from "@/lib/homes/filters";
 import { LISTING_TABLE, PAGE_SIZE, searchListings } from "@/lib/homes/listings";
 import { parseListingInput } from "@/lib/homes/listing-schema";
@@ -30,11 +31,13 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST /api/homes/ — create a listing as the signed-in user (requireUser). The row is written with the
- * user's own Supabase session so the table's owner policies apply. Coordinates come from the property
- * reference, never from the client. 201 { id } · 400 { error: "invalid", fields } · 401 · 429 · 503.
+ * POST /api/homes/ — create a listing as the signed-in user (requireUser). Clients have no INSERT
+ * privilege on home_listings, so the validated row is written with the server key and an explicit
+ * user_id. Coordinates come from the property reference, never from the client. 201 { id } · 400 { error: "invalid", fields } · 401 · 429 · 503.
  */
 export async function POST(req: NextRequest) {
+  const crossOrigin = rejectCrossOrigin(req);
+  if (crossOrigin) return crossOrigin;
   const gate = await requireUser();
   if (!gate.ok) return gate.response;
 
@@ -56,7 +59,7 @@ export async function POST(req: NextRequest) {
   const property = resolveListingProperty(input.ref);
   if (!property) return NextResponse.json({ error: "invalid", fields: { ref: "unknown" } }, { status: 400, headers: NO_STORE });
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ error: "listings_disabled" }, { status: 503, headers: NO_STORE });
 
   // Counted only for valid submissions that reach the database, so fixing a form error never uses up the allowance.

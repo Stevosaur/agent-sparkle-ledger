@@ -294,6 +294,68 @@ create trigger home_listings_touch_updated_at
   before update on public.home_listings
   for each row execute function public.touch_updated_at();
 
+-- created_at is server time on insert (listing order cannot be faked).
+create or replace function public.stamp_created_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.created_at = now();
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists home_listings_stamp_created_at on public.home_listings;
+create trigger home_listings_stamp_created_at
+  before insert on public.home_listings
+  for each row execute function public.stamp_created_at();
+
+-- ---------------------------------------------------------------------------
+-- Per-user row quotas, enforced in the database as well as in the route handlers, so direct
+-- PostgREST calls with a user's token cannot flood the tables (or starve the alerts cron).
+-- Limits match src/lib/account/limits.ts. Row-level BEFORE triggers also see rows inserted earlier
+-- in the same statement, so bulk inserts are capped too.
+-- ---------------------------------------------------------------------------
+create or replace function public.enforce_row_quota()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  max_rows integer := tg_argv[0]::integer;
+  existing integer;
+begin
+  execute format('select count(*) from public.%I where user_id = $1', tg_table_name) into existing using new.user_id;
+  if existing >= max_rows then
+    raise exception 'limit_reached' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists watchlist_quota on public.watchlist;
+create trigger watchlist_quota before insert on public.watchlist
+  for each row execute function public.enforce_row_quota('200');
+drop trigger if exists tracked_homes_quota on public.tracked_homes;
+create trigger tracked_homes_quota before insert on public.tracked_homes
+  for each row execute function public.enforce_row_quota('50');
+drop trigger if exists alerts_quota on public.alerts;
+create trigger alerts_quota before insert on public.alerts
+  for each row execute function public.enforce_row_quota('50');
+drop trigger if exists saved_calculations_quota on public.saved_calculations;
+create trigger saved_calculations_quota before insert on public.saved_calculations
+  for each row execute function public.enforce_row_quota('100');
+
+alter table public.saved_calculations drop constraint if exists saved_calculations_size;
+alter table public.saved_calculations add constraint saved_calculations_size
+  check (octet_length(input::text) + coalesce(octet_length(result::text), 0) <= 32768);
+alter table public.alerts drop constraint if exists alerts_ref_format;
+alter table public.alerts add constraint alerts_ref_format
+  check (ref ~ '^(hdb|condo|landed|landed-street|launch):[a-z0-9/-]+$');
+
 -- ---------------------------------------------------------------------------
 -- Table privileges. Supabase usually grants these through default privileges on the
 -- public schema; they are repeated here so the app also works on projects where those
@@ -305,8 +367,15 @@ grant usage on schema public to anon, authenticated, service_role;
 grant select on public.profiles, public.subscriptions to authenticated;
 grant select, insert, update, delete on public.watchlist, public.tracked_homes, public.saved_calculations, public.alerts to authenticated;
 grant usage, select on sequence public.watchlist_id_seq, public.tracked_homes_id_seq, public.saved_calculations_id_seq, public.alerts_id_seq to authenticated;
-grant select on public.home_listings to anon, authenticated;
-grant insert, update, delete on public.home_listings to authenticated;
+-- Listings: inserts go through POST /api/homes/ (validation, rate limit, coordinates from the property
+-- reference) with the server key, so clients get no INSERT. Owners may only flip `status` (close/reopen)
+-- or delete their own rows. Anonymous readers see every column except user_id.
+grant select (id, listing_type, ref, title, description, asking_price, flat_type, area_sqm, floor_level,
+  bedrooms, bathrooms, contact_name, whatsapp, status, lat, lng, created_at, updated_at)
+  on public.home_listings to anon;
+grant select on public.home_listings to authenticated;
+grant update (status) on public.home_listings to authenticated;
+grant delete on public.home_listings to authenticated;
 
 -- The server key (service_role) bypasses RLS but still needs table privileges.
 grant select, insert, update, delete on
