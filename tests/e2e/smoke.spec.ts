@@ -15,7 +15,7 @@ const ROUTES = [
   "/hdb/blk-999-tampines-st-99/",
   "/condo/aurora-fixture-residences/",
   "/condo/the-fixture-ec/",
-  "/landed/13-sample-ln/",
+  "/landed/15-sample-ln/",
   "/landed-street/sample-ln/",
   "/new-launch/condo/aurora-fixture-residences/",
   "/new-launch/condo/upcoming-fixture-towers/",
@@ -81,5 +81,6 @@ test("search API and public API respond", async ({ request }) => {
 test("language toggle switches chrome to Chinese", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: /切换到中文|Switch to English/ }).first().click();
-  await expect(page.getByRole("link", { name: "首页" }).or(page.getByText("估价").first())).toBeVisible();
+  await expect(page.getByText("估价").filter({ visible: true }).first()).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "zh-Hans-SG");
 });
