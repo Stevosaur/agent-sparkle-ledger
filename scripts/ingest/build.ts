@@ -531,7 +531,8 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
       acc.lat = c.lat;
       acc.lng = c.lng;
     }
-    acc.rows.push({ m: monthIndex(s.month), price: s.price, psf: psfOf(s.price, s.areaSqm) });
+    // bulk caveats (several units in one deal) report total price & area: keep them out of last-sale / median summaries
+    if ((s.noOfUnits || 1) === 1) acc.rows.push({ m: monthIndex(s.month), price: s.price, psf: psfOf(s.price, s.areaSqm) });
     if (s.unit || s.address) acc.unitLevel = true;
   }
 
@@ -657,7 +658,7 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
     let acc = streetAcc.get(key);
     if (!acc) streetAcc.set(key, (acc = { street, projects: new Set(), rows: [], types: new Set(), tenures: new Set(), districts: [], segments: [], lat: null, lng: null, addresses: new Set() }));
     acc.projects.add(slug);
-    acc.rows.push({ m: monthIndex(s.month), price: s.price, psf: psfOf(s.price, s.areaSqm) });
+    if ((s.noOfUnits || 1) === 1) acc.rows.push({ m: monthIndex(s.month), price: s.price, psf: psfOf(s.price, s.areaSqm) });
     acc.types.add(s.propertyType);
     const t = parseTenure(s.tenure);
     if (t) acc.tenures.add(t.kind === "freehold" ? "Freehold" : `${t.years}-year leasehold`);
@@ -682,7 +683,7 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
     const slug = landedAddressSlug(houseNo, street);
     let acc = addrAcc.get(slug);
     if (!acc) addrAcc.set(slug, (acc = { address, houseNo, street, rows: [], sales: [] }));
-    acc.rows.push({ m: monthIndex(s.month), price: s.price, psf: psfOf(s.price, s.areaSqm) });
+    if ((s.noOfUnits || 1) === 1) acc.rows.push({ m: monthIndex(s.month), price: s.price, psf: psfOf(s.price, s.areaSqm) });
     acc.sales.push(s);
   }
   const landedAddresses: LandedAddress[] = [];
@@ -780,7 +781,8 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
       if (s.district) {
         push(`private-d:${s.district}:ALL`, row);
         // separate indices so condo psf (strata area) and landed psf (land area) are not mixed in one median
-        push(`private-d:${s.district}:${g === "Landed" ? "Landed" : "NonLanded"}`, row);
+        // the landed index uses land-area psf, so it takes non-strata houses only; strata landed (strata area) goes with non-landed
+        push(`private-d:${s.district}:${LANDED_NON_STRATA.has(s.propertyType) ? "Landed" : "NonLanded"}`, row);
       }
     }
     for (const r of input.privateRentals) {

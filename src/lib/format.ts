@@ -21,8 +21,13 @@ export function formatSgdCompact(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
-  if (abs >= 1_000_000) return `${sign}S$${(abs / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2)}M`;
-  if (abs >= 1_000) return `${sign}S$${Math.round(abs / 1_000)}K`;
+  const k = Math.round(abs / 1_000);
+  // 999,500+ rounds to "1000K": show it in millions instead
+  if (abs >= 1_000_000 || k >= 1_000) {
+    const m = Math.max(abs, 1_000_000) / 1_000_000;
+    return `${sign}S$${m.toFixed(m >= 10 ? 1 : 2)}M`;
+  }
+  if (abs >= 1_000) return `${sign}S$${k}K`;
   return `${sign}S$${Math.round(abs)}`;
 }
 

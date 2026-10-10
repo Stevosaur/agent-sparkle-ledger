@@ -61,3 +61,13 @@ describe("fixture snapshot through the data layer", () => {
     expect(aurora).toContain("/new-launch/condo/aurora-fixture-residences/");
   });
 });
+
+import { formatSgdCompact } from "@/lib/format";
+describe("formatSgdCompact", () => {
+  it("never shows 1000K", () => {
+    expect(formatSgdCompact(999_499)).toBe("S$999K");
+    expect(formatSgdCompact(999_500)).toBe("S$1.00M");
+    expect(formatSgdCompact(1_234_567)).toBe("S$1.23M");
+    expect(formatSgdCompact(12_340_000)).toBe("S$12.3M");
+  });
+});

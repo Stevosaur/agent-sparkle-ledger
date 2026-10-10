@@ -117,9 +117,19 @@ export function getProjectTransactions(slug: string): PrivateTransaction[] {
 
 export function getLandedStreetTransactions(slug: string): PrivateTransaction[] {
   const s = getLandedStreet(slug);
-  if (!s || s.district == null) return [];
+  if (!s) return [];
   const projects = new Set(s.projects);
-  return getDistrictTransactions(s.district).filter((t) => projects.has(t.projectSlug) && LANDED_HOUSE_TYPES.has(t.propertyType));
+  // a long road can cross postal districts: read every district its projects sit in
+  const districts = new Set<number>();
+  if (s.district != null) districts.add(s.district);
+  for (const p of s.projects) {
+    const d = getProject(p)?.district;
+    if (d != null) districts.add(d);
+  }
+  return [...districts]
+    .flatMap((d) => getDistrictTransactions(d))
+    .filter((t) => projects.has(t.projectSlug) && LANDED_HOUSE_TYPES.has(t.propertyType))
+    .sort((a, b) => b.monthIndex - a.monthIndex);
 }
 
 export function getLandedAddressTransactions(slug: string): PrivateTransaction[] {
