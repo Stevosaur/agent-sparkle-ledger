@@ -11,7 +11,7 @@
  */
 import path from "node:path";
 import { buildSnapshot } from "./build";
-import { log } from "./http";
+import { log, pushAll } from "./http";
 import { hdbGeoKey, type Geocode, type RawHdbBlockInfo, type RawHdbRental, type RawHdbSale, type RawLaunch, type RawPrivateRental, type RawPrivateSale, type SnapshotInput } from "./types";
 import { DATASETS, datasetPage, downloadDataset } from "./sources/datagov";
 import { parsePropertyInfo, parseRentals, parseResaleEra, RESALE_ERAS } from "./sources/hdb";
@@ -73,7 +73,7 @@ async function main() {
       log("hdb", `${era.key}: ${report.rows} rows, kept ${report.kept}, dropped ${JSON.stringify(report.dropped)}${report.unknownTowns.length ? `, new towns ${report.unknownTowns.join("/")}` : ""}`);
       if (report.rows < era.minRows) throw new Error(`${era.key}: only ${report.rows} rows (expected >= ${era.minRows}); aborting without touching data/`);
       if (report.kept < report.rows * 0.98) throw new Error(`${era.key}: dropped too many rows (${report.rows - report.kept}); aborting`);
-      hdbSales.push(...sales);
+      pushAll(hdbSales, sales);
     }
     sources.push(
       source({

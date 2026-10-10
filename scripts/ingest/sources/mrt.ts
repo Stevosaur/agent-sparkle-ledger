@@ -40,13 +40,14 @@ export function loadFutureStations(): FutureStationReference[] {
   }
 }
 
+/** Matching key: upper case, "MRT/LRT STATION" suffix dropped, punctuation -> spaces ("one-north" ~ "ONE-NORTH" -> "ONE NORTH"). */
 export function stationKey(name: string): string {
   return name
     .toUpperCase()
+    .trim()
     .replace(/\s+(MRT|LRT)\s+STATION$/, "")
     .replace(/\s+STATION$/, "")
-    .replace(/[^A-Z0-9 ]/g, "")
-    .replace(/\s+/g, " ")
+    .replace(/[^A-Z0-9]+/g, " ")
     .trim();
 }
 
@@ -93,33 +94,52 @@ export function stationsFromExits(geojson: { features?: Feature[] }): { name: st
 export function buildStations(exitsGeojson: { features?: Feature[] } | null): { stations: MrtStation[]; unmatched: string[] } {
   const ref = loadStationReference();
   const refByKey = new Map(ref.map((r) => [stationKey(r.name), r]));
+  // LTA sometimes publishes a station code instead of a name (e.g. "CC9" for Paya Lebar)
+  const refByCode = new Map(ref.flatMap((r) => r.codes.map((c) => [c.toUpperCase(), r] as const)));
   const stations: MrtStation[] = [];
   const unmatched: string[] = [];
   const operationalKeys = new Set<string>();
+  const merged = new Map<string, { ref: StationReference | undefined; lats: number[]; lngs: number[] }>();
   for (const s of exitsGeojson ? stationsFromExits(exitsGeojson) : []) {
-    const r = refByKey.get(s.name);
-    if (!r) unmatched.push(s.name);
-    operationalKeys.add(s.name);
+    const r = refByKey.get(s.name) ?? (/^[A-Z]{2,3}\d+$/.test(s.name.replace(/\s/g, "")) ? refByCode.get(s.name.replace(/\s/g, "")) : undefined);
+    if (!r && ref.length) {
+      // not on the allow-list of operating stations (e.g. an unopened station whose exits are already published)
+      unmatched.push(s.name);
+      continue;
+    }
+    const key = r ? stationKey(r.name) : s.name;
+    const g = merged.get(key) ?? { ref: r, lats: [], lngs: [] };
+    // weight by exit count so MRT + LRT records of the same station merge sensibly
+    for (let i = 0; i < s.exits; i++) {
+      g.lats.push(s.lat);
+      g.lngs.push(s.lng);
+    }
+    merged.set(key, g);
+  }
+  for (const [key, g] of merged) {
+    operationalKeys.add(key);
     stations.push({
-      name: s.name,
-      codes: r?.codes ?? [],
-      lines: r?.lines ?? [],
+      name: g.ref?.name ?? key,
+      codes: g.ref?.codes ?? [],
+      lines: g.ref?.lines ?? [],
       status: "operational",
       expectedYear: null,
       approximate: false,
-      lat: s.lat,
-      lng: s.lng,
+      lat: Math.round((g.lats.reduce((a, b) => a + b, 0) / g.lats.length) * 1e6) / 1e6,
+      lng: Math.round((g.lngs.reduce((a, b) => a + b, 0) / g.lngs.length) * 1e6) / 1e6,
     });
   }
+  const missing = ref.filter((r) => !operationalKeys.has(stationKey(r.name))).map((r) => r.name);
+  if (missing.length) unmatched.push(...missing.map((m) => `(no exits) ${m}`));
   for (const f of loadFutureStations()) {
     const key = stationKey(f.name);
     // A future line at an existing station (e.g. a new interchange) stays a separate "future" record, so the
     // operational record never claims a line that is not open yet. It reuses the existing station's location.
-    const op = operationalKeys.has(key) ? stations.find((s) => s.name === key && s.status === "operational") : undefined;
+    const op = operationalKeys.has(key) ? stations.find((s) => stationKey(s.name) === key && s.status === "operational") : undefined;
     const lat = f.lat ?? op?.lat ?? null;
     const lng = f.lng ?? op?.lng ?? null;
     if (lat == null || lng == null) continue;
-    stations.push({ name: key, codes: f.codes, lines: f.lines, status: "future", expectedYear: f.expectedYear, approximate: f.lat == null ? false : f.approximate, lat, lng });
+    stations.push({ name: f.name.toUpperCase(), codes: f.codes, lines: f.lines, status: "future", expectedYear: f.expectedYear, approximate: f.lat == null ? false : f.approximate, lat, lng });
   }
   return { stations, unmatched };
 }

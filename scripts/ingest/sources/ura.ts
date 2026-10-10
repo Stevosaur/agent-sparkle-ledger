@@ -4,7 +4,7 @@
  * Response shapes for developer sales and pipeline are partly UNVERIFIED, so parsing is defensive and
  * the first raw record of each service is logged for verification.
  */
-import { fetchWithRetry, log, sleep } from "../http";
+import { fetchWithRetry, log, pushAll, sleep } from "../http";
 import { monthIndexFromMmyy, monthLabel } from "../../../src/lib/data/months";
 import { svy21ToWgs84 } from "./svy21";
 import type { RawLaunch, RawLaunchMonth, RawPrivateRental, RawPrivateSale } from "../types";
@@ -335,7 +335,7 @@ export async function fetchUra(accessKey: string, now = new Date()) {
     const parsed = parseTransactions(result);
     if (parsed.length === 0) throw new Error(`URA transactions batch ${batch} returned no rows`);
     log("ura", `transactions batch ${batch}: ${parsed.length} rows`);
-    sales.push(...parsed);
+    pushAll(sales, parsed);
     await sleep(1000);
   }
 
@@ -345,7 +345,7 @@ export async function fetchUra(accessKey: string, now = new Date()) {
       const result = await ura.invoke<UraRentProject[]>({ service: "PMI_Resi_Rental", refPeriod });
       const parsed = parseRentals(result);
       log("ura", `rentals ${refPeriod}: ${parsed.length} rows`);
-      rentals.push(...parsed);
+      pushAll(rentals, parsed);
     } catch (err) {
       log("ura", `rentals ${refPeriod} failed: ${(err as Error).message}`);
     }
@@ -361,7 +361,7 @@ export async function fetchUra(accessKey: string, now = new Date()) {
         log("ura", `sample developer sales record: ${JSON.stringify(result[0]).slice(0, 600)}`);
         loggedDev = true;
       }
-      dev.push(...parseDeveloperSales(result, refPeriod));
+      pushAll(dev, parseDeveloperSales(result, refPeriod));
     } catch (err) {
       log("ura", `developer sales ${refPeriod} failed: ${(err as Error).message}`);
     }

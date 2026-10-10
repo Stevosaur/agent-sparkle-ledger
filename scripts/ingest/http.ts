@@ -73,3 +73,9 @@ export function pacer(gapMs: number) {
 export function log(scope: string, msg: string) {
   console.log(`[${new Date().toISOString().slice(11, 19)}] [${scope}] ${msg}`);
 }
+
+/** Append without spreading into call arguments (push(...big) overflows the stack beyond ~100k items). */
+export function pushAll<T>(target: T[], items: readonly T[]): T[] {
+  for (let i = 0; i < items.length; i++) target.push(items[i]);
+  return target;
+}

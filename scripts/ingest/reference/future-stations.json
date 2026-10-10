@@ -1,0 +1,394 @@
+[
+ {
+  "name": "BEDOK SOUTH",
+  "codes": [
+   "TE30"
+  ],
+  "lines": [
+   "TEL"
+  ],
+  "expectedYear": 2026,
+  "lat": 1.31665,
+  "lng": 103.94923,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "SUNGEI BEDOK",
+  "codes": [
+   "TE31",
+   "DT37"
+  ],
+  "lines": [
+   "TEL",
+   "DTL"
+  ],
+  "expectedYear": 2026,
+  "lat": 1.3204,
+  "lng": 103.95721,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "XILIN",
+  "codes": [
+   "DT36"
+  ],
+  "lines": [
+   "DTL"
+  ],
+  "expectedYear": 2026,
+  "lat": 1.32873,
+  "lng": 103.96487,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "CHOA CHU KANG WEST",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2027,
+  "lat": 1.37922,
+  "lng": 103.74003,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "TENGAH",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2027,
+  "lat": 1.36638,
+  "lng": 103.73009,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "HONG KAH",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2027,
+  "lat": 1.35809,
+  "lng": 103.72611,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "CORPORATION",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2027,
+  "lat": 1.35297,
+  "lng": 103.71381,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "JURONG WEST",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2027,
+  "lat": 1.34919,
+  "lng": 103.70826,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "BAHAR JUNCTION",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2027,
+  "lat": 1.34619,
+  "lng": 103.70303,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "GEK POH",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2027,
+  "lat": 1.34835,
+  "lng": 103.69812,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "TAWAS",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2027,
+  "lat": 1.35066,
+  "lng": 103.69189,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "TENGAH PLANTATION",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2028,
+  "lat": 1.35733,
+  "lng": 103.73345,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "TENGAH PARK",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2028,
+  "lat": 1.35233,
+  "lng": 103.73679,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "BUKIT BATOK WEST",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2028,
+  "lat": 1.34567,
+  "lng": 103.7395,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "TOH GUAN",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2028,
+  "lat": 1.33991,
+  "lng": 103.7425,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "JURONG TOWN HALL",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2028,
+  "lat": 1.32638,
+  "lng": 103.74521,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "PANDAN RESERVOIR",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2028,
+  "lat": 1.32046,
+  "lng": 103.7448,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "ENTERPRISE",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2029,
+  "lat": 1.33273,
+  "lng": 103.70858,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "TUKANG",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2029,
+  "lat": 1.32541,
+  "lng": 103.70925,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "JURONG HILL",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2029,
+  "lat": 1.31862,
+  "lng": 103.71013,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "JURONG PIER",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2029,
+  "lat": 1.31313,
+  "lng": 103.7104,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "NANYANG GATEWAY",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2029,
+  "lat": 1.35369,
+  "lng": 103.6866,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "NANYANG CRESCENT",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2029,
+  "lat": 1.34841,
+  "lng": 103.68081,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "PENG KANG HILL",
+  "codes": [],
+  "lines": [
+   "JRL"
+  ],
+  "expectedYear": 2029,
+  "lat": 1.34321,
+  "lng": 103.67856,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "AVIATION PARK",
+  "codes": [],
+  "lines": [
+   "CRL"
+  ],
+  "expectedYear": 2030,
+  "lat": 1.37021,
+  "lng": 104.00351,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "LOYANG",
+  "codes": [],
+  "lines": [
+   "CRL"
+  ],
+  "expectedYear": 2030,
+  "lat": 1.37114,
+  "lng": 103.97192,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "PASIR RIS EAST",
+  "codes": [],
+  "lines": [
+   "CRL"
+  ],
+  "expectedYear": 2030,
+  "lat": 1.36702,
+  "lng": 103.96058,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "TAMPINES NORTH",
+  "codes": [],
+  "lines": [
+   "CRL"
+  ],
+  "expectedYear": 2030,
+  "lat": 1.36946,
+  "lng": 103.93813,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "DEFU",
+  "codes": [],
+  "lines": [
+   "CRL"
+  ],
+  "expectedYear": 2030,
+  "lat": 1.36234,
+  "lng": 103.899,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "SERANGOON NORTH",
+  "codes": [],
+  "lines": [
+   "CRL"
+  ],
+  "expectedYear": 2030,
+  "lat": 1.3706,
+  "lng": 103.87379,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "TAVISTOCK",
+  "codes": [],
+  "lines": [
+   "CRL"
+  ],
+  "expectedYear": 2030,
+  "lat": 1.37019,
+  "lng": 103.86325,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ },
+ {
+  "name": "TECK GHEE",
+  "codes": [],
+  "lines": [
+   "CRL"
+  ],
+  "expectedYear": 2030,
+  "lat": 1.36542,
+  "lng": 103.84352,
+  "approximate": true,
+  "source": "docs/research/mrt-network.md \u00a74.9"
+ }
+]
