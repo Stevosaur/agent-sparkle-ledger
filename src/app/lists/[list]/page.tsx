@@ -36,7 +36,7 @@ export default async function ListPage({ params }: Props) {
   const def = LIST_DEFS[list];
   const meta = getMeta();
   const asOf = meta.latestMonth.hdb ?? meta.latestMonth.private;
-  const top = freeTopRows(list, 3).flatMap((g) => g.rows);
+  const top = freeTopRows(list, 3).find((g) => g.rows.length > 0)?.rows ?? [];
   const options = listFilterOptions();
 
   return (

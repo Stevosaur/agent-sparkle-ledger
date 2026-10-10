@@ -129,6 +129,36 @@ export async function POST(req: NextRequest) {
   return json({ item: toView(row) }, 201);
 }
 
+/** PATCH { id, flatType?, areaSqm?, floor?, purchasePrice?, purchaseMonth? } -> { item } (replaces the details). */
+export async function PATCH(req: NextRequest) {
+  const blocked = rejectCrossOrigin(req);
+  if (blocked) return blocked;
+  const guard = await guardAccount("tracking.basic");
+  if (!guard.ok) return guard.response;
+  const { supabase, viewer } = guard;
+
+  const body = await readJsonBody(req);
+  const id = parseIdBody(body);
+  if (!id.ok) return errorJson(id.error, 400);
+  const current = await supabase.from("tracked_homes").select("ref").eq("user_id", viewer.userId).eq("id", id.value).maybeSingle();
+  if (current.error) return dbError("tracked.lookup", current.error);
+  if (!current.data) return errorJson("not_found", 404);
+  const parsed = parseTrackedHomeInput({ ...(body as Record<string, unknown>), ref: (current.data as { ref: string }).ref });
+  if (!parsed.ok) return errorJson(parsed.error, 400, parsed.field ? { field: parsed.field } : undefined);
+  const input = parsed.value;
+
+  const { data, error } = await supabase
+    .from("tracked_homes")
+    .update({ flat_type: input.flatType, area_sqm: input.areaSqm, floor: input.floor, purchase_price: input.purchasePrice, purchase_month: input.purchaseMonth })
+    .eq("user_id", viewer.userId)
+    .eq("id", id.value)
+    .select(COLUMNS)
+    .maybeSingle();
+  if (error) return dbError("tracked.update", error);
+  if (!data) return errorJson("not_found", 404);
+  return json({ item: toView(data as TrackedRow) });
+}
+
 export async function DELETE(req: NextRequest) {
   const blocked = rejectCrossOrigin(req);
   if (blocked) return blocked;

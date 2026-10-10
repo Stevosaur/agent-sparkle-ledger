@@ -103,8 +103,8 @@ describe("tool dispatch", () => {
     const condo = await run("get_property_summary", { ref: "condo:aurora-fixture-residences" });
     expect(condo.data).toMatchObject({ found: true, district: 18, segment: "OCR" });
     expect((condo.data.launch as { status: string }).status).toBe("launched");
-    const landed = await run("get_property_summary", { ref: "landed:13-sample-ln" });
-    expect(landed.data).toMatchObject({ found: true, path: "/landed/13-sample-ln/", streetPath: "/landed-street/sample-ln/" });
+    const landed = await run("get_property_summary", { ref: "landed:15-sample-ln" });
+    expect(landed.data).toMatchObject({ found: true, path: "/landed/15-sample-ln/", streetPath: "/landed-street/sample-ln/" });
     const street = await run("get_property_summary", { ref: "landed-street:fixture-cres" });
     expect(street.data.found).toBe(true);
     const launch = await run("get_property_summary", { ref: "launch:condo/upcoming-fixture-towers" });
