@@ -1,12 +1,17 @@
 "use client";
 
 import { CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from "recharts";
-import { formatAxis, formatMonthIndex, formatValue, type ValueFormat } from "./format";
+import { useT } from "@/lib/i18n/provider";
+import { formatAxis, formatMonthIndex, formatValue, monthTickCount, type ValueFormat } from "./format";
 
 export const CHART_COLORS = ["#19625b", "#f19414", "#3b6fd8", "#b5446e", "#6b8e23", "#7a5af8", "#0e9384", "#c4320a"];
 
 export interface TimeSeries {
+  /** English legend label (also the fallback when `nameKey` has no translation) */
   name: string;
+  /** optional i18n key for the legend label, translated on the client; `nameVars` fills its {placeholders} */
+  nameKey?: string;
+  nameVars?: Record<string, string | number>;
   /** x = month index (months since 1990-01) */
   points: { x: number; y: number }[];
   color?: string;
@@ -19,6 +24,7 @@ export interface TimeSeries {
  * directly: every prop is serializable.
  */
 export function TimeSeriesChart({ series, yFormat = "sgd", height = 280, ariaLabel }: { series: TimeSeries[]; yFormat?: ValueFormat; height?: number; ariaLabel: string }) {
+  const t = useT();
   const all = series.flatMap((s) => s.points);
   if (all.length === 0) return <div className="flex items-center justify-center text-sm text-muted" style={{ height }}>No data to chart.</div>;
   let minX = Infinity;
@@ -27,6 +33,8 @@ export function TimeSeriesChart({ series, yFormat = "sgd", height = 280, ariaLab
     if (p.x < minX) minX = p.x;
     if (p.x > maxX) maxX = p.x;
   }
+  // x is a whole month index: at most one tick per month (a 3-month chart gets 3 ticks, not 5 with repeated labels)
+  const xTickCount = monthTickCount(minX, maxX);
   return (
     <div role="img" aria-label={ariaLabel} style={{ width: "100%", height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -39,6 +47,8 @@ export function TimeSeriesChart({ series, yFormat = "sgd", height = 280, ariaLab
             tickFormatter={(v: number) => formatMonthIndex(Math.round(v))}
             tick={{ fontSize: 12, fill: "#5b6b68" }}
             minTickGap={40}
+            allowDecimals={false}
+            tickCount={xTickCount}
             allowDuplicatedCategory={false}
           />
           <YAxis dataKey="y" type="number" width={64} tickFormatter={(v: number) => formatAxis(v, yFormat)} tick={{ fontSize: 12, fill: "#5b6b68" }} domain={["auto", "auto"]} />
@@ -48,13 +58,14 @@ export function TimeSeriesChart({ series, yFormat = "sgd", height = 280, ariaLab
             contentStyle={{ borderRadius: 10, borderColor: "#e3e8e7", fontSize: 13 }}
           />
           {series.length > 1 ? <Legend wrapperStyle={{ fontSize: 12 }} /> : null}
-          {series.map((s, i) =>
-            s.kind === "scatter" ? (
-              <Scatter key={s.name} name={s.name} data={s.points} fill={s.color ?? CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.45} isAnimationActive={false} />
+          {series.map((s, i) => {
+            const label = s.nameKey ? t(s.nameKey, s.name, s.nameVars) : s.name;
+            return s.kind === "scatter" ? (
+              <Scatter key={s.name} name={label} data={s.points} fill={s.color ?? CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.45} isAnimationActive={false} />
             ) : (
-              <Line key={s.name} name={s.name} data={s.points} dataKey="y" type="monotone" stroke={s.color ?? CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} dot={false} isAnimationActive={false} />
-            ),
-          )}
+              <Line key={s.name} name={label} data={s.points} dataKey="y" type="monotone" stroke={s.color ?? CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} dot={false} isAnimationActive={false} />
+            );
+          })}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

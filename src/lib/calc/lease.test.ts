@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { BALA_TABLE, BALA_TABLE_STATUS, balaLookup, balaPct, balaRatio, balaRowStatus, cpfLimits, cpfUsage, estimateRemainingLease, remainingLeaseYears } from "./lease";
+import {
+  BALA_TABLE,
+  BALA_TABLE_STATUS,
+  balaLookup,
+  balaPct,
+  balaRatio,
+  balaRowStatus,
+  cpfLimits,
+  cpfUsage,
+  estimateRemainingLease,
+  leaseLeftAt,
+  midMonthYear,
+  remainingLeaseYears,
+  yearsLeftApprox,
+} from "./lease";
 
 describe("Bala's Table (docs/research/bala-table.md)", () => {
   it("has all 99 whole-year rows, strictly increasing", () => {
@@ -86,6 +100,37 @@ describe("remaining lease", () => {
     expect(remainingLeaseYears(1979.5, 2026.25)).toBe(52.25);
     expect(remainingLeaseYears(1900, 2026)).toBe(0);
     expect(remainingLeaseYears(2008, 2026, 999)).toBe(981);
+  });
+});
+
+describe("years of lease left (one convention for every page)", () => {
+  it("takes the middle of the month as now", () => {
+    expect(midMonthYear(new Date(Date.UTC(2026, 0, 1)))).toBeCloseTo(2026 + 0.5 / 12, 10);
+    expect(midMonthYear(new Date(Date.UTC(2026, 9, 31, 23)))).toBeCloseTo(2026 + 9.5 / 12, 10);
+  });
+  it("assumes a mid-year lease start", () => {
+    expect(leaseLeftAt(2015, 99, 2026.5)).toBe(88);
+    expect(leaseLeftAt(2015, 99, 2026)).toBe(88.5);
+    expect(leaseLeftAt(1900, 99, 2026)).toBe(0);
+    // a Date is read as the middle of its month: Oct 2026 → 2026.79
+    expect(leaseLeftAt(1990, 99, new Date(Date.UTC(2026, 9, 10)))).toBeCloseTo(99 - (2026 + 9.5 / 12 - 1990.5), 10);
+  });
+  it("rounds down to whole years, as the HDB block page shows them", () => {
+    const oct2026 = new Date(Date.UTC(2026, 9, 10));
+    expect(yearsLeftApprox(1990, 99, oct2026)).toBe(62); // 62.7
+    expect(yearsLeftApprox(2012, 99, oct2026)).toBe(84); // 84.7
+    expect(yearsLeftApprox(2012, 99, new Date(Date.UTC(2026, 2, 15)))).toBe(85); // Mar 2026: 85.3
+    expect(yearsLeftApprox(2015, 99, 2026.5)).toBe(88); // exactly 88, not 87.999…
+    expect(yearsLeftApprox(1885, 999, oct2026)).toBe(857);
+    expect(yearsLeftApprox(1980, 30, oct2026)).toBe(0);
+  });
+  it("matches the HDB block page's floor of leaseOutlook's remaining lease", () => {
+    for (let month = 0; month < 12; month++) {
+      const d = new Date(Date.UTC(2026, month, 15));
+      for (const start of [1966, 1979, 1990, 2004, 2019]) {
+        expect(yearsLeftApprox(start, 99, d)).toBe(Math.floor(remainingLeaseYears(start + 0.5, midMonthYear(d))));
+      }
+    }
   });
 });
 

@@ -151,7 +151,9 @@ function RankingExplorer({ def, options }: { def: FullRankingDef; options: Ranki
       </div>
 
       {!current ? (
-        <div className="h-64 animate-pulse rounded-xl bg-canvas" aria-busy="true" aria-label={t("common.loading", "Loading…")} />
+        <div className="h-64 animate-pulse rounded-xl bg-canvas" role="status">
+          <span className="sr-only">{t("common.loading", "Loading…")}</span>
+        </div>
       ) : current.error ? (
         <Notice tone="warn">{current.error === "plus_required" || current.error === "sign_in_required" ? t("gate.plusBody", "Start a free trial to unlock this section.") : t("common.error", "Something went wrong. Please try again.")}</Notice>
       ) : (

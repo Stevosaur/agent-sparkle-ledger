@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BookOpen, Calculator, Database, LineChart, Mail, Search } from "lucide-react";
 import type { ReactNode } from "react";
-import { site } from "@/lib/config/site";
+import { configuredContactEmail, site } from "@/lib/config/site";
 import { pageMetadata } from "@/lib/seo";
 import { T } from "@/components/i18n/t";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -52,9 +52,11 @@ const pillars: { icon: ReactNode; k: string; title: string; dk: string; desc: st
 ];
 
 export default function AboutPage() {
+  // Without NEXT_PUBLIC_CONTACT_EMAIL the contact section is left out rather than publishing a placeholder.
+  const email = configuredContactEmail();
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "About" }]} />
+      <Breadcrumbs items={[{ label: "About", k: "footer.about" }]} />
       <PageHeader
         title={<T k="trust.about.title" fallback="About {name}" vars={{ name: site.name }} />}
         description={<T k="trust.about.intro" fallback="{tagline} {name} helps you answer the questions behind every home decision: what is it worth, what did it sell for, can I afford it, and who will buy it from me later." vars={{ tagline: site.tagline, name: site.name }} />}
@@ -112,13 +114,15 @@ export default function AboutPage() {
             </ul>
           </LegalSection>
 
-          <LegalSection id="contact" title={<T k="trust.about.contactTitle" fallback="Contact" />}>
-            <p>Spotted an error, or have a question about the data? Email us with a link to the page and we will look into it.</p>
-            <ButtonLink href={`mailto:${site.contactEmail}`} variant="outline">
-              <Mail className="size-4" aria-hidden />
-              {site.contactEmail}
-            </ButtonLink>
-          </LegalSection>
+          {email ? (
+            <LegalSection id="contact" title={<T k="trust.about.contactTitle" fallback="Contact" />}>
+              <p>Spotted an error, or have a question about the data? Email us with a link to the page and we will look into it.</p>
+              <ButtonLink href={`mailto:${email}`} variant="outline">
+                <Mail className="size-4" aria-hidden />
+                {email}
+              </ButtonLink>
+            </LegalSection>
+          ) : null}
 
           <p className="flex items-center gap-2 text-sm text-muted">
             <BookOpen className="size-4" aria-hidden />

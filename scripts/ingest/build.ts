@@ -8,7 +8,8 @@ import path from "node:path";
 import { monthIndex, monthLabel } from "../../src/lib/data/months";
 import { haversineM, isInSingapore } from "../../src/lib/geo-math";
 import { median } from "../../src/lib/stats-math";
-import { hdbBlockSlug, landedAddressSlug, landedStreetSlug, projectSlug, titleCase, townSlug } from "../../src/lib/slug";
+import { LRT_CODE, stationMode } from "../../src/lib/transit";
+import { hdbBlockSlug, landedAddressSlug, landedStreetSlug, projectSlug, slugify, titleCase, townSlug } from "../../src/lib/slug";
 import type {
   DatasetMeta,
   HdbBlock,
@@ -199,6 +200,37 @@ export function privateGroup(propertyType: string): "Condo" | "EC" | "Landed" {
   if (propertyType === "Executive Condominium") return "EC";
   if (/terrace|semi-detached|detached/i.test(propertyType)) return "Landed";
   return "Condo";
+}
+
+/**
+ * Search entries for operational MRT / LRT stations, so stations can be found by name or code and picked as places
+ * in "find homes near your places". Future stations are left out: they are not somewhere you can travel to yet,
+ * and a future line at an existing interchange would duplicate that station's entry. Each entry opens that
+ * tool with the station as a place (the station is resolved from the label as `mrt:<slugify(name)>`).
+ */
+export function stationSearchEntries(stations: readonly MrtStation[]): SearchEntry[] {
+  const out: SearchEntry[] = [];
+  const seen = new Set<string>();
+  for (const s of stations) {
+    if (s.status !== "operational") continue;
+    const slug = slugify(s.name);
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    const mode = stationMode(s.codes);
+    const isLrt = mode === "LRT";
+    // an MRT interchange with an LRT line (e.g. Punggol NE17 / PTC) is labelled MRT but should also match "lrt"
+    const alsoLrt = !isLrt && s.codes.some((c) => LRT_CODE.test(c));
+    out.push({
+      kind: "mrt",
+      href: `/homes/fit/?p=mrt:${slug}`,
+      label: `${titleCase(s.name)} ${mode}`,
+      sub: s.codes.length ? s.codes.join(" / ") : `${mode} station`,
+      postal: null,
+      terms: `${s.codes.join(" ")} ${s.name} station${alsoLrt ? " lrt" : ""}`.toLowerCase(),
+      weight: 50,
+    });
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ */
@@ -452,6 +484,7 @@ export function buildSnapshot(input: SnapshotInput, outDir: string): BuildResult
       weight: t.tx.count,
     });
   }
+  search.push(...stationSearchEntries(stations));
 
   /* ----------------------------- Private ----------------------------- */
 

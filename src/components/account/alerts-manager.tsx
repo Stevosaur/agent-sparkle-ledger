@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
 import { SearchBox } from "@/components/search/search-box";
 import { apiJson } from "./api";
+import { T } from "@/components/i18n/t";
 
 /** Stable reference: SearchBox re-runs its fetch effect when `kinds` changes identity. */
 const ALERT_SEARCH_KINDS: SearchKind[] = ["hdb", "condo", "landed", "landed-street", "launch"];
@@ -91,7 +92,7 @@ export function AlertsManager() {
   }
 
   if (loadError) return <Notice tone="warn">{t("common.error", "Something went wrong. Please try again.")}</Notice>;
-  if (!data) return <div className="h-40 animate-pulse rounded-xl bg-surface" aria-busy="true" />;
+  if (!data) return <div className="h-40 animate-pulse rounded-xl bg-surface" role="status"><span className="sr-only"><T k="common.loading" fallback="Loading…" /></span></div>;
 
   const canAdd = data.telegram.configured && data.items.length < data.max;
 

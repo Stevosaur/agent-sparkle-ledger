@@ -9,7 +9,7 @@ import { formatPct, formatSgd } from "@/lib/format";
 import { affordability, type AffordabilityInput, type AffordabilityResult } from "@/lib/calc/affordability";
 import { bankLtv, hdbLoanLtv, hdbLoanMaxTenure, maxBankTenure, maxServiceableLoan, maxTenureForStandardLtv, msrApplies, type PropertyClass } from "@/lib/calc/loan";
 import { monthlyPayment } from "@/lib/calc/mortgage";
-import { BANK_STRESS_RATE_PCT, HDB_LOAN_AGE_LIMIT, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, MSR_LIMIT, TDSR_LIMIT, type BuyerProfile } from "@/lib/calc/rules";
+import { BANK_STRESS_RATE_PCT, HDB_LOAN_AGE_LIMIT, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, MSR_LIMIT, ruleNeedsDisclaimer, TDSR_LIMIT, type BuyerProfile, type RuleKey } from "@/lib/calc/rules";
 import { BreakdownRow, NumberField, parseNum, Segmented } from "./controls";
 import { HomesThatFit } from "./homes-that-fit";
 import { SaveCalculation } from "./save-calculation";
@@ -175,7 +175,7 @@ export function AffordabilityTool({ defaults }: { defaults: AffordabilityDefault
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card>
-          <CardHeader title={t("tools.aff.inputsTitle", "Your numbers")} />
+          <CardHeader as="h2" title={t("tools.aff.inputsTitle", "Your numbers")} />
           <CardBody className="space-y-6">
             {mode === "budget" ? (
               <div className="grid gap-4 sm:grid-cols-2">
@@ -234,7 +234,7 @@ function BudgetResult({ input, result }: { input: AffordabilityInput; result: Af
   const standardLtvYears = input.lender === "bank" ? maxTenureForStandardLtv(input.propertyClass, input.age) : null;
   return (
     <Card>
-      <CardHeader title={t("tools.aff.resultTitle", "What you can afford")} />
+      <CardHeader as="h2" title={t("tools.aff.resultTitle", "What you can afford")} />
       <CardBody className="space-y-4">
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-muted">{t("tools.aff.maxPrice", "Maximum price")}</div>
@@ -283,9 +283,30 @@ function BudgetResult({ input, result }: { input: AffordabilityInput; result: Af
             msr: formatPct(MSR_LIMIT, 0),
           })}
         </p>
+        <IndicativeNote rules={result.rules} />
       </CardBody>
     </Card>
   );
+}
+
+/** "Indicative" line, shown whenever a result relies on a rule that rules.ts does not mark verified. */
+function IndicativeNote({ rules }: { rules: readonly RuleKey[] }) {
+  const t = useT();
+  const indicative = [...new Set(rules)].filter(ruleNeedsDisclaimer);
+  if (indicative.length === 0) return null;
+  return (
+    <p className="text-xs text-muted">
+      {t("tools.aff.indicative", "Indicative: some rules used here are not yet verified against the agencies' own pages, so check with MAS / HDB / IRAS / CPF Board before you commit.")}
+    </p>
+  );
+}
+
+/** Rules behind the "from my income" result (the loan part of affordability()'s list: no stamp duty or CPF). */
+function incomeModeRules(cls: PropertyClass, lender: "hdb" | "bank"): RuleKey[] {
+  if (lender === "hdb") return ["hdbLoanLtv", "hdbLoanMsr", "hdbStressRate", "hdbLoanRate", "hdbLoanTenure"];
+  const rules: RuleKey[] = ["tdsr", "bankStressRate", "bankLtv", "bankLtvTriggers", "bankMaxTenure", "incomeWeightedAge"];
+  if (msrApplies(cls)) rules.push("msr");
+  return rules;
 }
 
 function IncomeResult({ cls, lender, income, debts, tenureYears, ratePct, age, outstanding }: { cls: PropertyClass; lender: "hdb" | "bank"; income: number; debts: number; tenureYears: number; ratePct: number; age: number; outstanding: number }) {
@@ -297,7 +318,7 @@ function IncomeResult({ cls, lender, income, debts, tenureYears, ratePct, age, o
   const msr = msrApplies(cls) || lender === "hdb";
   return (
     <Card>
-      <CardHeader title={t("tools.aff.incomeResultTitle", "How much you can borrow")} />
+      <CardHeader as="h2" title={t("tools.aff.incomeResultTitle", "How much you can borrow")} />
       <CardBody className="space-y-4">
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-muted">{t("tools.aff.maxLoan", "Maximum loan")}</div>
@@ -328,6 +349,7 @@ function IncomeResult({ cls, lender, income, debts, tenureYears, ratePct, age, o
         <p className="text-xs text-muted">
           {t("tools.aff.incomeSource", "Rules: MAS TDSR and MSR with the MAS / HDB medium-term interest rate floors, MAS LTV limits. Your lender may apply further haircuts to variable income.")}
         </p>
+        <IndicativeNote rules={incomeModeRules(cls, lender)} />
       </CardBody>
     </Card>
   );

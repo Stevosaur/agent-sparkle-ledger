@@ -58,6 +58,7 @@ function SideCard({ side, slot, a, b }: { side: Side; slot: "a" | "b"; a: string
   return (
     <Card className="min-w-0">
       <CardHeader
+        as="h2"
         title={
           side.col ? (
             <span>
@@ -116,7 +117,7 @@ export default async function CompareUnitsPage({ searchParams }: { searchParams:
   return (
     <PageContainer className="space-y-8 pb-12">
       <div>
-        <Breadcrumbs items={[{ label: "Compare", href: "/compare/" }, { label: "Sale by sale" }]} />
+        <Breadcrumbs items={[{ label: "Compare", href: "/compare/", k: "tools.compare" }, { label: "Sale by sale", k: "crumbs.saleBySale" }]} />
         <PageHeader
           eyebrow={<T k="tools.cmp.eyebrow" fallback="Compare" />}
           title={<T k="tools.cmp.unitsTitle" fallback="Two properties, sale by sale" />}

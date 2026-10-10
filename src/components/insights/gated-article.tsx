@@ -10,7 +10,12 @@ import { ArticleBlocks } from "./article-blocks";
 function Remainder({ slug }: { slug: string }) {
   const t = useT();
   const { data, error, loading } = useGatedJson<{ slug: string; blocks: ResolvedBlock[] }>(`/api/gated/insights/article/${encodeURIComponent(slug)}/`);
-  if (loading) return <div className="h-64 animate-pulse rounded-xl bg-canvas" aria-busy="true" aria-label={t("common.loading", "Loading…")} />;
+  if (loading)
+    return (
+      <div className="h-64 animate-pulse rounded-xl bg-canvas" role="status">
+        <span className="sr-only">{t("common.loading", "Loading…")}</span>
+      </div>
+    );
   if (error || !data) return <Notice tone="warn">{t("insights.news.loadError", "The rest of this article could not be loaded. Please try again later.")}</Notice>;
   return (
     <div className="space-y-4">

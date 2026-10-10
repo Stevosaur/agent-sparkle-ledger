@@ -7,13 +7,14 @@ import { Stat, StatGrid } from "@/components/ui/stat";
 import { useT } from "@/lib/i18n/provider";
 import { formatInt, formatMonth, formatPct, formatPctSigned, formatSgd } from "@/lib/format";
 import type { ProfitLossResponse, ProfitLossRow } from "@/lib/private-insights";
+import { T } from "@/components/i18n/t";
 
 /** Same-unit repeat-sale pairs for a condo project (gated: property.profit-loss; unit-level data only). */
 export function ProfitLoss({ slug }: { slug: string }) {
   const t = useT();
   const { data, error, loading } = useGatedJson<ProfitLossResponse>(`/api/gated/private/condo/${slug}/profit-loss/`);
   if (error) return <Notice tone="warn">{t("common.error", "Something went wrong. Please try again.")}</Notice>;
-  if (loading || !data) return <div className="h-48 animate-pulse rounded-lg bg-canvas" aria-busy="true" />;
+  if (loading || !data) return <div className="h-48 animate-pulse rounded-lg bg-canvas" role="status"><span className="sr-only"><T k="common.loading" fallback="Loading…" /></span></div>;
   if (!data.available) return <p className="text-sm text-muted">{t("private.pl.needsUnit", "Profit and loss pairs need unit-level records.")}</p>;
   if (data.total === 0) return <p className="text-sm text-muted">{t("private.pl.none", "No unit has been sold twice in the records yet.")}</p>;
   return (

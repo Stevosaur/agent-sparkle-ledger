@@ -1,6 +1,6 @@
 import type { Messages } from "../types";
 
-/** Site chrome shared by every page. Keys: nav.*, tabs.*, tools.*, search.*, gate.*, next.*, common.*, footer.* */
+/** Site chrome shared by every page. Keys: nav.*, tabs.*, tools.*, search.*, gate.*, next.*, common.*, footer.*, crumbs.* */
 export const common: Messages = {
   en: {
     "nav.valuation": "Valuation",
@@ -73,6 +73,21 @@ export const common: Messages = {
     "footer.tos": "Terms",
     "footer.disclaimer": "Information only, not financial advice. Estimates can be wrong; check figures with official sources before you commit.",
     "fixture.banner": "Sample data: this deployment is showing synthetic test data, not real transactions.",
+    "nav.homes": "Homes",
+    "footer.homes": "Homes for sale & rent",
+    "gate.trialDays": "{n} days",
+    "crumbs.hdb": "HDB",
+    "crumbs.report": "Report",
+    "crumbs.saleBySale": "Sale by sale",
+    "crumbs.createAccount": "Create account",
+    "common.notFound.title": "Page not found",
+    "common.notFound.body": "We could not find that page. It may not have any recorded sales yet, or the address may be spelt differently.",
+    "common.notFound.home": "Back to home",
+    "common.errorPage.title": "Something went wrong",
+    "common.errorPage.body": "This page failed to load. Please try again.",
+    "common.errorPage.retry": "Try again",
+    "common.noRecords": "No records.",
+    "common.table": "Table",
   },
   zh: {
     "nav.valuation": "估价",
@@ -145,5 +160,20 @@ export const common: Messages = {
     "footer.tos": "服务条款",
     "footer.disclaimer": "仅供参考，不构成财务建议。估算可能有误，作出决定前请以官方资料核实。",
     "fixture.banner": "示例数据：此部署显示的是合成测试数据，并非真实成交记录。",
+    "nav.homes": "房源",
+    "footer.homes": "出售和出租房源",
+    "gate.trialDays": "{n} 天",
+    "crumbs.hdb": "组屋",
+    "crumbs.report": "报告",
+    "crumbs.saleBySale": "逐笔对比",
+    "crumbs.createAccount": "创建账户",
+    "common.notFound.title": "找不到页面",
+    "common.notFound.body": "我们找不到该页面。该房产可能尚无成交记录，或地址的拼写有所不同。",
+    "common.notFound.home": "返回首页",
+    "common.errorPage.title": "出现错误",
+    "common.errorPage.body": "此页面加载失败，请重试。",
+    "common.errorPage.retry": "重试",
+    "common.noRecords": "暂无记录。",
+    "common.table": "表格",
   },
 };

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { API_ENDPOINTS, API_ERRORS, buildOpenApiDocument } from "./spec";
 
 const doc = buildOpenApiDocument("https://example.com");
@@ -89,6 +89,26 @@ describe("OpenAPI document", () => {
     for (const e of API_ENDPOINTS) {
       const file = path.join(process.cwd(), "src/app", e.path.replace(/\{(\w+)\}/g, "[$1]"), "route.ts");
       expect(fs.existsSync(file), file).toBe(true);
+    }
+  });
+
+  it("publishes a contact e-mail only when one is configured", async () => {
+    try {
+      for (const [env, email] of [
+        ["", undefined],
+        ["hello@example.com", undefined],
+        ["api@plotline.sg", "api@plotline.sg"],
+      ] as const) {
+        vi.resetModules();
+        vi.stubEnv("NEXT_PUBLIC_CONTACT_EMAIL", env);
+        const { buildOpenApiDocument: build } = await import("./spec");
+        const contact = build("https://plotline.test").info.contact as { email?: string; url: string };
+        expect(contact.email, env).toBe(email);
+        expect(contact.url).toBe("https://plotline.test/docs/");
+      }
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
     }
   });
 });

@@ -5,6 +5,7 @@ import { getMrtStations } from "@/lib/data/geo";
 import { resolveProperty } from "@/lib/data/resolve";
 import { parsePropertyRef } from "@/lib/property-ref";
 import { slugify, titleCase } from "@/lib/slug";
+import { stationMode } from "@/lib/transit";
 import { rankByWeightedDistance } from "./fit";
 import { getActiveListings, toSummary } from "./listings";
 import { resolveListingProperty } from "./property";
@@ -28,7 +29,7 @@ export function resolvePlace(ref: string): Omit<FitPlace, "weight"> | null {
     const station = getMrtStations().find((s) => slugify(s.name) === rest);
     if (!station) return null;
     const suffix = station.status === "future" ? ` (opens ${station.expectedYear ?? "TBC"})` : "";
-    return { ref, label: `${titleCase(station.name)} MRT${suffix}`, lat: station.lat, lng: station.lng };
+    return { ref, label: `${titleCase(station.name)} ${stationMode(station.codes)}${suffix}`, lat: station.lat, lng: station.lng };
   }
   const pref = parsePropertyRef(ref);
   if (!pref) return null;

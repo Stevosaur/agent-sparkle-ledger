@@ -44,7 +44,7 @@ const steps: { icon: ReactNode; k: string; title: string; dk: string; desc: stri
 export default function SpotPage() {
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Spot" }]} />
+      <Breadcrumbs items={[{ label: "Spot", k: "tabs.spot" }]} />
       <PageHeader
         eyebrow={
           <Badge tone="plus">
@@ -101,7 +101,7 @@ export default function SpotPage() {
         </div>
 
         <div>
-          <LeadForm type="general" context={{ feature: "spot" }} title="Get notified" />
+          <LeadForm type="general" context={{ feature: "spot" }} title={<T k="trust.spot.notifyTitle" fallback="Get notified" />} />
         </div>
       </div>
     </PageContainer>

@@ -19,7 +19,6 @@ import { Stat, StatGrid } from "@/components/ui/stat";
 import { DataTable, type Column } from "@/components/ui/table";
 import { EmptyState, Notice } from "@/components/ui/notice";
 import { TimeSeriesChart, type TimeSeries } from "@/components/charts/time-series-chart";
-import { GatedPanel } from "@/components/gating/gated-panel";
 import { AskPanel } from "@/components/ai/ask-panel";
 import { WhatsNext } from "@/components/property/whats-next";
 import { T } from "@/components/i18n/t";
@@ -89,7 +88,8 @@ export default async function LandedStreetPage({ params }: Props) {
   const coverage = getCoverage();
   const point = pointOf(s);
   const near = point ? nearbyContext(point) : null;
-  const districtSeries = s.district != null ? (getSeries(`private-d:${s.district}:Landed`) ?? getSeries(`private-d:${s.district}:ALL`)) : null;
+  const landedSeries = s.district != null ? getSeries(`private-d:${s.district}:Landed`) : null;
+  const districtSeries = landedSeries ?? (s.district != null ? getSeries(`private-d:${s.district}:ALL`) : null);
 
   const rows: AddressRow[] = addresses.slice(0, MAX_ADDRESSES).map((a) => {
     let estimate: TimeAdjustedEstimate | null = null;
@@ -108,7 +108,15 @@ export default async function LandedStreetPage({ params }: Props) {
   const scatter = salesScatter(txs, chartFrom);
   if (scatter.length) chartSeries.push({ name: "Sales on this street (land psf)", points: scatter, kind: "scatter" });
   const districtPts = seriesPsfPoints(districtSeries?.points, chartFrom, asOf ?? undefined);
-  if (districtPts.length) chartSeries.push({ name: `${formatDistrict(s.district)} median psf (all private)`, points: districtPts });
+  if (districtPts.length) {
+    // the legend names the series actually plotted: the landed index, or the all-private one where the district has none
+    const d = formatDistrict(s.district);
+    chartSeries.push(
+      landedSeries
+        ? { name: `${d} median land psf (landed houses)`, nameKey: "private.chart.districtLanded", nameVars: { d }, points: districtPts }
+        : { name: `${d} median psf (all private)`, nameKey: "private.chart.districtAll", nameVars: { d }, points: districtPts },
+    );
+  }
 
   const addressCols: Column<AddressRow>[] = [
     {
@@ -153,7 +161,7 @@ export default async function LandedStreetPage({ params }: Props) {
 
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Property analysis", href: "/property-analysis/" }, { label: name }]} />
+      <Breadcrumbs items={[{ label: "Property analysis", href: "/property-analysis/", k: "tools.analysis" }, { label: name }]} />
       {point ? (
         <JsonLd
           data={{
@@ -274,13 +282,12 @@ export default async function LandedStreetPage({ params }: Props) {
                 <h3 className="mb-3 text-base font-semibold text-ink">
                   <T k="private.sales.full" fallback="Full sales history" /> <span className="text-sm font-normal text-muted">({formatInt(txs.length)})</span>
                 </h3>
-                <GatedPanel feature="sales.full">
-                  <Card>
-                    <CardBody>
-                      <SalesHistory endpoint={`/api/gated/private/landed-street/${s.slug}/sales/`} variant="landed" showAddress={txs.some((t) => t.address)} />
-                    </CardBody>
-                  </Card>
-                </GatedPanel>
+                {/* free for everyone: the street page shows every address with its sales (spec: landed street is Free) */}
+                <Card>
+                  <CardBody>
+                    <SalesHistory endpoint={`/api/gated/private/landed-street/${s.slug}/sales/`} variant="landed" showAddress={txs.some((t) => t.address)} />
+                  </CardBody>
+                </Card>
               </div>
             ) : null}
             <SourceLine>

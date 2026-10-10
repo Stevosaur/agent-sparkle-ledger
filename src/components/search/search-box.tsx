@@ -87,6 +87,16 @@ export function SearchBox({
   }, []);
 
   const visible = q.trim().length >= 2 ? results : [];
+  const popupOpen = open && q.trim().length >= 2;
+  const listOpen = popupOpen && visible.length > 0;
+  const optionId = (i: number) => `${listId}-opt-${i}`;
+  const activeId = listOpen && visible[active] ? optionId(active) : undefined;
+
+  /** Keyboard highlight: also keeps the option in view (hover highlights without scrolling the list under the pointer). */
+  function highlight(i: number) {
+    setActive(i);
+    document.getElementById(optionId(i))?.scrollIntoView?.({ block: "nearest" });
+  }
 
   function choose(entry: SearchEntry) {
     setOpen(false);
@@ -104,9 +114,10 @@ export function SearchBox({
           type="search"
           name={name}
           role="combobox"
-          aria-expanded={open && visible.length > 0}
+          aria-expanded={listOpen}
           aria-controls={listId}
           aria-autocomplete="list"
+          aria-activedescendant={activeId}
           aria-label={placeholder ?? t("search.placeholder")}
           autoFocus={autoFocus}
           value={q}
@@ -115,46 +126,64 @@ export function SearchBox({
             setDirty(true);
           }}
           onFocus={() => visible.length > 0 && setOpen(true)}
+          // options are not focusable (they preventDefault on mousedown), so leaving the input means leaving the widget
+          onBlur={() => setOpen(false)}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();
-              setActive((a) => Math.min(a + 1, visible.length - 1));
+              if (!open) {
+                // reopening starts at the first option (the list remounts scrolled to the top)
+                if (visible.length) {
+                  setActive(0);
+                  setOpen(true);
+                }
+              } else highlight(Math.max(0, Math.min(active + 1, visible.length - 1)));
             } else if (e.key === "ArrowUp") {
               e.preventDefault();
-              setActive((a) => Math.max(a - 1, 0));
+              highlight(Math.max(Math.min(active, visible.length) - 1, 0));
             } else if (e.key === "Enter" && open && visible[active]) {
               e.preventDefault();
               choose(visible[active]);
             } else if (e.key === "Escape") setOpen(false);
           }}
           placeholder={placeholder ?? t("search.placeholder")}
-          className={cn("h-full w-full min-w-0 bg-transparent text-ink outline-none placeholder:text-muted/70", size === "lg" ? "text-base" : "text-sm")}
+          className={cn("h-full w-full min-w-0 bg-transparent text-ink outline-none placeholder:text-muted", size === "lg" ? "text-base" : "text-sm")}
         />
         {loading ? <span className="text-xs text-muted">{t("search.searching")}</span> : null}
       </div>
-      {open && q.trim().length >= 2 ? (
-        <ul id={listId} role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-96 overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-lg">
-          {visible.length === 0 && !loading ? <li className="px-4 py-3 text-sm text-muted">{t("search.noResults")}</li> : null}
+      {listOpen ? (
+        // mousedown would move focus off the input (closing the list via onBlur) before the click lands
+        <ul
+          id={listId}
+          role="listbox"
+          aria-label={placeholder ?? t("search.placeholder")}
+          onMouseDown={(e) => e.preventDefault()}
+          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-96 overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-lg"
+        >
           {visible.map((r, i) => {
             const Icon = ICONS[r.kind] ?? Search;
             return (
-              <li key={r.href} role="option" aria-selected={i === active}>
-                <button
-                  type="button"
-                  onMouseEnter={() => setActive(i)}
-                  onClick={() => choose(r)}
-                  className={cn("flex w-full items-start gap-3 px-4 py-2 text-left", i === active ? "bg-brand-50" : "hover:bg-canvas")}
-                >
-                  <Icon className="mt-0.5 size-4 shrink-0 text-brand-700" aria-hidden />
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-ink">{r.label}</span>
-                    <span className="block truncate text-xs text-muted">{r.sub}</span>
-                  </span>
-                </button>
+              <li
+                key={r.href}
+                id={optionId(i)}
+                role="option"
+                aria-selected={i === active}
+                onMouseDown={(e) => e.preventDefault()}
+                onMouseEnter={() => setActive(i)}
+                onClick={() => choose(r)}
+                className={cn("flex w-full cursor-pointer items-start gap-3 px-4 py-2 text-left", i === active ? "bg-brand-50" : "hover:bg-canvas")}
+              >
+                <Icon className="mt-0.5 size-4 shrink-0 text-brand-700" aria-hidden />
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-ink">{r.label}</span>
+                  <span className="block truncate text-xs text-muted">{r.sub}</span>
+                </span>
               </li>
             );
           })}
         </ul>
+      ) : popupOpen && !loading ? (
+        <p role="status" className="absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted shadow-lg">{t("search.noResults")}</p>
       ) : null}
     </div>
   );

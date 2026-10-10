@@ -144,7 +144,7 @@ export default async function HdbBlockPage({ params }: Props) {
 
   return (
     <PageContainer className="pb-12">
-      <Breadcrumbs items={[{ label: "HDB", href: "/hdb/" }, { label: town, href: `/insights/town/${block.townSlug}/` }, { label }]} />
+      <Breadcrumbs items={[{ label: "HDB", href: "/hdb/", k: "crumbs.hdb" }, { label: town, href: `/insights/town/${block.townSlug}/` }, { label }]} />
       <JsonLd data={jsonLd} />
 
       <BlockHeader block={block} label={label} lastSale={last ? { price: last.price, flatType: last.flatType, month: last.month } : null} yearsLeft={lease ? Math.floor(lease.remainingToday) : null} latestMonth={latestMonth} />

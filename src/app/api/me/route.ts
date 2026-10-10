@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { getViewer } from "@/lib/auth/viewer";
 import { isAiConfigured, isStripeConfigured, isSupabaseConfigured } from "@/lib/auth/config";
+import type { ClientViewer } from "@/lib/auth/viewer-context";
+import { leadSinks } from "@/lib/leads/deliver";
 
 export const dynamic = "force-dynamic";
 
 /** Current visitor + entitlements, consumed by ViewerProvider on the client. */
 export async function GET() {
   const viewer = await getViewer();
+  const sinks = leadSinks();
   return NextResponse.json(
     {
       signedIn: Boolean(viewer.userId),
@@ -17,8 +20,9 @@ export async function GET() {
       currentPeriodEnd: viewer.currentPeriodEnd,
       gating: viewer.gating,
       features: viewer.features,
-      integrations: { auth: isSupabaseConfigured(), billing: isStripeConfigured(), ai: isAiConfigured() },
-    },
+      // leads: /api/leads/ can store or forward a request; without it lead forms show direct-contact options up front.
+      integrations: { auth: isSupabaseConfigured(), billing: isStripeConfigured(), ai: isAiConfigured(), leads: sinks.database || sinks.webhook },
+    } satisfies ClientViewer,
     { headers: { "Cache-Control": "private, no-store" } },
   );
 }

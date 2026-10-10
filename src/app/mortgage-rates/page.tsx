@@ -59,7 +59,7 @@ export default function MortgageRatesPage() {
   return (
     <PageContainer className="space-y-10 pb-12">
       <div>
-        <Breadcrumbs items={[{ label: "Mortgage rates" }]} />
+        <Breadcrumbs items={[{ label: "Mortgage rates", k: "nav.mortgage" }]} />
         <PageHeader
           eyebrow={<T k="tools.mr.eyebrow" fallback="Mortgage rates" />}
           title={<T k="tools.mr.title" fallback="Mortgage rates today" />}

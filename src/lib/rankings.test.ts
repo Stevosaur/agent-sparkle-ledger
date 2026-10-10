@@ -222,6 +222,33 @@ describe("demand vs supply", () => {
     expect(rows[0].value).toBeNull();
     expect(rows[1].metric).toBe("0.50×");
   });
+  it("leaves supply unknown, not zero, when no launch data is loaded", () => {
+    const [r] = townDemandSupply({ referenceYear: 2026, hdbBlocks: blocks, towns: [town], launches: [] });
+    expect(r.demandUnits).toBe(300);
+    expect(r.supplyUnits).toBeNull();
+    expect(r.ratio).toBeNull();
+    expect(r.launches).toEqual([]);
+  });
+  it("does not claim 'No launches nearby' without launch data, and ranks towns by demand", () => {
+    const other: TownSummary = { ...town, town: "OTHER", slug: "other" };
+    const inp = inputs({
+      towns: [town, other],
+      hdbBlocks: [...blocks, block("blk-9-o", { townSlug: "other", town: "OTHER", yearCompleted: 2023, dwellingUnits: 80, lat: 1.3, lng: 103.7 })],
+      launches: [],
+    });
+    const rows = buildDemandSupplyRows(inp);
+    expect(rows.map((r) => r.townSlug)).toEqual(["testville", "other"]);
+    for (const row of rows) {
+      expect(row.metric).toBe("Launch data not loaded");
+      expect(row.value).toBeNull();
+      expect(row.cells[1]).toBe("—");
+    }
+  });
+  it("still says 'Location unknown' for a town without mapped blocks when launch data is loaded", () => {
+    const rows = buildDemandSupplyRows(inputs({ hdbBlocks: blocks.map((b) => ({ ...b, lat: undefined, lng: undefined })), launches: [launch("near", { totalUnits: 600 })] }));
+    expect(rows).toHaveLength(1);
+    expect(rows[0].metric).toBe("Location unknown");
+  });
 });
 
 describe("en-bloc ranking", () => {

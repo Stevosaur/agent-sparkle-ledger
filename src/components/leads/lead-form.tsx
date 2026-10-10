@@ -7,7 +7,8 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Button, buttonClass } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
-import { site } from "@/lib/config/site";
+import { configuredContactEmail, site } from "@/lib/config/site";
+import { useViewer } from "@/lib/auth/viewer-context";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/cn";
 import {
@@ -24,7 +25,7 @@ import {
   type LeadField,
   type LeadFieldErrors,
 } from "@/lib/leads/validate";
-import { isConfiguredEmail, mailtoHref, whatsappHref } from "@/lib/leads/contact-links";
+import { mailtoHref, whatsappHref } from "@/lib/leads/contact-links";
 
 export type LeadType = "mortgage" | "enquiry" | "services" | "listing" | "valuation" | "general";
 
@@ -44,7 +45,8 @@ export interface LeadFormProps {
   type: LeadType;
   /** context fields stored with the lead, e.g. { property: "condo:the-hillford" } */
   context?: Record<string, string>;
-  title?: string;
+  /** card heading; pass a translated node, e.g. <T k="…" fallback="…" /> (defaults to the type's heading) */
+  title?: ReactNode;
   description?: string;
   submitLabel?: string;
   initial?: LeadFormInitialValues;
@@ -161,11 +163,15 @@ function ErrorText({ id, children }: { id: string; children: ReactNode }) {
 
 /**
  * Lead capture form posting to /api/leads/. Fields depend on `type` (services: postal code, service,
- * preferred date; mortgage: purpose). Requires PDPA consent. When the API answers 503 (no lead store
- * configured) it offers WhatsApp and e-mail fallbacks, showing only the channels that are configured.
+ * preferred date; mortgage: purpose). Requires PDPA consent. When no lead store is configured (known
+ * up front from /api/me/, or from a 503 answer) it offers WhatsApp and e-mail fallbacks, showing only the
+ * channels that are configured.
  */
 export function LeadForm({ type, context, title, description, submitLabel, initial }: LeadFormProps) {
   const t = useT();
+  const { viewer } = useViewer();
+  // Only when /api/me/ says so explicitly: while the viewer loads (or on an older API) the form works as before.
+  const leadsOff = viewer?.integrations.leads === false;
   const uid = useId();
   const id = (field: string) => `${uid}-${field}`;
   const copy = TYPE_COPY[type] ?? TYPE_COPY.general;
@@ -219,7 +225,7 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (status === "submitting") return;
+    if (status === "submitting" || leadsOff) return;
     const errs = validateLeadFields({ type, ...values }, singaporeToday());
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
@@ -295,7 +301,8 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
     );
   }
 
-  // Fallback channels for the 503 "leads_disabled" case, built locally from what the visitor typed.
+  // Fallback channels when no lead store is configured (up front, or after a 503 "leads_disabled"),
+  // built locally from what the visitor typed.
   const summaryLines = [
     t("homes.lead.fallbackIntro", "Hi {site}, I would like help with {topic}.", { site: site.name, topic: t(copy.summary[0], copy.summary[1]) }),
     values.name.trim() && `${t("homes.lead.name", "Name")}: ${values.name.trim()}`,
@@ -306,7 +313,24 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
   ].filter(Boolean) as string[];
   const fallbackText = summaryLines.join("\n");
   const waHref = whatsappHref(site.whatsapp, fallbackText);
-  const emailOk = isConfiguredEmail(site.contactEmail);
+  const contactEmail = configuredContactEmail();
+  const fallbackButtons =
+    waHref || contactEmail ? (
+      <div className="mt-2 flex flex-wrap gap-2">
+        {waHref ? (
+          <a href={waHref} target="_blank" rel="noopener noreferrer" className={buttonClass("primary", "sm")}>
+            <MessageCircle className="size-4" aria-hidden />
+            {t("homes.lead.whatsapp", "WhatsApp us")}
+          </a>
+        ) : null}
+        {contactEmail ? (
+          <a href={mailtoHref(contactEmail, `${site.name}: ${t(copy.summary[0], copy.summary[1])}`, fallbackText)} className={buttonClass("outline", "sm")}>
+            <Mail className="size-4" aria-hidden />
+            {t("homes.lead.email", "E-mail")}
+          </a>
+        ) : null}
+      </div>
+    ) : null;
 
   const busy = status === "submitting";
   const share = SHARE_WITH[type];
@@ -316,6 +340,18 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
     <Card>
       <CardHeader title={heading} description={intro} />
       <CardBody>
+        {leadsOff ? (
+          <Notice tone="warn" title={t("homes.lead.disabledTitle", "Online requests are not connected yet")} className="mb-4">
+            {fallbackButtons ? (
+              <>
+                <p>{t("homes.lead.offlineBody", "This form cannot send requests on this site yet. Please contact us directly instead:")}</p>
+                {fallbackButtons}
+              </>
+            ) : (
+              <p>{t("homes.lead.offlineNoFallback", "This form cannot send requests on this site yet, and no other contact channel is set up. Please check back later.")}</p>
+            )}
+          </Notice>
+        ) : null}
         <form noValidate onSubmit={onSubmit} className="space-y-4" aria-describedby={Object.keys(errors).length ? id("summary") : undefined}>
           {Object.keys(errors).length > 0 ? (
             <p id={id("summary")} role="alert" className="text-sm font-medium text-down">
@@ -522,25 +558,12 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
             {errors.consent ? <ErrorText id={id("consent-error")}>{errorFor("consent")}</ErrorText> : null}
           </div>
 
-          {status === "disabled" ? (
+          {status === "disabled" && !leadsOff ? (
             <Notice tone="warn" title={t("homes.lead.disabledTitle", "Online requests are not connected yet")}>
-              {waHref || emailOk ? (
+              {fallbackButtons ? (
                 <>
                   <p>{t("homes.lead.disabledBody", "Your request was not sent. Please contact us directly instead:")}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {waHref ? (
-                      <a href={waHref} target="_blank" rel="noopener noreferrer" className={buttonClass("primary", "sm")}>
-                        <MessageCircle className="size-4" aria-hidden />
-                        {t("homes.lead.whatsapp", "WhatsApp us")}
-                      </a>
-                    ) : null}
-                    {emailOk ? (
-                      <a href={mailtoHref(site.contactEmail, `${site.name}: ${t(copy.summary[0], copy.summary[1])}`, fallbackText)} className={buttonClass("outline", "sm")}>
-                        <Mail className="size-4" aria-hidden />
-                        {t("homes.lead.email", "E-mail")}
-                      </a>
-                    ) : null}
-                  </div>
+                  {fallbackButtons}
                 </>
               ) : (
                 <p>{t("homes.lead.disabledNoFallback", "Your request was not sent and no other contact channel is set up on this site yet. Please try again later.")}</p>
@@ -558,7 +581,7 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
             </p>
           ) : null}
 
-          <Button type="submit" disabled={busy} aria-busy={busy || undefined} className={cn("w-full sm:w-auto")}>
+          <Button type="submit" disabled={busy || leadsOff} aria-busy={busy || undefined} className={cn("w-full sm:w-auto")}>
             {busy ? t("homes.lead.sending", "Sending…") : (submitLabel ?? t("homes.lead.submit", "Send request"))}
           </Button>
         </form>

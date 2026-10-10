@@ -224,7 +224,9 @@ export function TrendBuilder({ groups, defaultKey, minYear, maxYear }: { groups:
       <Card>
         <CardBody className="space-y-3">
           {pending ? (
-            <div className="h-[320px] animate-pulse rounded-xl bg-canvas" aria-busy="true" aria-label={t("common.loading", "Loading…")} />
+            <div className="h-[320px] animate-pulse rounded-xl bg-canvas" role="status">
+              <span className="sr-only">{t("common.loading", "Loading…")}</span>
+            </div>
           ) : plotted.length ? (
             <TimeSeriesChart series={lines} yFormat={yFormat} ariaLabel={ariaLabel} height={320} />
           ) : (

@@ -92,6 +92,11 @@ describe("formatting helpers", () => {
     expect(tenureSummary({ raw: "30 yrs from 1980", kind: "leasehold", years: 30, startYear: 1980 }, 2026)).toMatchObject({ yearsLeft: 0 });
     expect(tenureSummary(null, 2026)).toBeNull();
     expect(tenureText({ raw: "99 yrs lease commencing from 2012", kind: "leasehold", years: 99, startYear: 2012 }, 2026)).toBe("99-year leasehold from 2012 (~85 years left)");
+    // a Date uses the HDB block page's convention: mid-year lease start, mid-month now, rounded down (Oct 2026: 84.7 → 84)
+    const lease2012 = { raw: "99 yrs lease commencing from 2012", kind: "leasehold", years: 99, startYear: 2012 } as const;
+    expect(tenureSummary(lease2012, new Date(Date.UTC(2026, 9, 10)))).toMatchObject({ yearsLeft: 84 });
+    expect(tenureSummary(lease2012, new Date(Date.UTC(2026, 2, 10)))).toMatchObject({ yearsLeft: 85 });
+    expect(tenureText(lease2012, new Date(Date.UTC(2026, 9, 10)))).toBe("99-year leasehold from 2012 (~84 years left)");
     expect(tenureText(null, 2026)).toBe("Tenure not recorded");
   });
 });

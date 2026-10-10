@@ -37,7 +37,7 @@ export default function HdbIndexPage() {
 
   return (
     <PageContainer className="pb-12">
-      <Breadcrumbs items={[{ label: "HDB" }]} />
+      <Breadcrumbs items={[{ label: "HDB", k: "crumbs.hdb" }]} />
       <PageHeader
         title={<T k="hdb.index.title" fallback="HDB resale prices by block" />}
         description={<T k="hdb.index.desc" fallback="Every HDB block with resale records: recent sales with lease left, rents, MRT access, MOP supply and nearby blocks." />}

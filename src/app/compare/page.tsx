@@ -105,7 +105,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
   return (
     <PageContainer className="space-y-8 pb-12">
       <div>
-        <Breadcrumbs items={[{ label: "Compare" }]} />
+        <Breadcrumbs items={[{ label: "Compare", k: "tools.compare" }]} />
         <PageHeader
           eyebrow={<T k="tools.cmp.eyebrow" fallback="Compare" />}
           title={<T k="tools.cmp.title" fallback="Compare properties side by side" />}

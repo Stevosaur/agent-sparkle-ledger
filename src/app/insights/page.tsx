@@ -41,7 +41,7 @@ export default function InsightsPage() {
 
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Insights" }]} />
+      <Breadcrumbs items={[{ label: "Insights", k: "nav.insights" }]} />
       <PageHeader
         eyebrow={<T k="insights.page.eyebrow" fallback="Market insights" />}
         title={<T k="insights.page.title" fallback="Singapore property market insights" />}

@@ -13,8 +13,12 @@ import { ValuationResult, type ValuationRequestBody } from "./valuation-tool";
 
 type State = { key: string; status: "done"; data: ValuationResponse } | { key: string; status: "error"; message: string };
 
-/** Print-optimised valuation report. Fetches the Plus-gated report endpoint itself (never receives gated data as props). */
-export function ValuationReport({ body }: { body: ValuationRequestBody }) {
+/**
+ * Print-optimised valuation report. Fetches the Plus-gated report endpoint itself (never receives gated data as props).
+ * `siteHost` is the host printed on the report, resolved by the server page: client bundles only see NEXT_PUBLIC_*
+ * variables, so `site.url` here would fall back to localhost on Vercel. Without it, the current browser host is used.
+ */
+export function ValuationReport({ body, siteHost }: { body: ValuationRequestBody; siteHost?: string }) {
   const t = useT();
   const key = JSON.stringify(body);
   const [state, setState] = useState<State | null>(null);
@@ -40,7 +44,12 @@ export function ValuationReport({ body }: { body: ValuationRequestBody }) {
 
   const backHref = `/valuation/?ref=${encodeURIComponent(body.ref)}`;
 
-  if (!current) return <div className="h-64 animate-pulse rounded-xl bg-canvas" aria-busy="true" aria-label={t("common.loading", "Loading…")} />;
+  if (!current)
+    return (
+      <div className="h-64 animate-pulse rounded-xl bg-canvas" role="status">
+        <span className="sr-only">{t("common.loading", "Loading…")}</span>
+      </div>
+    );
   if (current.status === "error")
     return (
       <div className="space-y-4">
@@ -90,7 +99,8 @@ export function ValuationReport({ body }: { body: ValuationRequestBody }) {
           </div>
           <div className="text-right text-xs text-muted">
             <div>{t("tools.val.dataTo", "Data to {month}", { month: formatMonth(d.asOf) })}</div>
-            <div>{site.url.replace(/^https?:\/\//, "")}</div>
+            {/* the report only renders after the client fetch, never on the server, so window is defined here */}
+            <div>{siteHost ?? window.location.host}</div>
           </div>
         </header>
         <ValuationResult data={d} compact />

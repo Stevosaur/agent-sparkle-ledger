@@ -1,7 +1,9 @@
 import "server-only";
 import { getDistrictRentals, getDistrictTransactions, getProjects, LANDED_TYPES } from "@/lib/data/private";
 import { getMeta } from "@/lib/data/meta";
-import { monthIndex } from "@/lib/data/months";
+import { monthLabel } from "@/lib/data/months";
+import { getSeries } from "@/lib/data/stats";
+import { anchorMonth } from "@/lib/home-insights";
 import type { MarketSegment, PrivateProject } from "@/lib/data/types";
 import { SQFT_PER_SQM } from "@/lib/format";
 import { median } from "@/lib/stats-math";
@@ -69,14 +71,13 @@ const EMPTY_SCAN: PrivateSalesScan = {
   bulkExcluded12m: 0,
 };
 
+/**
+ * The last COMPLETE month of private sales, the end of every window here. Same anchor as the home page's market
+ * pulse: the month the snapshot was generated in is still receiving records, so it is skipped (see `anchorMonth`).
+ */
 function latestPrivateMonth(): number | null {
-  const label = getMeta().latestMonth.private;
-  if (!label) return null;
-  try {
-    return monthIndex(label);
-  } catch {
-    return null;
-  }
+  const meta = getMeta();
+  return anchorMonth(meta.latestMonth.private, meta.generatedAt || null, getSeries("private:ALL:ALL"));
 }
 
 export function getPrivateSalesScan(): PrivateSalesScan {
@@ -93,7 +94,7 @@ function computePrivateSalesScan(): PrivateSalesScan {
       const tx = getDistrictTransactions(d);
       if (tx.length && tx[0].monthIndex > max) max = tx[0].monthIndex;
     }
-    latest = max >= 0 ? max : null;
+    latest = max >= 0 ? anchorMonth(monthLabel(max), getMeta().generatedAt || null, null) : null;
   }
   if (latest == null) return EMPTY_SCAN;
   const w = comparisonWindows(latest);

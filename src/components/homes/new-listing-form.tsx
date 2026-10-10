@@ -19,6 +19,7 @@ import { HDB_TYPICAL_BEDROOMS, LISTING_LIMITS as L } from "@/lib/homes/constants
 import type { ListingInputField } from "@/lib/homes/listing-schema";
 import type { ListingKind, ListingType } from "@/lib/homes/types";
 import { cn } from "@/lib/cn";
+import { T } from "@/components/i18n/t";
 
 type Field = ListingInputField | "confirm";
 type Errors = Partial<Record<Field, string>>;
@@ -91,7 +92,7 @@ export function NewListingForm() {
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "submitting" | "error" | "disabled" | "signin" | "rate_limited">("idle");
 
-  if (loading) return <div className="h-96 animate-pulse rounded-xl bg-canvas" aria-busy="true" />;
+  if (loading) return <div className="h-96 animate-pulse rounded-xl bg-canvas" role="status"><span className="sr-only"><T k="common.loading" fallback="Loading…" /></span></div>;
   if (viewer && !viewer.integrations.auth) {
     return (
       <Notice tone="warn" title={t("homes.new.noAuthTitle", "Listing is not available on this deployment")}>

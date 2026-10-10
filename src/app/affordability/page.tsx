@@ -19,7 +19,7 @@ export default function AffordabilityPage() {
   const sora = rates?.sora.compounded3m ?? null;
   return (
     <PageContainer className="pb-12">
-      <Breadcrumbs items={[{ label: "Affordability" }]} />
+      <Breadcrumbs items={[{ label: "Affordability", k: "nav.affordability" }]} />
       <PageHeader
         eyebrow={<T k="tools.aff.eyebrow" fallback="Affordability" />}
         title={<T k="tools.aff.title" fallback="What can I afford?" />}

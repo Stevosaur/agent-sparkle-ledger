@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useId, type ReactNode } from "react";
 import { Braces, ExternalLink } from "lucide-react";
 import { site } from "@/lib/config/site";
 import { pageMetadata } from "@/lib/seo";
@@ -97,11 +98,23 @@ function abbreviate(value: unknown, depth = 0): unknown {
   return value;
 }
 
-function Code({ children }: { children: string }) {
+/** Scrollable code block: focusable, labelled region so keyboard users can scroll long examples. */
+function Code({ children, label }: { children: string; label: ReactNode }) {
+  const labelId = useId();
   return (
-    <pre className="max-h-96 max-w-full overflow-auto rounded-lg border border-line bg-canvas p-3 text-xs leading-5 text-ink">
-      <code>{children}</code>
-    </pre>
+    <>
+      <span id={labelId} hidden>
+        {label}
+      </span>
+      <pre
+        tabIndex={0}
+        role="region"
+        aria-labelledby={labelId}
+        className="max-h-96 max-w-full overflow-auto rounded-lg border border-line bg-canvas p-3 text-xs leading-5 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+      >
+        <code>{children}</code>
+      </pre>
+    </>
   );
 }
 
@@ -114,7 +127,7 @@ export default function DocsPage() {
 
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Public API" }]} />
+      <Breadcrumbs items={[{ label: "Public API", k: "trust.docs.title" }]} />
       <PageHeader
         eyebrow={<T k="trust.docs.eyebrow" fallback="Developers" />}
         title={<T k="trust.docs.title" fallback="Public API" />}
@@ -190,8 +203,8 @@ export default function DocsPage() {
             <p className="text-sm font-medium text-ink">
               <T k="trust.docs.quickStart" fallback="Quick start" />
             </p>
-            <Code>{`curl "${firstExample}"`}</Code>
-            <Code>{`const res = await fetch("${firstExample}");\nif (!res.ok) throw new Error((await res.json()).message);\nconst data = await res.json();`}</Code>
+            <Code label={<T k="trust.docs.codeCurl" fallback="curl example" />}>{`curl "${firstExample}"`}</Code>
+            <Code label={<T k="trust.docs.codeFetch" fallback="JavaScript fetch example" />}>{`const res = await fetch("${firstExample}");\nif (!res.ok) throw new Error((await res.json()).message);\nconst data = await res.json();`}</Code>
           </div>
         </Section>
 
@@ -278,11 +291,11 @@ export default function DocsPage() {
                               <ExternalLink className="size-3.5" aria-hidden />
                             </a>
                           </div>
-                          <Code>{`GET ${ex.path}`}</Code>
+                          <Code label={<T k="trust.docs.codeRequest" fallback="Example request" />}>{`GET ${ex.path}`}</Code>
                           <p className="text-xs text-muted">
                             <T k="trust.docs.response" fallback="Response {status} (arrays shortened to two items; schema {schema} in the OpenAPI document)" vars={{ status: ex.status, schema: e.response }} />
                           </p>
-                          <Code>{JSON.stringify(ex.body, null, 2)}</Code>
+                          <Code label={<T k="trust.docs.codeResponse" fallback="Example response" />}>{JSON.stringify(ex.body, null, 2)}</Code>
                         </div>
                       </CardBody>
                     </Card>

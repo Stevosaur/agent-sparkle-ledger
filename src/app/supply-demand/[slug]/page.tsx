@@ -57,7 +57,7 @@ export default async function SupplyDemandPage({ params }: { params: Params }) {
   return (
     <PageContainer className="space-y-8 pb-12">
       <div>
-        <Breadcrumbs items={[{ label: property.label, href: property.href }, { label: "Supply & demand" }]} />
+        <Breadcrumbs items={[{ label: property.label, href: property.href }, { label: "Supply & demand", k: "next.supplyDemand" }]} />
         <PageHeader
           eyebrow={
             <span className="inline-flex items-center gap-2">

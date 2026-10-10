@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n/provider";
 import { buttonClass } from "@/components/ui/button";
 import { site } from "@/lib/config/site";
 import { cn } from "@/lib/cn";
+import { T } from "@/components/i18n/t";
 
 /**
  * Shows `children` only to visitors entitled to `feature`; everyone else sees a sign-up / trial prompt.
@@ -22,7 +23,7 @@ export function GatedPanel({ feature, children, teaser, className, minHeight = 1
   const { allowed, loading, viewer } = useFeature(feature);
   const t = useT();
   const pathname = usePathname();
-  if (loading) return <div className={cn("animate-pulse rounded-xl bg-canvas", className)} style={{ minHeight }} aria-busy="true" />;
+  if (loading) return <div className={cn("animate-pulse rounded-xl bg-canvas", className)} style={{ minHeight }} role="status"><span className="sr-only"><T k="common.loading" fallback="Loading…" /></span></div>;
   if (allowed) return <>{children}</>;
   const level = FEATURES[feature];
   const needsAccount = level === "account" || !viewer?.signedIn;
@@ -39,7 +40,8 @@ export function GatedPanel({ feature, children, teaser, className, minHeight = 1
         <div className="flex flex-wrap items-center justify-center gap-2">
           {level === "plus" ? (
             <Link href={viewer?.signedIn ? "/plus/" : `/login/?next=${encodeURIComponent("/plus/")}`} className={buttonClass("plus")}>
-              {t("gate.plusCta")} · {site.plus.trialDays} days
+              {t("gate.plusCta", "Start free trial")}
+              {site.plus.trialDays > 0 ? ` · ${t("gate.trialDays", "{n} days", { n: site.plus.trialDays })}` : null}
             </Link>
           ) : (
             <Link href={`/login/?mode=signup&next=${next}`} className={buttonClass("primary")}>

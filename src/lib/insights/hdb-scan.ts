@@ -1,7 +1,9 @@
 import "server-only";
 import { estimateRemainingLeaseMonths, getHdbBlock, getTownRentals, getTowns, readHdbTxFile, storeyMid } from "@/lib/data/hdb";
 import { getMeta } from "@/lib/data/meta";
-import { monthIndex, yearOfMonth } from "@/lib/data/months";
+import { monthLabel, yearOfMonth } from "@/lib/data/months";
+import { getSeries } from "@/lib/data/stats";
+import { anchorMonth } from "@/lib/home-insights";
 import { SQFT_PER_SQM } from "@/lib/format";
 import { median } from "@/lib/stats-math";
 import { comparisonWindows, inWindow, LEASE_BANDS, leaseBand, STOREY_BANDS, storeyBand, upsert, WindowAcc, type MonthWindow } from "./math";
@@ -48,22 +50,24 @@ export interface HdbSalesScan {
 
 const EMPTY: WindowStat = { count: 0, medianPrice: null, medianPsf: null };
 
+/**
+ * The last COMPLETE month of HDB resales, the end of every window here (and so of rankings, insights modules and the
+ * market report). Same anchor as the home page's market pulse: the month the snapshot was generated in is still
+ * receiving records, so it is skipped (see `anchorMonth`).
+ */
 function latestHdbMonth(): number | null {
-  const label = getMeta().latestMonth.hdb;
-  if (label) {
-    try {
-      return monthIndex(label);
-    } catch {
-      /* fall through to a scan */
-    }
-  }
+  const meta = getMeta();
+  const generatedAt = meta.generatedAt || null;
+  const anchored = anchorMonth(meta.latestMonth.hdb, generatedAt, getSeries("hdb:ALL:ALL"));
+  if (anchored != null) return anchored;
+  // no usable meta month or national series: derive the latest month from the files
   let max = -1;
   for (const t of getTowns()) {
     const f = readHdbTxFile(t.slug);
     if (!f) continue;
     for (const m of f.m) if (m > max) max = m;
   }
-  return max >= 0 ? max : null;
+  return max >= 0 ? anchorMonth(monthLabel(max), generatedAt, null) : null;
 }
 
 export function getHdbSalesScan(): HdbSalesScan {

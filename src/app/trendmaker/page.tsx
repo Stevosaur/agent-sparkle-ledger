@@ -44,7 +44,7 @@ export default function TrendMakerPage() {
   const defaultKey = hasNational ? "hdb:ALL:ALL" : (groups[0]?.options[0]?.key ?? null);
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Insights", href: "/insights/" }, { label: "Trend builder" }]} />
+      <Breadcrumbs items={[{ label: "Insights", href: "/insights/", k: "nav.insights" }, { label: "Trend builder", k: "insights.trend.title" }]} />
       <PageHeader
         eyebrow={<T k="insights.page.eyebrow" fallback="Market insights" />}
         title={<T k="insights.trend.title" fallback="Trend builder" />}
@@ -60,7 +60,7 @@ export default function TrendMakerPage() {
           <T k="insights.trend.noSeries" fallback="Monthly series appear once HDB resale records (data.gov.sg) or URA private data are in the dataset." />
         </EmptyState>
       ) : (
-        <Suspense fallback={<div className="h-[520px] animate-pulse rounded-xl bg-canvas" aria-busy="true" />}>
+        <Suspense fallback={<div className="h-[520px] animate-pulse rounded-xl bg-canvas" role="status"><span className="sr-only"><T k="common.loading" fallback="Loading…" /></span></div>}>
           <TrendBuilder groups={groups} defaultKey={defaultKey} minYear={minYear} maxYear={maxYear} />
         </Suspense>
       )}

@@ -49,7 +49,8 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   return pageMetadata({
     title: TYPE_LABELS[f.type].title,
     description: "Private residential new launches from URA developer sales: units sold, launch prices per square foot, expected completion, tenure and developer, filterable by region and district.",
-    path: listingsHref({ type: f.type, page: f.page }),
+    // the default view (condo, first page) is canonically the bare /listings/ (as in the sitemap)
+    path: f.type === "condo" && f.page === 1 ? "/listings/" : listingsHref({ type: f.type, page: f.page }),
   });
 }
 
@@ -87,7 +88,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
 
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "New launches" }]} />
+      <Breadcrumbs items={[{ label: "New launches", k: "nav.newLaunches" }]} />
       <PageHeader
         title={<T k="launches.list.title" fallback="New launches" />}
         description={

@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const name = titleCase(p.name);
   const where = [p.district != null ? `District ${p.district}` : null, p.segment].filter(Boolean).join(", ");
   const facts = [
-    `${name}${where ? ` (${where})` : ""}: ${tenureText(p.tenure, new Date().getFullYear())}.`,
+    `${name}${where ? ` (${where})` : ""}: ${tenureText(p.tenure, new Date())}.`,
     p.tx.count ? `${formatInt(p.tx.count)} recorded sales${p.tx.lastPrice ? `, latest ${formatSgd(p.tx.lastPrice)} in ${formatMonth(p.tx.last)}` : ""}.` : null,
     p.tx.medianPsf12m ? `Median ${formatPsf(p.tx.medianPsf12m)} over the last 12 months.` : null,
     "Sales, rents, unit mix, sun path, stacking plan and nearby schools and MRT.",
@@ -100,12 +100,13 @@ export default async function CondoPage({ params }: Props) {
   const p = getCondoProject(slug);
   if (!p) notFound();
 
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentYear = now.getFullYear();
   const name = titleCase(p.name);
   const txs = getProjectTransactions(p.slug);
   const latest = latestFirst(txs);
   const asOf = latestPrivateMonth(txs);
-  const tenure = tenureSummary(p.tenure, currentYear);
+  const tenure = tenureSummary(p.tenure, now);
   const point = pointOf(p);
   const mix = saleTypeMix(txs);
   const launch = launchFor(p.launchSlug);
@@ -131,8 +132,13 @@ export default async function CondoPage({ params }: Props) {
   const scatterSample = asOf != null ? salesScatterSample(txs, asOf - 59) : { points: [], total: 0 };
   const scatter = scatterSample.points;
   const chartFrom = Math.min(line[0]?.x ?? Number.POSITIVE_INFINITY, scatter[0]?.x ?? Number.POSITIVE_INFINITY);
-  const districtSeries = p.district != null ? (getSeries(`private-d:${p.district}:NonLanded`) ?? getSeries(`private-d:${p.district}:ALL`)) : null;
+  // non-landed district index; the all-private one only when the district has no non-landed series (legend says which)
+  const nonLandedSeries = p.district != null ? getSeries(`private-d:${p.district}:NonLanded`) : null;
+  const districtSeries = nonLandedSeries ?? (p.district != null ? getSeries(`private-d:${p.district}:ALL`) : null);
   const districtPts = Number.isFinite(chartFrom) ? seriesPsfPoints(districtSeries?.points, chartFrom, asOf ?? undefined) : [];
+  const districtLegend: Pick<TimeSeries, "name" | "nameKey" | "nameVars"> = nonLandedSeries
+    ? { name: `${formatDistrict(p.district)} median psf (condos & apartments)`, nameKey: "private.chart.districtNonLanded", nameVars: { d: formatDistrict(p.district) } }
+    : { name: `${formatDistrict(p.district)} median psf (all private)`, nameKey: "private.chart.districtAll", nameVars: { d: formatDistrict(p.district) } };
   const chartSeries: TimeSeries[] = (
     [
       { name: "Monthly median psf", points: line },
@@ -144,7 +150,7 @@ export default async function CondoPage({ params }: Props) {
         points: scatter,
         kind: "scatter",
       },
-      { name: `${formatDistrict(p.district)} median psf (all private)`, points: districtPts },
+      { ...districtLegend, points: districtPts },
     ] satisfies TimeSeries[]
   ).filter((s) => s.points.length > 0);
 
@@ -158,7 +164,7 @@ export default async function CondoPage({ params }: Props) {
 
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Property analysis", href: "/property-analysis/" }, { label: name }]} />
+      <Breadcrumbs items={[{ label: "Property analysis", href: "/property-analysis/", k: "tools.analysis" }, { label: name }]} />
       <JsonLd
         data={{
           "@context": "https://schema.org",

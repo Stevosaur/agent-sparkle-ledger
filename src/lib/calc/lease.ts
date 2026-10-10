@@ -119,6 +119,34 @@ export function remainingLeaseYears(leaseCommenceYear: number, atYear: number, l
   return Math.max(0, leaseYears - (atYear - leaseCommenceYear));
 }
 
+/** Fractional year at the middle of the date's (UTC) month: 15 Oct 2026 → 2026 + 9.5 / 12 ≈ 2026.79. */
+export function midMonthYear(date: Date): number {
+  return date.getUTCFullYear() + (date.getUTCMonth() + 0.5) / 12;
+}
+
+/**
+ * Lease left (fractional years, never below 0) for a lease known only by the YEAR it started — HDB's lease
+ * commencement year, URA's "99 yrs lease commencing from 2012".
+ *
+ * One convention for every "years left" figure on the site (the HDB block page's): the lease is assumed to start
+ * mid-year (`startYear + 0.5`) because only the year is published, and "now" is a fractional year — a Date counts
+ * from the middle of its month (`midMonthYear`); a number is used as given (2026 = the start of 2026).
+ */
+export function leaseLeftAt(startYear: number, leaseYears: number, now: Date | number): number {
+  const at = typeof now === "number" ? now : midMonthYear(now);
+  return remainingLeaseYears(startYear + 0.5, at, leaseYears);
+}
+
+/**
+ * Whole years of lease left, for "about N years left" lines: `leaseLeftAt` rounded down (so a lease with 62 years
+ * 8 months left reads 62, as the HDB block page shows it). Example: 99-year lease from 1990, Oct 2026 →
+ * 99 − (2026.79 − 1990.5) = 62.7 → 62.
+ */
+export function yearsLeftApprox(startYear: number, leaseYears: number, now: Date | number): number {
+  // the epsilon keeps an exact whole number (e.g. 63) from flooring to 62 through floating-point error
+  return Math.max(0, Math.floor(leaseLeftAt(startYear, leaseYears, now) + 1e-9));
+}
+
 /**
  * CPF usage for buying a flat with `remainingLease` years left (rules from 10 May 2019, loan-rules.md §4 — UNVERIFIED):
  * - below 20 years: CPF cannot be used (exactly 20 years is allowed);

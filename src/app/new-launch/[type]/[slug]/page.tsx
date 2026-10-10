@@ -268,7 +268,7 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
   return (
     <PageContainer>
       <JsonLd data={jsonLd} />
-      <Breadcrumbs items={[{ label: "New launches", href: listingsHref({ type: launch.status === "upcoming" ? "upcoming" : launch.type }) }, { label: name }]} />
+      <Breadcrumbs items={[{ label: "New launches", href: listingsHref({ type: launch.status === "upcoming" ? "upcoming" : launch.type }), k: "nav.newLaunches" }, { label: name }]} />
       <PageHeader
         eyebrow={
           <span className="flex flex-wrap items-center gap-1.5">
@@ -377,7 +377,7 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
                   <MiniMap center={origin} zoom={14} markers={markers} height={320} radiusM={NEARBY_RESALE_RADIUS_M} />
                   <p className="mt-2 text-xs text-muted">
                     <T k="launches.map.radiusNote" fallback="Dashed circle: 1.5 km comparison radius." />{" "}
-                    <Link href={focusHref(origin.lat, origin.lng, 15)} className="text-brand-700 hover:underline">
+                    <Link href={focusHref(origin.lat, origin.lng, 15)} className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
                       <T k="launches.map.openFull" fallback="Open the full map" />
                     </Link>
                   </p>
@@ -601,7 +601,7 @@ export default async function NewLaunchPage({ params }: { params: Params }) {
           title={<T k="launches.enquire.title" fallback="Enquire about this launch" />}
           description={<T k="launches.enquire.description" fallback="Ask for the price list, floor plans or a showflat appointment." />}
         >
-          <LeadForm type="enquiry" context={{ launch: launch.slug, launchType: launch.type }} title={`Enquire about ${name}`} />
+          <LeadForm type="enquiry" context={{ launch: launch.slug, launchType: launch.type }} title={<T k="launches.enquire.formTitle" fallback="Enquire about {name}" vars={{ name }} />} />
         </Section>
 
         <AskPanel context={{ kind: "launch", slug: launch.slug, launchType: launch.type }} />

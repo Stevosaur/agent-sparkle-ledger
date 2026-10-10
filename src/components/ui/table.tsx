@@ -1,5 +1,7 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+// aliased: `T` is DataTable's row type parameter
+import { T as Translate } from "@/components/i18n/t";
 
 export interface Column<T> {
   key: string;
@@ -9,11 +11,44 @@ export interface Column<T> {
   className?: string;
 }
 
-/** Simple responsive table: horizontal scroll on small screens, tabular numerals. */
-export function DataTable<T>({ columns, rows, rowKey, empty, className, dense }: { columns: Column<T>[]; rows: T[]; rowKey: (row: T, index: number) => string; empty?: ReactNode; className?: string; dense?: boolean }) {
-  if (rows.length === 0) return <div className="px-4 py-6 text-center text-sm text-muted">{empty ?? "No records."}</div>;
+/**
+ * Simple responsive table: horizontal scroll on small screens, tabular numerals.
+ * The scroll wrapper is a focusable, labelled region so keyboard users can scroll wide tables;
+ * pass `ariaLabel` to name it (defaults to a translated "Table").
+ */
+export function DataTable<T>({
+  columns,
+  rows,
+  rowKey,
+  empty,
+  className,
+  dense,
+  ariaLabel,
+}: {
+  columns: Column<T>[];
+  rows: T[];
+  rowKey: (row: T, index: number) => string;
+  empty?: ReactNode;
+  className?: string;
+  dense?: boolean;
+  ariaLabel?: string;
+}) {
+  // works in server and client components; the default label is translated via <T> in a hidden node
+  const labelId = useId();
+  if (rows.length === 0) return <div className="px-4 py-6 text-center text-sm text-muted">{empty ?? <Translate k="common.noRecords" fallback="No records." />}</div>;
   return (
-    <div className={cn("overflow-x-auto", className)}>
+    <div
+      className={cn("overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500", className)}
+      tabIndex={0}
+      role="region"
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabel ? undefined : labelId}
+    >
+      {ariaLabel ? null : (
+        <span id={labelId} hidden>
+          <Translate k="common.table" fallback="Table" />
+        </span>
+      )}
       <table className="tabular w-full min-w-max border-collapse text-sm">
         <thead>
           <tr className="border-b border-line">

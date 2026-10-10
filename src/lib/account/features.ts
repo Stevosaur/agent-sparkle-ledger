@@ -15,14 +15,14 @@ export const FEATURE_LABELS: Record<FeatureKey, { k: string; fallback: string }>
   "valuation.report": { k: "account.feature.valuationReport", fallback: "Downloadable valuation reports" },
   "lists.full": { k: "account.feature.listsFull", fallback: "Full rankings and filters, beyond the top 3" },
   "insights.full": { k: "account.feature.insightsFull", fallback: "Every market insight and the full trend builder" },
-  "mortgage.compare": { k: "account.feature.mortgageCompare", fallback: "Mortgage package comparison and AI top picks" },
+  "mortgage.compare": { k: "account.feature.mortgageCompare", fallback: "Mortgage package comparison" },
   "affordability.save": { k: "account.feature.affordabilitySave", fallback: "Save affordability results" },
   watchlist: { k: "account.feature.watchlist", fallback: "Watchlist of properties you follow" },
   "tracking.basic": { k: "account.feature.trackingBasic", fallback: "Track your home's estimated value ({free} home)" },
   "tracking.unlimited": { k: "account.feature.trackingUnlimited", fallback: "Track up to {max} homes" },
   alerts: { k: "account.feature.alerts", fallback: "New-sale alerts on Telegram" },
   "homes.exit-audience": { k: "account.feature.exitAudience", fallback: "Likely-buyer (exit audience) analysis on listings" },
-  "news.plus": { k: "account.feature.newsPlus", fallback: "Members-only articles and launch dossiers" },
+  "news.plus": { k: "account.feature.newsPlus", fallback: "Members-only articles" },
   "ai.ask": { k: "account.feature.aiAsk", fallback: "AI property assistant" },
 };
 

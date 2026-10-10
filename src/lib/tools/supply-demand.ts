@@ -42,6 +42,11 @@ export interface SupplyDemandResult {
   fromYear: number;
   toYear: number;
   rows: SdYearRow[];
+  /**
+   * false when the snapshot has no new-launch records at all: supply is then unknown, not zero, and the UI must
+   * not say "no new supply" (supply figures are still 0 in `rows` / `totals` and must not be shown as such)
+   */
+  launchData: boolean;
   totals: { mopUnits: number; supplyUnits: number; ratio: number | null };
   coverage: {
     blocksTotal: number;
@@ -105,6 +110,7 @@ export function supplyDemand(center: { lat: number; lng: number }, radiusM: numb
     fromYear,
     toYear,
     rows,
+    launchData: launches.length > 0,
     totals: { mopUnits, supplyUnits, ratio: supplyUnits > 0 ? mopUnits / supplyUnits : null },
     coverage: {
       blocksTotal: blocks.length,

@@ -6,6 +6,7 @@ import { Notice } from "@/components/ui/notice";
 import { useT } from "@/lib/i18n/provider";
 import { formatInt, formatMonth, formatSgd, sqmToSqft } from "@/lib/format";
 import type { GroupRow, RentalRow, RentalSummary } from "@/lib/private-insights";
+import { T } from "@/components/i18n/t";
 
 function areaLabel(lo: number | null, hi: number | null): string {
   if (lo == null || hi == null) return "—";
@@ -17,7 +18,7 @@ export function CondoRentals({ slug }: { slug: string }) {
   const t = useT();
   const { data, error, loading } = useGatedJson<RentalSummary>(`/api/gated/private/condo/${slug}/rentals/`);
   if (error) return <Notice tone="warn">{t("common.error", "Something went wrong. Please try again.")}</Notice>;
-  if (loading || !data) return <div className="h-48 animate-pulse rounded-lg bg-canvas" aria-busy="true" />;
+  if (loading || !data) return <div className="h-48 animate-pulse rounded-lg bg-canvas" role="status"><span className="sr-only"><T k="common.loading" fallback="Loading…" /></span></div>;
   if (data.total === 0) return <p className="text-sm text-muted">{t("private.rent.none", "No rental contracts recorded for this project.")}</p>;
 
   const groupCols = (labelHeader: string, labelFor: (g: GroupRow) => string) => [

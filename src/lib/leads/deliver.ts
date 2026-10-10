@@ -1,4 +1,5 @@
 import "server-only";
+import { supabaseSecretKey, supabaseUrl } from "@/lib/auth/config";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { site } from "@/lib/config/site";
 import type { ValidLead } from "./schema";
@@ -23,7 +24,8 @@ export function leadsWebhookUrl(): string | null {
 }
 
 export function leadSinks(): { database: boolean; webhook: boolean } {
-  return { database: createSupabaseAdminClient() !== null, webhook: leadsWebhookUrl() !== null };
+  // env check only (same condition as createSupabaseAdminClient) so /api/me/ doesn't build a client per request
+  return { database: Boolean(supabaseUrl() && supabaseSecretKey()), webhook: leadsWebhookUrl() !== null };
 }
 
 export type DeliveryResult = { status: "disabled" } | { status: "delivered"; stored: boolean; forwarded: boolean } | { status: "failed" };

@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import { isStripeConfigured, isSupabaseConfigured, supabaseSecretKey } from "@/lib/auth/config";
 import { getViewer } from "@/lib/auth/viewer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { site } from "@/lib/config/site";
+import { configuredContactEmail, site } from "@/lib/config/site";
 import { pageMetadata } from "@/lib/seo";
 import { firstParam } from "@/lib/account/next-path";
 import { isTelegramConfigured } from "@/lib/account/telegram";
@@ -67,7 +67,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
   if (!isSupabaseConfigured()) {
     return (
       <PageContainer className="pb-16">
-        <Breadcrumbs items={[{ label: "Profile" }]} />
+        <Breadcrumbs items={[{ label: "Profile", k: "tabs.profile" }]} />
         <PageHeader title={<T k="account.profile.title" fallback="Your profile" />} />
         <AccountsDisabled />
       </PageContainer>
@@ -101,10 +101,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
     sub?.price_id && sub.price_id === process.env.STRIPE_PRICE_YEARLY ? "year" : sub?.price_id && sub.price_id === process.env.STRIPE_PRICE_MONTHLY ? "month" : null;
   const trialAvailable = eligibleForTrial(sub) && site.plus.trialDays > 0;
   const checkoutSuccess = firstParam(sp.checkout) === "success";
+  const contactEmail = configuredContactEmail();
 
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Profile" }]} />
+      <Breadcrumbs items={[{ label: "Profile", k: "tabs.profile" }]} />
       <PageHeader title={<T k="account.profile.title" fallback="Your profile" />} description={viewer.email ?? undefined} />
 
       {checkoutSuccess ? (
@@ -244,9 +245,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
                   <T k="account.profile.signOut" fallback="Sign out" />
                 </Button>
               </form>
-              {process.env.NEXT_PUBLIC_CONTACT_EMAIL ? (
+              {contactEmail ? (
                 <p className="text-xs text-muted">
-                  <T k="account.profile.deleteNote" fallback="To delete your account and data, email {email} from this address." vars={{ email: site.contactEmail }} />
+                  <T k="account.profile.deleteNote" fallback="To delete your account and data, email {email} from this address." vars={{ email: contactEmail }} />
                 </p>
               ) : null}
             </CardBody>

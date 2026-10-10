@@ -18,6 +18,7 @@ import { SearchBox } from "@/components/search/search-box";
 import { apiJson } from "./api";
 import { draftToBody, EMPTY_DRAFT, HomeDetailsFields, useTrackedErrorText, type HomeDetailsDraft } from "./home-details-fields";
 import { TrackedHomeCard } from "./tracked-home-card";
+import { T } from "@/components/i18n/t";
 
 /** Stable reference: SearchBox re-runs its fetch effect when `kinds` changes identity. */
 const TRACKABLE_SEARCH_KINDS: SearchKind[] = ["hdb", "condo", "landed"];
@@ -141,7 +142,7 @@ export function TrackedHomes() {
       </Notice>
     );
   }
-  if (!data) return <div className="h-64 animate-pulse rounded-xl bg-surface" aria-busy="true" />;
+  if (!data) return <div className="h-64 animate-pulse rounded-xl bg-surface" role="status"><span className="sr-only"><T k="common.loading" fallback="Loading…" /></span></div>;
 
   const { items, limit } = data;
   const canAdd = items.length < limit.max;

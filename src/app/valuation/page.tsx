@@ -32,7 +32,7 @@ export default async function ValuationPage({ searchParams }: { searchParams: Se
   const coverage = getCoverage();
   return (
     <PageContainer className="pb-12">
-      <Breadcrumbs items={[{ label: "Valuation" }]} />
+      <Breadcrumbs items={[{ label: "Valuation", k: "nav.valuation" }]} />
       <PageHeader
         eyebrow={<T k="tools.val.eyebrow" fallback="Valuation" />}
         title={<T k="tools.val.title" fallback="What is my home worth?" />}

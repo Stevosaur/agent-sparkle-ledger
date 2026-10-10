@@ -35,12 +35,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   const next = safeNextPath(firstParam(sp.next));
   const mode = firstParam(sp.mode) === "signup" ? "signup" : "signin";
   const error = firstParam(sp.error);
-  const crumb = mode === "signup" ? "Create account" : "Sign in";
+  const crumb = mode === "signup" ? { label: "Create account", k: "crumbs.createAccount" } : { label: "Sign in", k: "nav.signIn" };
 
   if (!isSupabaseConfigured()) {
     return (
       <PageContainer className="pb-16">
-        <Breadcrumbs items={[{ label: crumb }]} />
+        <Breadcrumbs items={[crumb]} />
         <PageHeader title={<T k="account.login.title" fallback="Sign in" />} />
         <AccountsDisabled />
       </PageContainer>
@@ -52,7 +52,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
 
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: crumb }]} />
+      <Breadcrumbs items={[crumb]} />
       <div className="mx-auto max-w-md">
         <PageHeader
           title={mode === "signup" ? <T k="account.login.titleSignup" fallback="Create your free account" /> : <T k="account.login.title" fallback="Sign in" />}

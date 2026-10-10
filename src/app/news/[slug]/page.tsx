@@ -44,7 +44,7 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "News", href: "/news/" }, { label: a.title }]} />
+      <Breadcrumbs items={[{ label: "News", href: "/news/", k: "nav.news" }, { label: a.title }]} />
       <article className="mx-auto max-w-3xl">
         <header className="pb-6 pt-6 sm:pt-10">
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -64,14 +64,19 @@ export default async function ArticlePage({ params }: Props) {
               </Badge>
             ))}
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{a.title}</h1>
-          <p className="mt-2 text-base text-muted">{a.description}</p>
+          <h1 lang="en" className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            {a.title}
+          </h1>
+          <p lang="en" className="mt-2 text-base text-muted">
+            {a.description}
+          </p>
           <p className="mt-3 text-sm text-muted">
             {a.author} · <time dateTime={a.date}>{formatDate(a.date)}</time>
           </p>
         </header>
 
-        <div className="space-y-4">
+        {/* Articles are written in English only; mark them so screen readers keep English pronunciation in 中文 mode. */}
+        <div lang="en" className="space-y-4">
           <ArticleBlocks blocks={blocks} slug={a.slug} />
         </div>
 
@@ -92,7 +97,7 @@ export default async function ArticlePage({ params }: Props) {
             <h2 id="sources" className="text-base font-semibold text-ink">
               <T k="insights.news.sources" fallback="Sources" />
             </h2>
-            <ul className="mt-2 space-y-1 text-sm">
+            <ul lang="en" className="mt-2 space-y-1 text-sm">
               {a.sources.map((s) => (
                 <li key={s.url}>
                   <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:underline">
@@ -109,7 +114,7 @@ export default async function ArticlePage({ params }: Props) {
             <h2 id="related" className="text-base font-semibold text-ink">
               <T k="insights.news.related" fallback="Related" />
             </h2>
-            <ul className="mt-2 flex flex-wrap gap-2">
+            <ul lang="en" className="mt-2 flex flex-wrap gap-2">
               {a.related.map((r) => (
                 <li key={r.href}>
                   <Link href={r.href} className="inline-flex h-8 items-center rounded-full border border-line bg-surface px-3 text-sm text-ink hover:bg-canvas">

@@ -51,7 +51,7 @@ const EXPLAINER: { icon: LucideIcon; k: string; title: string; dk: string; desc:
     k: "home.explain.rents",
     title: "Rents",
     dk: "home.explain.rentsDesc",
-    desc: "Recent rental records and the yield they imply, wherever rental data is published.",
+    desc: "Recent rental records, plus the gross yield they imply for HDB blocks.",
   },
   {
     icon: Compass,
@@ -152,7 +152,7 @@ export default async function PropertyAnalysisPage({ searchParams }: { searchPar
 
   return (
     <PageContainer className="pb-12">
-      <Breadcrumbs items={[{ label: "Property analysis" }]} />
+      <Breadcrumbs items={[{ label: "Property analysis", k: "tools.analysis" }]} />
       <PageHeader
         title={<T k="home.analysis.title" fallback="Property analysis" />}
         description={
@@ -203,7 +203,7 @@ export default async function PropertyAnalysisPage({ searchParams }: { searchPar
                       <ul className="divide-y divide-line">
                         {group.entries.map((entry) => (
                           <li key={entry.href}>
-                            <Link href={entry.href} className="block px-5 py-3 hover:bg-canvas focus-visible:bg-canvas focus-visible:outline-none">
+                            <Link href={entry.href} className="block px-5 py-3 hover:bg-canvas focus-visible:bg-brand-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-500">
                               <span className="block font-medium text-ink">{entry.label}</span>
                               <span className="block text-sm text-muted">{entry.sub}</span>
                             </Link>

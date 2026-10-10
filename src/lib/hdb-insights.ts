@@ -11,7 +11,7 @@ import { MONTH_EPOCH_YEAR, monthLabel } from "@/lib/data/months";
 import { median } from "@/lib/stats-math";
 import { haversineM } from "@/lib/geo-math";
 import { grossYield } from "@/lib/calc/returns";
-import { balaPct, cpfUsage, remainingLeaseYears } from "@/lib/calc/lease";
+import { balaPct, cpfUsage, leaseLeftAt, midMonthYear } from "@/lib/calc/lease";
 import { CPF_LEASE_COVER_AGE, HDB_LEASE_YEARS, HDB_MOP_YEARS } from "@/lib/calc/rules";
 import { titleCase } from "@/lib/slug";
 
@@ -409,7 +409,7 @@ export function launchesNear(launches: readonly NewLaunch[], from: LatLng, radiu
 
 /** Fractional year at the middle of the date's month (matches monthToYearFraction). */
 export function yearFraction(date: Date): number {
-  return date.getUTCFullYear() + (date.getUTCMonth() + 0.5) / 12;
+  return midMonthYear(date);
 }
 
 export interface LeaseOutlook {
@@ -426,13 +426,13 @@ export interface LeaseOutlook {
 
 /**
  * Lease outlook for a 99-year HDB lease. HDB publishes only the commencement year, so the lease is assumed
- * to start mid-year (the same assumption the data layer uses for pre-2015 remaining-lease estimates).
+ * to start mid-year (the same assumption the data layer uses for pre-2015 remaining-lease estimates); see
+ * `leaseLeftAt` / `yearsLeftApprox` in calc/lease.ts, which every other "years left" line uses.
  */
 export function leaseOutlook(leaseCommenceYear: number, nowYear: number, youngestBuyerAge = 35): LeaseOutlook {
-  const start = leaseCommenceYear + 0.5;
-  const remainingToday = remainingLeaseYears(start, nowYear);
-  const remainingIn10 = remainingLeaseYears(start, nowYear + 10);
-  const remainingIn20 = remainingLeaseYears(start, nowYear + 20);
+  const remainingToday = leaseLeftAt(leaseCommenceYear, HDB_LEASE_YEARS, nowYear);
+  const remainingIn10 = leaseLeftAt(leaseCommenceYear, HDB_LEASE_YEARS, nowYear + 10);
+  const remainingIn20 = leaseLeftAt(leaseCommenceYear, HDB_LEASE_YEARS, nowYear + 20);
   const bToday = balaPct(remainingToday);
   const b10 = balaPct(remainingIn10);
   const b20 = balaPct(remainingIn20);

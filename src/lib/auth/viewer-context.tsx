@@ -12,7 +12,8 @@ export interface ClientViewer {
   currentPeriodEnd: string | null;
   gating: "open" | "enforce";
   features: Partial<Record<FeatureKey, boolean>>;
-  integrations: { auth: boolean; billing: boolean; ai: boolean };
+  /** which env-driven integrations this deployment has; leads = a lead store (database or webhook) is configured */
+  integrations: { auth: boolean; billing: boolean; ai: boolean; leads: boolean };
 }
 
 interface ViewerContextValue {

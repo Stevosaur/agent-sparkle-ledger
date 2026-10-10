@@ -18,6 +18,7 @@ const groups = [
     label: "Company",
     links: [
       { href: "/about/", key: "footer.about", label: "About" },
+      { href: "/homes/", key: "footer.homes", label: "Homes for sale & rent" },
       { href: "/services/", key: "footer.services", label: "Home services" },
       { href: "/plus/", key: "", label: site.plusName },
     ],

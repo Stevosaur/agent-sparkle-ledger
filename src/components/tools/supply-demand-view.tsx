@@ -38,7 +38,11 @@ export function SupplyDemandView({ slug, currentYear }: { slug: string; currentY
         }
       />
       <CardBody className="space-y-6">
-        {loading ? <div className="h-72 animate-pulse rounded-lg bg-canvas" aria-busy="true" aria-label={t("common.loading", "Loading…")} /> : null}
+        {loading ? (
+          <div className="h-72 animate-pulse rounded-lg bg-canvas" role="status">
+            <span className="sr-only">{t("common.loading", "Loading…")}</span>
+          </div>
+        ) : null}
         {!loading && error ? (
           <Notice tone="warn">
             {status === 422
@@ -57,8 +61,12 @@ export function SupplyDemandView({ slug, currentYear }: { slug: string; currentY
 function Result({ data, currentYear }: { data: Response; currentYear: number }) {
   const t = useT();
   const km = data.radiusM / 1000;
-  const ratioText =
-    data.totals.ratio == null
+  // without any launch records supply is unknown, not zero: show "—" and say why instead of "no new supply"
+  const noLaunchData = !data.launchData;
+  const supplyCell = (n: number) => (noLaunchData ? "—" : formatInt(n));
+  const ratioText = noLaunchData
+    ? t("tools.sd.noLaunchData", "Launch data not loaded")
+    : data.totals.ratio == null
       ? t("tools.sd.ratioNoSupply", "No new private supply recorded in range")
       : t("tools.sd.ratioValue", "{r} flats per new private unit", { r: data.totals.ratio.toFixed(data.totals.ratio < 10 ? 2 : 1) });
   return (
@@ -71,8 +79,8 @@ function Result({ data, currentYear }: { data: Response; currentYear: number }) 
         />
         <Stat
           label={t("tools.sd.supplyTotal", "Private units completing")}
-          value={formatInt(data.totals.supplyUnits)}
-          sub={t("tools.sd.years", "{from}–{to}, within {km} km", { from: data.fromYear, to: data.toYear, km })}
+          value={supplyCell(data.totals.supplyUnits)}
+          sub={noLaunchData ? t("tools.sd.noLaunchData", "Launch data not loaded") : t("tools.sd.years", "{from}–{to}, within {km} km", { from: data.fromYear, to: data.toYear, km })}
         />
         <Stat label={t("tools.sd.ratio", "Demand to supply")} value={data.totals.ratio == null ? "—" : `${data.totals.ratio.toFixed(data.totals.ratio < 10 ? 2 : 1)}×`} sub={ratioText} />
       </StatGrid>
@@ -88,12 +96,18 @@ function Result({ data, currentYear }: { data: Response; currentYear: number }) 
         </div>
         <div>
           <h3 className="mb-2 text-sm font-semibold text-ink">{t("tools.sd.supplyChart", "Private units completing, by year")}</h3>
-          <SimpleBarChart
-            data={data.rows.map((r) => ({ label: String(r.year), value: r.supplyUnits }))}
-            height={220}
-            color="#f19414"
-            ariaLabel={t("tools.sd.supplyChartAria", "Bar chart of private homes within {km} km expected to complete each year from {from} to {to}", { km, from: data.fromYear, to: data.toYear })}
-          />
+          {noLaunchData ? (
+            <div className="flex h-[220px] items-center justify-center rounded-lg border border-dashed border-line px-4 text-center text-sm text-muted">
+              {t("tools.sd.noLaunchDataBody", "No new-launch records (URA project pipeline) are loaded yet, so new private supply cannot be measured. It is not zero, just unknown.")}
+            </div>
+          ) : (
+            <SimpleBarChart
+              data={data.rows.map((r) => ({ label: String(r.year), value: r.supplyUnits }))}
+              height={220}
+              color="#f19414"
+              ariaLabel={t("tools.sd.supplyChartAria", "Bar chart of private homes within {km} km expected to complete each year from {from} to {to}", { km, from: data.fromYear, to: data.toYear })}
+            />
+          )}
         </div>
       </div>
 
@@ -105,7 +119,7 @@ function Result({ data, currentYear }: { data: Response; currentYear: number }) 
           { key: "y", header: t("tools.sd.colYear", "Year"), cell: (r) => (r.year === currentYear ? <strong>{r.year}</strong> : r.year) },
           { key: "mop", header: t("tools.sd.colMop", "Flats reaching MOP"), align: "right", cell: (r) => formatInt(r.mopUnits) },
           { key: "blocks", header: t("tools.sd.colBlocks", "Blocks"), align: "right", cell: (r) => formatInt(r.mopBlocks) },
-          { key: "supply", header: t("tools.sd.colSupply", "Private units completing"), align: "right", cell: (r) => formatInt(r.supplyUnits) },
+          { key: "supply", header: t("tools.sd.colSupply", "Private units completing"), align: "right", cell: (r) => supplyCell(r.supplyUnits) },
           {
             key: "projects",
             header: t("tools.sd.colProjects", "Projects"),

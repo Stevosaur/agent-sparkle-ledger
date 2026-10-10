@@ -22,7 +22,7 @@ export default async function HomesPage() {
   const data = await homesIndexData();
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Homes" }]} />
+      <Breadcrumbs items={[{ label: "Homes", k: "nav.homes" }]} />
       <PageHeader
         title={<T k="homes.title" fallback="Homes for sale and rent" />}
         description={<T k="homes.intro" fallback="Listings from owners. HDB and condo listings show a fair-value range worked out from recent HDB and URA records, so you can see how the asking price compares." />}

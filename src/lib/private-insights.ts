@@ -4,6 +4,7 @@
  */
 import { compass, sunPathForDay } from "@/lib/calc/sun";
 import { repeatSalePairs } from "@/lib/calc/returns";
+import { yearsLeftApprox } from "@/lib/calc/lease";
 import { median } from "@/lib/stats-math";
 import { monthLabel } from "@/lib/data/months";
 import { titleCase } from "@/lib/slug";
@@ -23,17 +24,21 @@ export type TenureSummary =
   | { kind: "freehold" }
   | { kind: "leasehold"; years: number | null; startYear: number | null; yearsLeft: number | null };
 
-/** Structured tenure for display: Freehold, or "99-year from 2012, ~85 years left". */
-export function tenureSummary(tenure: Tenure | null | undefined, currentYear: number): TenureSummary | null {
+/**
+ * Structured tenure for display: Freehold, or "99-year from 2012, ~84 years left". `now` is today's Date (read as the
+ * middle of its month) or a fractional year; years left use the site-wide convention of `yearsLeftApprox` (mid-year
+ * lease start, rounded down), the same as the HDB block page.
+ */
+export function tenureSummary(tenure: Tenure | null | undefined, now: Date | number): TenureSummary | null {
   if (!tenure) return null;
   if (tenure.kind === "freehold") return { kind: "freehold" };
-  const yearsLeft = tenure.years != null && tenure.startYear != null ? Math.max(0, tenure.years - (currentYear - tenure.startYear)) : null;
+  const yearsLeft = tenure.years != null && tenure.startYear != null ? yearsLeftApprox(tenure.startYear, tenure.years, now) : null;
   return { kind: "leasehold", years: tenure.years, startYear: tenure.startYear, yearsLeft };
 }
 
 /** Plain-English tenure line (used in metadata and as a fallback string). */
-export function tenureText(tenure: Tenure | null | undefined, currentYear: number): string {
-  const t = tenureSummary(tenure, currentYear);
+export function tenureText(tenure: Tenure | null | undefined, now: Date | number): string {
+  const t = tenureSummary(tenure, now);
   if (!t) return "Tenure not recorded";
   if (t.kind === "freehold") return "Freehold";
   const head = t.years != null ? `${t.years}-year leasehold` : "Leasehold";

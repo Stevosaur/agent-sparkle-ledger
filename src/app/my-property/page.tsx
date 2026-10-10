@@ -20,7 +20,7 @@ export const metadata = pageMetadata({
 export default async function MyPropertyPage() {
   const header = (
     <>
-      <Breadcrumbs items={[{ label: "My Property" }]} />
+      <Breadcrumbs items={[{ label: "My Property", k: "tabs.myProperty" }]} />
       <PageHeader
         title={<T k="account.myProperty.title" fallback="My Property" />}
         description={

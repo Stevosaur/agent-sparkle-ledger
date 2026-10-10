@@ -114,7 +114,7 @@ export function ValuationTool({
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader title={t("tools.val.step1", "1. Choose the property")} />
+        <CardHeader as="h2" title={t("tools.val.step1", "1. Choose the property")} />
         <CardBody className="space-y-4">
           <Segmented label={t("tools.val.typeLabel", "Property type")} value={type} options={typeOptions} onChange={(v) => setTypeOverride(v)} />
           {type !== "hdb" && !privateAvailable ? (
@@ -226,7 +226,7 @@ function ValuationForm({ subject }: { subject: ValuationSubject }) {
   return (
     <>
       <Card>
-        <CardHeader title={t("tools.val.step2", "2. Tell us about the home")} />
+        <CardHeader as="h2" title={t("tools.val.step2", "2. Tell us about the home")} />
         <CardBody>
           <div className="grid gap-4 sm:grid-cols-2">
             {hdb ? (
@@ -342,6 +342,7 @@ function EstimatePanel({ body }: { body: ValuationRequestBody | null }) {
   return (
     <Card>
       <CardHeader
+        as="h2"
         title={t("tools.val.step3", "3. Estimate")}
         actions={
           <Button type="button" onClick={run} disabled={!body || current?.status === "loading"}>

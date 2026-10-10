@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState, Notice } from "@/components/ui/notice";
 import { apiJson } from "./api";
+import { T } from "@/components/i18n/t";
 
 function formatDay(iso: string): string {
   const d = new Date(iso);
@@ -45,7 +46,7 @@ export function WatchlistManager() {
   if (error && !items) {
     return <Notice tone="warn">{t("common.error", "Something went wrong. Please try again.")}</Notice>;
   }
-  if (!items) return <div className="h-32 animate-pulse rounded-xl bg-surface" aria-busy="true" />;
+  if (!items) return <div className="h-32 animate-pulse rounded-xl bg-surface" role="status"><span className="sr-only"><T k="common.loading" fallback="Loading…" /></span></div>;
   if (items.length === 0) {
     return (
       <EmptyState

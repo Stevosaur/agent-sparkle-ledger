@@ -60,7 +60,7 @@ function useBlockContext(slug: string): { data: HdbContextData | null; error: bo
 
 function Loading({ label }: { label: string }) {
   return (
-    <div className="min-h-40 animate-pulse rounded-xl bg-canvas" aria-busy="true">
+    <div className="min-h-40 animate-pulse rounded-xl bg-canvas" role="status">
       <span className="sr-only">{label}</span>
     </div>
   );

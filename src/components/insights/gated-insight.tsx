@@ -41,7 +41,9 @@ function GatedInsightBody({ id }: { id: string }) {
   return (
     <div ref={ref}>
       {!near || loading ? (
-        <div className="h-[300px] animate-pulse rounded-xl bg-canvas" aria-busy="true" aria-label={t("common.loading", "Loading…")} />
+        <div className="h-[300px] animate-pulse rounded-xl bg-canvas" role="status">
+          <span className="sr-only">{t("common.loading", "Loading…")}</span>
+        </div>
       ) : error || !data ? (
         <Notice tone="warn">{t("insights.loadError", "This module could not be loaded. Please try again later.")}</Notice>
       ) : (

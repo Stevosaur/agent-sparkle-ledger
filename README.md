@@ -27,15 +27,16 @@ gated feature unlocked, with a banner). Add the keys and gating switches on auto
    Framework preset: **Next.js** (auto-detected). No build settings to change.
 2. **Production branch**: Vercel deploys `main` to production and every other branch / PR as a preview.
    Merge the Plotline PR into `main`, or set *Settings → Git → Production Branch* to the Plotline branch.
-3. **Environment variables** (Settings → Environment Variables) — all optional, see [`.env.example`](.env.example):
+3. **Environment variables** (Settings → Environment Variables) — optional except the contact e-mail, see [`.env.example`](.env.example):
 
    | Feature | Variables |
    |---|---|
+   | **Contact / PDPA (required for production)** | `NEXT_PUBLIC_CONTACT_EMAIL`: the published contact and Data Protection Officer address on /privacy/, /tos/, /about/, /methodology/, the profile page, the public API spec and lead-form fallbacks. When unset, those pages leave the address out (no placeholder is published), which does not meet the PDPA requirement to publish a DPO contact. |
    | Canonical URLs / sitemap | `NEXT_PUBLIC_SITE_URL` (e.g. `https://plotline.sg`) |
    | Accounts | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (then apply [`supabase/migrations`](supabase)) |
    | Payments | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY` (webhook URL: `/api/stripe/webhook/`) |
    | AI assistant | `ANTHROPIC_API_KEY` (optional `ANTHROPIC_MODEL`) |
-   | Leads | `LEADS_WEBHOOK_URL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_CONTACT_EMAIL` |
+   | Leads | `LEADS_WEBHOOK_URL` (or Supabase above) to receive form requests; `NEXT_PUBLIC_WHATSAPP_NUMBER` and `NEXT_PUBLIC_CONTACT_EMAIL` as direct-contact fallbacks. Without a lead store, forms show the fallbacks up front and do not submit. |
    | Alerts | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET` |
 
 4. Redeploy after changing variables.

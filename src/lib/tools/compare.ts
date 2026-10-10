@@ -15,7 +15,8 @@ import { monthIndex } from "@/lib/data/months";
 import { resolveProperty } from "@/lib/data/resolve";
 import type { HdbTransaction, NearbyStation, NewLaunch, PrivateProject, PrivateTransaction, StatSeries, Tenure, TxSummary } from "@/lib/data/types";
 import { seriesGrowth, grossYield } from "@/lib/calc/returns";
-import { remainingLeaseYears } from "@/lib/calc/lease";
+import { yearsLeftApprox } from "@/lib/calc/lease";
+import { HDB_LEASE_YEARS } from "@/lib/calc/rules";
 import { median } from "@/lib/stats-math";
 import { formatPropertyRef, type PropertyKind, type PropertyRef } from "@/lib/property-ref";
 import { titleCase } from "@/lib/slug";
@@ -68,16 +69,11 @@ function latestIndex(kind: "hdb" | "private"): number | null {
   }
 }
 
-function fractionalYearNow(): number {
-  const d = new Date();
-  return d.getUTCFullYear() + d.getUTCMonth() / 12;
-}
-
 function tenureText(t: Tenure | null): string | null {
   if (!t) return null;
   if (t.kind === "freehold") return "Freehold";
   if (t.years && t.startYear) {
-    const left = Math.max(0, Math.floor(remainingLeaseYears(t.startYear, fractionalYearNow(), t.years)));
+    const left = yearsLeftApprox(t.startYear, t.years, new Date());
     return `${t.years}-year lease from ${t.startYear} (about ${left} years left)`;
   }
   return t.raw;
@@ -176,8 +172,8 @@ export function compareColumn(ref: PropertyRef): CompareColumn | null {
       if (!b.rentals) notes.push("No rental approvals recorded");
       let tenure: string | null = null;
       if (b.leaseCommenceYear) {
-        const left = Math.max(0, Math.floor(remainingLeaseYears(b.leaseCommenceYear, fractionalYearNow())));
-        tenure = `99-year lease from ${b.leaseCommenceYear} (about ${left} years left)`;
+        const left = yearsLeftApprox(b.leaseCommenceYear, HDB_LEASE_YEARS, new Date());
+        tenure = `${HDB_LEASE_YEARS}-year lease from ${b.leaseCommenceYear} (about ${left} years left)`;
       } else if (b.yearCompleted) tenure = `99-year lease (completed ${b.yearCompleted})`;
       return {
         ...base,

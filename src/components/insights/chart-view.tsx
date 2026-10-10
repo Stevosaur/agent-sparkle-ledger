@@ -4,7 +4,7 @@ import { Download } from "lucide-react";
 import { TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { SimpleBarChart } from "@/components/charts/bar-chart";
 import { buttonClass } from "@/components/ui/button";
-import { useT } from "@/lib/i18n/provider";
+import { useLang, useT } from "@/lib/i18n/provider";
 import type { ChartSpec } from "@/lib/insights/types";
 import { chartToCsv, csvFileName } from "./csv";
 
@@ -23,9 +23,10 @@ export function downloadCsv(text: string, fileName: string): void {
 
 export function CsvButton({ chart, name, className }: { chart: ChartSpec; name: string; className?: string }) {
   const t = useT();
+  const { lang } = useLang();
   const empty = chart.kind === "bar" ? chart.data.length === 0 : chart.series.every((s) => s.points.length === 0);
   return (
-    <button type="button" disabled={empty} onClick={() => downloadCsv(chartToCsv(chart), csvFileName(name))} className={buttonClass("ghost", "sm", className)} aria-label={`${t("insights.csv", "Download CSV")}: ${name}`}>
+    <button type="button" disabled={empty} onClick={() => downloadCsv(chartToCsv(chart), csvFileName(name))} className={buttonClass("ghost", "sm", className)} lang={lang === "zh" ? "zh-Hans-SG" : "en-SG"} aria-label={`${t("insights.csv", "Download CSV")}: ${name}`}>
       <Download className="size-4" aria-hidden />
       {t("insights.csv", "Download CSV")}
     </button>

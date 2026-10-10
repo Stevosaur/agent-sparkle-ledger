@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { site } from "@/lib/config/site";
+import { configuredContactEmail, site } from "@/lib/config/site";
 import { pageMetadata } from "@/lib/seo";
 import { T } from "@/components/i18n/t";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -12,12 +12,13 @@ export const metadata = pageMetadata({
   path: "/privacy/",
 });
 
-const mail = `mailto:${site.contactEmail}`;
-
 export default function PrivacyPage() {
+  // Without NEXT_PUBLIC_CONTACT_EMAIL the sentences below drop the address rather than publish a placeholder.
+  const email = configuredContactEmail();
+  const mailLink = email ? <a href={`mailto:${email}`}>{email}</a> : null;
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Privacy policy" }]} />
+      <Breadcrumbs items={[{ label: "Privacy policy", k: "trust.privacy.title" }]} />
       <PageHeader
         title={<T k="trust.privacy.title" fallback="Privacy policy" />}
         description={<T k="trust.privacy.intro" fallback="What personal data we collect, why, who we share it with, and the choices you have." />}
@@ -139,7 +140,11 @@ export default function PrivacyPage() {
             <li>Server logs are kept by our hosting provider for a limited period under its own retention settings.</li>
           </ul>
           <p>
-            To delete your account and its data, email <a href={mail}>{site.contactEmail}</a> from the address you sign in with.
+            {mailLink ? (
+              <>To delete your account and its data, email {mailLink} from the address you sign in with.</>
+            ) : (
+              <>To delete your account and its data, contact us; we will confirm the request with the email address you sign in with.</>
+            )}
           </p>
         </LegalSection>
 
@@ -151,8 +156,8 @@ export default function PrivacyPage() {
             <li>withdraw your consent to our use of your personal data. If you do, we may no longer be able to provide some features, and we will tell you what that means first.</li>
           </ul>
           <p>
-            While signed in, you can remove items from your watchlist, tracked homes and alerts, and edit or close your listings, yourself. For anything else, email{" "}
-            <a href={mail}>{site.contactEmail}</a>. We will respond as soon as reasonably possible.
+            While signed in, you can remove items from your watchlist, tracked homes and alerts, and edit or close your listings, yourself.{" "}
+            {mailLink ? <>For anything else, email {mailLink}.</> : <>For anything else, contact us.</>} We will respond as soon as reasonably possible.
           </p>
         </LegalSection>
 
@@ -169,7 +174,7 @@ export default function PrivacyPage() {
 
         <LegalSection id="contact" title={<T k="trust.privacy.contact" fallback="Contact us" />}>
           <p>
-            For questions, requests or complaints about personal data, contact our Data Protection Officer at <a href={mail}>{site.contactEmail}</a>. See also our{" "}
+            For questions, requests or complaints about personal data, contact our Data Protection Officer{mailLink ? <> at {mailLink}</> : null}. See also our{" "}
             <Link href="/tos/">terms of use</Link>.
           </p>
         </LegalSection>

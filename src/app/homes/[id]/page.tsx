@@ -168,8 +168,10 @@ export default async function ListingPage({ params }: Params) {
       <div>
         <Breadcrumbs
           items={[
-            { label: "Homes", href: "/homes/" },
-            { label: listing.listingType === "sale" ? "For sale" : "For rent", href: listing.listingType === "sale" ? "/homes/" : "/homes/?type=rent" },
+            { label: "Homes", href: "/homes/", k: "nav.homes" },
+            listing.listingType === "sale"
+              ? { label: "For sale", href: "/homes/", k: "homes.type.sale" }
+              : { label: "For rent", href: "/homes/?type=rent", k: "homes.type.rent" },
             { label: listing.title },
           ]}
         />

@@ -9,6 +9,7 @@ import { ValuationReport } from "@/components/tools/valuation-report";
 import { resolveProperty } from "@/lib/data/resolve";
 import { formatPropertyRef, parsePropertyRef } from "@/lib/property-ref";
 import { pageMetadata } from "@/lib/seo";
+import { site } from "@/lib/config/site";
 import { firstParam } from "@/lib/tools/refs";
 
 export const metadata = pageMetadata({
@@ -19,6 +20,16 @@ export const metadata = pageMetadata({
 });
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+/**
+ * Host printed on the report, resolved on the server where Vercel's system variables are readable: the configured
+ * site URL (NEXT_PUBLIC_SITE_URL, else the production domain, see site.url), else this deployment's own host.
+ */
+function reportHost(): string {
+  const deployment = process.env.VERCEL_URL;
+  if (!process.env.NEXT_PUBLIC_SITE_URL && !process.env.VERCEL_PROJECT_PRODUCTION_URL && deployment) return deployment;
+  return site.url.replace(/^https?:\/\//, "");
+}
 
 function num(v: string | undefined): number | null {
   if (v == null || v.trim() === "") return null;
@@ -35,7 +46,7 @@ export default async function ValuationReportPage({ searchParams }: { searchPara
   return (
     <PageContainer className="pb-12">
       <div className="print:hidden">
-        <Breadcrumbs items={[{ label: "Valuation", href: "/valuation/" }, { label: "Report" }]} />
+        <Breadcrumbs items={[{ label: "Valuation", href: "/valuation/", k: "nav.valuation" }, { label: "Report", k: "crumbs.report" }]} />
       </div>
       <div className="print:hidden">
         <PageHeader
@@ -46,6 +57,7 @@ export default async function ValuationReportPage({ searchParams }: { searchPara
       {valid && ref && area != null ? (
         <GatedPanel feature="valuation.report" minHeight={240}>
           <ValuationReport
+            siteHost={reportHost()}
             body={{
               ref: formatPropertyRef(ref),
               flatType: firstParam(sp.flatType)?.slice(0, 40) ?? null,

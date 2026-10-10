@@ -138,7 +138,7 @@ export default async function TownPage({ params }: Props) {
 
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Insights", href: "/insights/" }, { label: "Towns", href: "/insights/#towns" }, { label: name }]} />
+      <Breadcrumbs items={[{ label: "Insights", href: "/insights/", k: "nav.insights" }, { label: "Towns", href: "/insights/#towns", k: "hdb.index.towns" }, { label: name }]} />
       <PageHeader
         eyebrow={
           <>

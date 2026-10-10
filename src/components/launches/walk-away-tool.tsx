@@ -3,7 +3,7 @@
 import { useId, useMemo, useState } from "react";
 import { useT } from "@/lib/i18n/provider";
 import { walkAwayPrice } from "@/lib/calc/walk-away";
-import { BANK_LTV, BANK_MAX_TENURE, LTV_TENURE_THRESHOLD, SSD_FROM_2025_07_04, type BuyerProfile } from "@/lib/calc/rules";
+import { BANK_LTV, BANK_MAX_TENURE, LTV_TENURE_THRESHOLD, ruleNeedsDisclaimer, SSD_FROM_2025_07_04, type BuyerProfile, type RuleKey } from "@/lib/calc/rules";
 import { estimatePrice, formatIsoDay } from "@/lib/launch-insights";
 import { formatMonth, formatPct, formatPsf, formatSgd } from "@/lib/format";
 import { Card, CardBody } from "@/components/ui/card";
@@ -26,6 +26,10 @@ const MAX_LTV_PCT = Math.round(BANK_LTV[0].standard * 100);
 /** MAS: a first housing loan with a tenure over the threshold (30 years for private property) gets the reduced LTV. */
 const REDUCED_LTV_PCT = Math.round(BANK_LTV[0].reduced * 100);
 const SSD_YEARS = SSD_FROM_2025_07_04.rates.length;
+/** Rules behind the walk-away price (stamp duties from calc/walk-away.ts, the MAS LTV cap on the loan field). */
+const WALK_AWAY_RULES: RuleKey[] = ["bsdResidential", "bsdRounding", "absdRates", "absdRounding", "ssd2025", "ssdRounding", "bankLtv"];
+/** The method note adds an "indicative" caveat while any of them is not marked verified in rules.ts. */
+const WALK_AWAY_INDICATIVE = WALK_AWAY_RULES.some(ruleNeedsDisclaimer);
 
 const num = (s: string): number => (s.trim() === "" ? Number.NaN : Number(s));
 
@@ -295,6 +299,12 @@ export function WalkAwayTool({ medianPsf, medianPsfMonth, defaultRatePct, defaul
               "launches.walk.method",
               "Estimate. Stamp duties use IRAS rates; interest assumes the whole loan is drawn on purchase and repaid monthly, so it overstates interest during construction under progressive payments. Excludes property tax, maintenance fees and any rental income. Rounded up to the nearest S$1,000.",
             )}
+            {WALK_AWAY_INDICATIVE ? (
+              <>
+                {" "}
+                {t("launches.walk.indicative", "Indicative: some stamp-duty and loan rules used here are not yet verified against the agencies' own pages, so check with IRAS / MAS before you commit.")}
+              </>
+            ) : null}
           </p>
         </div>
       </CardBody>

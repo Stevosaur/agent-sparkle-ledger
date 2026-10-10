@@ -21,14 +21,17 @@ export function LastUpdated() {
   );
 }
 
-/** A numbered or plain section of long-form text with an h2. */
+/**
+ * A numbered or plain section of long-form text with an h2. The (translated) title follows the page language;
+ * the body is English-only prose, so it is marked lang="en" for screen readers and hyphenation in 中文 mode.
+ */
 export function LegalSection({ id, title, children, className }: { id: string; title: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className={cn("scroll-mt-24", className)}>
       <h2 id={`${id}-title`} className="text-lg font-semibold text-ink sm:text-xl">
         {title}
       </h2>
-      <div className="mt-2 space-y-3 text-[15px] leading-7 text-ink/90 [&_a]:font-medium [&_a]:text-brand-700 [&_a:hover]:underline [&_li]:ml-5 [&_ol]:list-decimal [&_ol]:space-y-1 [&_ul]:list-disc [&_ul]:space-y-1">
+      <div lang="en" className="mt-2 space-y-3 text-[15px] leading-7 text-ink/90 [&_a]:font-medium [&_a]:text-brand-700 [&_a:hover]:underline [&_li]:ml-5 [&_ol]:list-decimal [&_ol]:space-y-1 [&_ul]:list-disc [&_ul]:space-y-1">
         {children}
       </div>
     </section>

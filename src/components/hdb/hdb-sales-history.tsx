@@ -58,7 +58,7 @@ export function HdbSalesHistory({ slug, flatTypes }: { slug: string; flatTypes: 
             {t("common.error", "Something went wrong. Please try again.")}
           </Notice>
         ) : !view ? (
-          <div className="min-h-40 animate-pulse rounded-lg bg-canvas" aria-busy="true">
+          <div className="min-h-40 animate-pulse rounded-lg bg-canvas" role="status">
             <span className="sr-only">{t("common.loading", "Loading…")}</span>
           </div>
         ) : (

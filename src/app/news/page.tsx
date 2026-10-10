@@ -65,7 +65,7 @@ export default function NewsPage() {
   const rest = articles.filter((a) => a !== report);
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "News" }]} />
+      <Breadcrumbs items={[{ label: "News", k: "nav.news" }]} />
       <PageHeader
         eyebrow={<T k="insights.news.eyebrow" fallback="News and research" />}
         title={<T k="insights.news.title" fallback="Property news and explainers" />}

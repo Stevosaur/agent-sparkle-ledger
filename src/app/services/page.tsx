@@ -59,7 +59,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Sea
 
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Home services" }]} />
+      <Breadcrumbs items={[{ label: "Home services", k: "homes.services.title" }]} />
       <PageHeader
         title={<T k="homes.services.title" fallback="Home services" />}
         description={<T k="homes.services.intro" fallback="Cleaning, moving, disinfection and aircon servicing for your home. Tell us your postal code, the service and a preferred date, and our service partner will confirm the time and quote with you." />}

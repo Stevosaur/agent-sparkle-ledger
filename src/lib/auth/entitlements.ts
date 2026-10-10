@@ -26,7 +26,7 @@ export const FEATURES = {
   "lists.full": "plus",
   /** full insights modules and the trend builder beyond the first series */
   "insights.full": "plus",
-  /** mortgage package comparison and AI top picks */
+  /** mortgage package comparison */
   "mortgage.compare": "plus",
   /** saving affordability results */
   "affordability.save": "account",

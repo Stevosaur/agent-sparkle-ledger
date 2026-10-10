@@ -35,13 +35,15 @@ export default async function ListPage({ params }: Props) {
   if (!isListId(list)) notFound();
   const def = LIST_DEFS[list];
   const meta = getMeta();
-  const asOf = meta.latestMonth.hdb ?? meta.latestMonth.private;
+  // HDB rankings (blocks, towns) run to the HDB month; condo / launch-only rankings to the private month
+  const hasHdb = def.groups.some((g) => g.id === "hdb" || g.id === "town");
+  const asOf = hasHdb ? (meta.latestMonth.hdb ?? meta.latestMonth.private) : meta.latestMonth.private;
   const top = freeTopRows(list, 3).find((g) => g.rows.length > 0)?.rows ?? [];
   const options = listFilterOptions();
 
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Rankings", href: "/lists/" }, { label: def.title }]} />
+      <Breadcrumbs items={[{ label: "Rankings", href: "/lists/", k: "nav.lists" }, { label: def.title, k: def.titleKey }]} />
       <PageHeader eyebrow={<T k="insights.lists.eyebrow" fallback="Rankings" />} title={<T k={def.titleKey} fallback={def.title} />} description={<T k={def.descKey} fallback={def.description} />}>
         {asOf ? (
           <p className="text-sm text-muted">

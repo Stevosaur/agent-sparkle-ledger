@@ -1,4 +1,4 @@
-import { site } from "@/lib/config/site";
+import { configuredContactEmail, site } from "@/lib/config/site";
 import { CACHE, PUBLIC_API_RATE_LIMIT } from "./constants";
 import { toJsonSchema, type JsonSchema } from "./json-schema";
 import {
@@ -252,6 +252,7 @@ export interface OpenApiDocument {
 }
 
 export function buildOpenApiDocument(baseUrl: string = site.url): OpenApiDocument {
+  const contactEmail = configuredContactEmail();
   const schemas: Record<string, JsonSchema> = { Error: toJsonSchema(ErrorSchema, "output", { openObjects: true }) };
   for (const [name, schema] of Object.entries(RESPONSE_SCHEMAS)) schemas[name] = toJsonSchema(schema, "output", { openObjects: true });
 
@@ -322,7 +323,8 @@ export function buildOpenApiDocument(baseUrl: string = site.url): OpenApiDocumen
         `No key is needed. Requests are limited to ${PUBLIC_API_RATE_LIMIT.max} per ${PUBLIC_API_RATE_LIMIT.windowSec} seconds per IP address, CORS is open to every origin and responses are cached by the CDN.`,
         "Attribution: data.gov.sg datasets are used under the Singapore Open Data Licence version 1.0; URA data is subject to URA's terms of use. Figures are information only, not financial advice.",
       ].join("\n\n"),
-      contact: { email: site.contactEmail, url: `${baseUrl}/docs/` },
+      // The e-mail is only published when NEXT_PUBLIC_CONTACT_EMAIL is set to a real address.
+      contact: { ...(contactEmail ? { email: contactEmail } : {}), url: `${baseUrl}/docs/` },
     },
     servers: [{ url: baseUrl, description: site.name }],
     tags: [

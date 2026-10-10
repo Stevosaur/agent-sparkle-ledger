@@ -14,7 +14,7 @@ export const metadata = pageMetadata({
 export default function NewListingPage() {
   return (
     <PageContainer className="max-w-3xl pb-16">
-      <Breadcrumbs items={[{ label: "Homes", href: "/homes/" }, { label: "List your home" }]} />
+      <Breadcrumbs items={[{ label: "Homes", href: "/homes/", k: "nav.homes" }, { label: "List your home", k: "homes.new.pageTitle" }]} />
       <PageHeader
         title={<T k="homes.new.pageTitle" fallback="List your home" />}
         description={<T k="homes.new.pageIntro" fallback="Free for owners. HDB and condo listings show a fair-value range worked out from recent HDB or URA records, so serious buyers and tenants can see how your price compares." />}

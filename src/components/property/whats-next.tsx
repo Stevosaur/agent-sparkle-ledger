@@ -79,12 +79,10 @@ export function WhatsNext({ property, postal, label }: { property: PropertyRef; 
           <Columns2 className="size-4" aria-hidden />
           {t("next.compare")}
         </Link>
-        {property.kind !== "landed-street" ? (
-          <Link href={`/supply-demand/${property.slug}/`} className={buttonClass("outline", "sm")}>
-            <Scale className="size-4" aria-hidden />
-            {t("next.supplyDemand")}
-          </Link>
-        ) : null}
+        <Link href={`/supply-demand/${property.slug}/`} className={buttonClass("outline", "sm")}>
+          <Scale className="size-4" aria-hidden />
+          {t("next.supplyDemand")}
+        </Link>
         <Link href={postal ? `/services/?postal=${postal}` : "/services/"} className={buttonClass("outline", "sm")}>
           <Wrench className="size-4" aria-hidden />
           {t("next.services")}

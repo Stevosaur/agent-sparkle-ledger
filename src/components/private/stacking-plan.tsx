@@ -17,7 +17,12 @@ export function StackingPlan({ slug }: { slug: string }) {
   const t = useT();
   const { data, error, loading } = useGatedJson<StackingResponse>(`/api/gated/private/condo/${slug}/stacking/`);
   if (error) return <Notice tone="warn">{t("common.error", "Something went wrong. Please try again.")}</Notice>;
-  if (loading || !data) return <div className="h-64 animate-pulse rounded-lg bg-canvas" aria-busy="true" />;
+  if (loading || !data)
+    return (
+      <div className="h-64 animate-pulse rounded-lg bg-canvas" role="status">
+        <span className="sr-only">{t("common.loading", "Loading…")}</span>
+      </div>
+    );
   if (data.rows.length === 0 || data.cols.length === 0) {
     return <p className="text-sm text-muted">{t("private.stack.empty", "Not enough single-unit sales with a floor range and size to build a grid.")}</p>;
   }
@@ -27,6 +32,7 @@ export function StackingPlan({ slug }: { slug: string }) {
   const max = Math.max(...psfs);
   const byKey = new Map<string, (typeof data.cells)[number]>();
   for (const c of data.cells) byKey.set(`${c.row}|${c.col}`, c);
+  const caption = data.mode === "unit" ? t("private.stack.captionUnit", "Latest psf by stack and floor") : t("private.stack.captionGrid", "Median psf by floor range and size band");
 
   return (
     <div>
@@ -38,11 +44,15 @@ export function StackingPlan({ slug }: { slug: string }) {
               since: formatMonth(data.sinceMonth),
             })}
       </p>
-      <div className="overflow-x-auto">
+      {/* focusable region so keyboard users can scroll a wide grid */}
+      <div
+        className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+        tabIndex={0}
+        role="region"
+        aria-label={caption}
+      >
         <table className="tabular w-full min-w-max border-collapse text-sm">
-          <caption className="sr-only">
-            {data.mode === "unit" ? t("private.stack.captionUnit", "Latest psf by stack and floor") : t("private.stack.captionGrid", "Median psf by floor range and size band")}
-          </caption>
+          <caption className="sr-only">{caption}</caption>
           <thead>
             <tr>
               <th scope="col" className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted">
@@ -76,7 +86,7 @@ export function StackingPlan({ slug }: { slug: string }) {
                     <td key={col.key} className="px-1 py-1">
                       <div className="rounded-md px-2 py-1 text-center" style={{ background: shade(psf, min, max) }}>
                         <div className="font-medium text-ink">{formatSgd(psf)}</div>
-                        <div className="text-[11px] text-ink/70">
+                        <div className="text-[11px] text-ink/85">
                           {"count" in cell ? (cell.count === 1 ? t("private.stack.sale1", "1 sale") : t("private.stack.sales", "{n} sales", { n: formatInt(cell.count) })) : formatMonth(cell.month)}
                         </div>
                       </div>

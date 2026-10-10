@@ -1,3 +1,15 @@
+import { isConfiguredEmail } from "@/lib/leads/contact-links";
+
+/**
+ * Canonical origin: NEXT_PUBLIC_SITE_URL, else the Vercel production domain (NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL is
+ * also inlined into client bundles when Vercel exposes system variables), else localhost for development.
+ */
+function siteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const vercel = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  return (explicit || (vercel ? `https://${vercel}` : "http://localhost:3000")).replace(/\/$/, "");
+}
+
 /**
  * Brand and product configuration. Rename the product here (name, plus tier, domain) — nothing else
  * in the codebase hard-codes the brand.
@@ -8,9 +20,13 @@ export const site = {
   tagline: "Every Singapore home sale, turned into answers.",
   description:
     "Free Singapore property research: HDB resale, condo and landed transaction records, valuations, affordability and mortgage calculators, rankings and market insights.",
-  url: (process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000")).replace(/\/$/, ""),
+  url: siteUrl(),
   locale: "en-SG",
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@example.com",
+  /**
+   * Public contact and PDPA Data Protection Officer address. Required in production; empty when unset (pages then
+   * omit the address instead of publishing a placeholder). Read it through configuredContactEmail().
+   */
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "",
   /** WhatsApp number in international format without "+", e.g. 6591234567. Empty disables WhatsApp links. */
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "",
   plus: {
@@ -23,11 +39,17 @@ export const site = {
   freeTrackedHomes: 1,
 } as const;
 
+/** The contact e-mail when one is configured (not empty, not a reserved example.* placeholder), otherwise null. */
+export function configuredContactEmail(): string | null {
+  return isConfiguredEmail(site.contactEmail) ? site.contactEmail : null;
+}
+
 export type NavItem = { href: string; labelKey: string; label: string };
 
 export const primaryNav: NavItem[] = [
   { href: "/valuation/", labelKey: "nav.valuation", label: "Valuation" },
   { href: "/listings/", labelKey: "nav.newLaunches", label: "New launches" },
+  { href: "/homes/", labelKey: "nav.homes", label: "Homes" },
   { href: "/lists/", labelKey: "nav.lists", label: "Rankings" },
   { href: "/insights/", labelKey: "nav.insights", label: "Insights" },
   { href: "/affordability/", labelKey: "nav.affordability", label: "Affordability" },

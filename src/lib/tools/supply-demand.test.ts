@@ -33,6 +33,8 @@ describe("supply & demand", () => {
     const far = supplyDemand({ lat: 1.3, lng: 103.7 }, 1000, NOW);
     expect(far.totals.supplyUnits).toBe(0);
     expect(far.totals.ratio).toBeNull();
+    // launch data is loaded, so this really is "no supply nearby" rather than "unknown"
+    expect(far.launchData).toBe(true);
   });
 
   it("accepts only the published radii", () => {

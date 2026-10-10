@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { site } from "@/lib/config/site";
+import { configuredContactEmail, site } from "@/lib/config/site";
 import { pageMetadata } from "@/lib/seo";
 import { getMeta } from "@/lib/data/meta";
 import type { SourceInfo, SourceStatus } from "@/lib/data/types";
@@ -22,6 +22,7 @@ import {
 } from "@/lib/valuation-service";
 import { rulesReferenceItems } from "@/lib/ai/prompt";
 import { T } from "@/components/i18n/t";
+import { PageLang } from "@/components/i18n/page-lang";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Card, CardBody } from "@/components/ui/card";
@@ -90,13 +91,13 @@ function RankingMethod({ id, children }: { id: ListId; children?: ReactNode }) {
           </Link>
         </h3>
         {children}
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-ink/90">
+        <ul lang="en" className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-ink/90">
           {def.methodology.map((m) => (
             <li key={m}>{m}</li>
           ))}
         </ul>
         <p className="mt-2 text-xs text-muted">
-          <T k="common.source" fallback="Source" />: {def.source}
+          <T k="common.source" fallback="Source" />: <span lang="en">{def.source}</span>
         </p>
       </CardBody>
     </Card>
@@ -122,10 +123,11 @@ export default function MethodologyPage() {
   const balaLoaded = Object.keys(BALA_TABLE).length > 0;
   const rules = rulesReferenceItems();
   const balaNote = RULE_META.bala.note;
+  const contactEmail = configuredContactEmail();
 
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Methodology" }]} />
+      <Breadcrumbs items={[{ label: "Methodology", k: "trust.method.title" }]} />
       <PageHeader
         title={<T k="trust.method.title" fallback="Methodology" />}
         description={<T k="trust.method.intro" fallback="Where our data comes from, how it is matched to properties, and how every derived figure is computed, including what it cannot tell you." />}
@@ -296,7 +298,7 @@ export default function MethodologyPage() {
           <h2 id="supply-demand-title" className="text-lg font-semibold text-ink sm:text-xl">
             <T k="trust.method.supplyDemand" fallback="Demand vs supply (MOP)" />
           </h2>
-          <p className="max-w-3xl text-[15px] leading-7 text-ink/90">
+          <p lang="en" className="max-w-3xl text-[15px] leading-7 text-ink/90">
             HDB owners can sell their flat on the open market, or buy private property while keeping it, only after the Minimum Occupation Period ({HDB_MOP_YEARS} years for most
             flats). On property pages, demand counts HDB flats near the property reaching MOP in each year (completion year + {HDB_MOP_YEARS}); supply counts units in new launches and
             pipeline projects in the same radius by expected completion year.
@@ -341,7 +343,10 @@ export default function MethodologyPage() {
                   {r.text}{" "}
                   {r.indicative ? (
                     <Badge tone="warn">
-                      <T k="trust.method.indicative" fallback="Indicative: check with {agency}" vars={{ agency: r.checkWith }} />
+                      {/* translated label inside the English-only section body */}
+                      <PageLang>
+                        <T k="trust.method.indicative" fallback="Indicative: check with {agency}" vars={{ agency: r.checkWith }} />
+                      </PageLang>
                     </Badge>
                   ) : null}
                 </li>
@@ -361,9 +366,11 @@ export default function MethodologyPage() {
               <li>Matching by name and street can occasionally attach a sale to the wrong page, especially where projects or blocks were renamed.</li>
               <li>Estimates (valuations, yields, growth, lease figures, demand vs supply, en-bloc tiers) are models with stated assumptions, not forecasts or advice.</li>
             </ul>
-            <p>
-              Found a mistake? Email <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a> with the page link.
-            </p>
+            {contactEmail ? (
+              <p>
+                Found a mistake? Email <a href={`mailto:${contactEmail}`}>{contactEmail}</a> with the page link.
+              </p>
+            ) : null}
           </LegalSection>
         </LegalBody>
       </div>

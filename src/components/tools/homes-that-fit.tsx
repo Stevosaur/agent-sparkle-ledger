@@ -50,6 +50,7 @@ export function HomesThatFit({ maxPrice, defaultKind }: { maxPrice: number; defa
   return (
     <Card>
       <CardHeader
+        as="h2"
         title={t("tools.aff.fitTitle", "Homes that fit")}
         description={t("tools.aff.fitDesc", "Where the typical recent sale is within your budget. Medians over the last 12 months.")}
       />
@@ -88,7 +89,11 @@ export function HomesThatFit({ maxPrice, defaultKind }: { maxPrice: number; defa
         ) : null}
 
         {!url ? <p className="text-sm text-muted">{t("tools.aff.fitNeedBudget", "Enter a budget to see what fits.")}</p> : null}
-        {url && (loading || url !== debouncedUrl) ? <div className="h-40 animate-pulse rounded-lg bg-canvas" aria-busy="true" aria-label={t("common.loading", "Loading…")} /> : null}
+        {url && (loading || url !== debouncedUrl) ? (
+          <div className="h-40 animate-pulse rounded-lg bg-canvas" role="status">
+            <span className="sr-only">{t("common.loading", "Loading…")}</span>
+          </div>
+        ) : null}
         {url && url === debouncedUrl && error ? <Notice tone="warn">{t("common.error", "Something went wrong. Please try again.")}</Notice> : null}
         {url && url === debouncedUrl && data ? <FitTable data={data} /> : null}
       </CardBody>

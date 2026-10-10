@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { rovingTabStop, rovingTarget } from "@/lib/roving-focus";
 
 /** Parse a user-typed number ("1,200,000", " 3.5 ") -> number, or null when empty / invalid. */
 export function parseNum(raw: string): number | null {
@@ -105,19 +106,40 @@ export function Segmented<T extends string>({
   hideLabel?: boolean;
 }) {
   const labelId = useId();
+  const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const disabled = options.map((o) => !!o.disabled);
+  // roving tabindex: Tab reaches the checked option only; arrow keys / Home / End move and select (like native radios)
+  const tabStop = rovingTabStop(
+    options.findIndex((o) => o.value === value),
+    disabled,
+  );
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const current = radioRefs.current.indexOf(e.target as HTMLButtonElement);
+    const target = rovingTarget(e.key, current, disabled, { vertical: true });
+    if (target == null) return;
+    e.preventDefault();
+    radioRefs.current[target]?.focus();
+    if (options[target].value !== value) onChange(options[target].value);
+  }
+
   return (
     <div className={cn("space-y-1.5", className)}>
       <div id={labelId} className={cn("text-sm font-medium text-ink", hideLabel && "sr-only")}>
         {label}
       </div>
-      <div role="radiogroup" aria-labelledby={labelId} className="inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-line bg-canvas p-1">
-        {options.map((o) => (
+      <div role="radiogroup" aria-labelledby={labelId} onKeyDown={onKeyDown} className="inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-line bg-canvas p-1">
+        {options.map((o, i) => (
           <button
             key={o.value}
+            ref={(el) => {
+              radioRefs.current[i] = el;
+            }}
             type="button"
             role="radio"
             aria-checked={value === o.value}
             disabled={o.disabled}
+            tabIndex={i === tabStop ? 0 : -1}
             onClick={() => onChange(o.value)}
             className={cn(
               "min-h-8 rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-40",

@@ -12,7 +12,8 @@ const variants: Record<Variant, string> = {
   secondary: "bg-brand-50 text-brand-800 hover:bg-brand-100",
   outline: "border border-line bg-surface text-ink hover:bg-canvas",
   ghost: "text-ink hover:bg-canvas",
-  plus: "bg-plus-500 text-white hover:bg-plus-600",
+  // dark text: white on plus-500 is only 2.3:1; ink on plus-500 / plus-400 clears AA
+  plus: "bg-plus-500 text-ink hover:bg-plus-400",
   danger: "bg-down text-white hover:opacity-90",
 };
 const sizes: Record<Size, string> = {

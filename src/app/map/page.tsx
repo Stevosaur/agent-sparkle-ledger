@@ -58,7 +58,7 @@ export default function MapPage() {
         }
       />
       <PageContainer>
-        <Breadcrumbs items={[{ label: "Map" }]} />
+        <Breadcrumbs items={[{ label: "Map", k: "tools.map" }]} />
         <section aria-labelledby="map-launches" className="mt-4">
           <h2 id="map-launches" className="text-lg font-semibold text-ink">
             <T k="launches.map.listTitle" fallback="Launches on this map" />

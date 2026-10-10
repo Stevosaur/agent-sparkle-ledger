@@ -19,7 +19,12 @@ export function ExitAudiencePanel({ listingId }: { listingId: string }) {
   const t = useT();
   const { data, error, loading } = useGatedJson<ExitAudienceResult>(`/api/homes/${listingId}/exit-audience/`);
 
-  if (loading) return <div className="h-48 animate-pulse rounded-xl bg-canvas" aria-busy="true" aria-label={t("common.loading", "Loading…")} />;
+  if (loading)
+    return (
+      <div className="h-48 animate-pulse rounded-xl bg-canvas" role="status">
+        <span className="sr-only">{t("common.loading", "Loading…")}</span>
+      </div>
+    );
   if (error || !data) return <Notice tone="warn">{t("common.error", "Something went wrong. Please try again.")}</Notice>;
   if (!data.available) {
     return (

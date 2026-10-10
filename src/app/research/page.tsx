@@ -14,7 +14,7 @@ export const revalidate = 86400;
 
 export const metadata = pageMetadata({
   title: "Research",
-  description: `${site.name} research: market explainers and new-launch dossiers, market insights and town trends, rankings, and the methodology and data behind them.`,
+  description: `${site.name} research: market explainers and reports, market insights and town trends, rankings, and the methodology and data behind them.`,
   path: "/research/",
 });
 
@@ -23,9 +23,9 @@ const hubs: { href: string; icon: ReactNode; k: string; title: string; dk: strin
     href: "/news/",
     icon: <Newspaper className="size-5" aria-hidden />,
     k: "trust.research.news",
-    title: "Explainers and launch dossiers",
+    title: "Explainers and market reports",
     dk: "trust.research.newsDesc",
-    desc: "Plain-English guides to buying, financing and selling in Singapore, and in-depth write-ups of new launches.",
+    desc: "Plain-English guides to buying, financing and selling in Singapore, and market reports computed from the latest records.",
   },
   {
     href: "/insights/",
@@ -54,7 +54,7 @@ export default function ResearchPage() {
   const articles = getArticles().slice(0, 6);
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Research" }]} />
+      <Breadcrumbs items={[{ label: "Research", k: "trust.research.title" }]} />
       <PageHeader
         title={<T k="trust.research.title" fallback="Research" />}
         description={<T k="trust.research.intro" fallback="Explainers, market insights and rankings built from Singapore's recorded home sales, with the methods behind every number." />}

@@ -477,9 +477,10 @@ export function townDemandSupply(inp: Pick<RankingInputs, "referenceYear" | "hdb
         demandBlocks += 1;
       }
     }
+    // supply stays unknown (null), not zero, without a town centre or when no launch data is loaded at all
     let supplyUnits: number | null = null;
     const launches: string[] = [];
-    if (n > 0) {
+    if (n > 0 && inp.launches.length > 0) {
       const centre = { lat: lat / n, lng: lng / n };
       supplyUnits = 0;
       for (const l of inp.launches) {
@@ -507,8 +508,9 @@ export function townDemandSupply(inp: Pick<RankingInputs, "referenceYear" | "hdb
 export function buildDemandSupplyRows(inp: RankingInputs): RankRow[] {
   const fromYear = inp.referenceYear + 1;
   const toYear = inp.referenceYear + RANKING_RULES.demandYears;
+  const noLaunchData = inp.launches.length === 0;
   const rank = (r: TownDemandSupply): [number, number] => {
-    // 0: demand with no competing launches nearby; 1: finite ratio; 2: location unknown
+    // 0: demand with no competing launches nearby; 1: finite ratio; 2: supply unknown (location unknown or no launch data)
     if (r.supplyUnits === 0) return [0, r.demandUnits];
     if (r.ratio != null) return [1, r.ratio];
     return [2, r.demandUnits];
@@ -530,7 +532,8 @@ export function buildDemandSupplyRows(inp: RankingInputs): RankRow[] {
       flatType: null,
       segment: null,
       value: r.ratio,
-      metric: r.ratio != null ? `${r.ratio.toFixed(2)}×` : r.supplyUnits === 0 ? "No launches nearby" : "Location unknown",
+      metric:
+        r.ratio != null ? `${r.ratio.toFixed(2)}×` : r.supplyUnits === 0 ? "No launches nearby" : noLaunchData ? "Launch data not loaded" : "Location unknown",
       cells: [formatInt(r.demandUnits), r.supplyUnits == null ? "—" : formatInt(r.supplyUnits), r.launches.length ? r.launches.join(", ") : "—"],
     }));
 }

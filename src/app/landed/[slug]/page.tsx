@@ -38,6 +38,7 @@ import { SourceLine } from "@/components/private/source-line";
 import { Detail } from "@/components/private/detail";
 import { TenureLabel } from "@/components/private/tenure-label";
 import { addressSlugMap, latestPrivateMonth, nearbyContext, pointOf } from "@/components/private/server-data";
+import { NEARBY_LANDED_MONTHS, NEARBY_LANDED_RADIUS_M, nearbyLandedSales } from "@/lib/landed-nearby";
 
 export const revalidate = 86400;
 
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const facts = [
     `${name}${a.propertyType ? `, a ${a.propertyType.toLowerCase()} house` : ""}${a.district != null ? ` in District ${a.district}` : ""}.`,
     a.landAreaSqm != null ? `Land area ${formatArea(a.landAreaSqm)}.` : null,
-    `${tenureText(a.tenure, new Date().getFullYear())}.`,
+    `${tenureText(a.tenure, new Date())}.`,
     a.tx.count ? `${formatInt(a.tx.count)} recorded sales${a.tx.lastPrice ? `, latest ${formatSgd(a.tx.lastPrice)} in ${formatMonth(a.tx.last)}` : ""}.` : null,
     "Street and district sales, rebuild-cost calculator and nearby schools and MRT.",
   ];
@@ -86,7 +87,6 @@ export default async function LandedAddressPage({ params }: Props) {
   const a = getLandedAddress(slug);
   if (!a) notFound();
 
-  const currentYear = new Date().getFullYear();
   const name = displayAddress(a.address);
   const streetName = titleCase(a.street);
   const street = getLandedStreet(a.streetSlug);
@@ -95,12 +95,16 @@ export default async function LandedAddressPage({ params }: Props) {
   const others = street ? latestFirst(getLandedStreetTransactions(street.slug)).filter((t) => isLandedHouse(t) && t.address !== a.address) : [];
   const slugs = addressSlugMap(a.streetSlug);
   const asOf = latestPrivateMonth(own);
-  const tenure = tenureSummary(a.tenure, currentYear);
+  // a Date, as on the condo page: years left use the site-wide convention (mid-year lease start, mid-month now)
+  const tenure = tenureSummary(a.tenure, new Date());
   const point = pointOf(a);
   const near = point ? nearbyContext(point) : null;
+  // landed sales on other streets within 500 m, last 24 months (only the districts of streets in range are read)
+  const nearbySales = point && asOf != null ? nearbyLandedSales(a, point, asOf) : null;
 
   // District context: landed sales in the last 12 months + the district's median psf series.
-  const districtSeries = a.district != null ? (getSeries(`private-d:${a.district}:Landed`) ?? getSeries(`private-d:${a.district}:ALL`)) : null;
+  const landedSeries = a.district != null ? getSeries(`private-d:${a.district}:Landed`) : null;
+  const districtSeries = landedSeries ?? (a.district != null ? getSeries(`private-d:${a.district}:ALL`) : null);
   const landed12 =
     a.district != null && asOf != null ? getDistrictTransactions(a.district).filter((t) => LANDED_TYPES.has(t.propertyType) && t.monthIndex > asOf - 12) : [];
   // median land psf only from caveats that record land area (strata landed homes record floor area)
@@ -109,7 +113,15 @@ export default async function LandedAddressPage({ params }: Props) {
   const chartFrom = asOf != null ? asOf - 59 : 0;
   const chartSeries: TimeSeries[] = [];
   const districtPts = seriesPsfPoints(districtSeries?.points, chartFrom, asOf ?? undefined);
-  if (districtPts.length) chartSeries.push({ name: `${formatDistrict(a.district)} median psf (all private)`, points: districtPts });
+  if (districtPts.length) {
+    // the legend names the series actually plotted: the landed index, or the all-private one where the district has none
+    const d = formatDistrict(a.district);
+    chartSeries.push(
+      landedSeries
+        ? { name: `${d} median land psf (landed houses)`, nameKey: "private.chart.districtLanded", nameVars: { d }, points: districtPts }
+        : { name: `${d} median psf (all private)`, nameKey: "private.chart.districtAll", nameVars: { d }, points: districtPts },
+    );
+  }
   const ownPts = salesScatter(own, chartFrom);
   if (ownPts.length) chartSeries.push({ name: "This property (land psf)", points: ownPts, kind: "scatter" });
 
@@ -117,7 +129,7 @@ export default async function LandedAddressPage({ params }: Props) {
     <PageContainer className="pb-16">
       <Breadcrumbs
         items={[
-          { label: "Property analysis", href: "/property-analysis/" },
+          { label: "Property analysis", href: "/property-analysis/", k: "tools.analysis" },
           ...(street ? [{ label: streetName, href: `/landed-street/${street.slug}/` }] : []),
           { label: name },
         ]}
@@ -139,7 +151,7 @@ export default async function LandedAddressPage({ params }: Props) {
         description={
           <>
             {street ? (
-              <Link href={`/landed-street/${street.slug}/`} className="text-brand-700 hover:underline">
+              <Link href={`/landed-street/${street.slug}/`} className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
                 {streetName}
               </Link>
             ) : (
@@ -364,13 +376,71 @@ export default async function LandedAddressPage({ params }: Props) {
         </Section>
 
         <Section id="nearby" className={SECTION} title={<T k="private.nearby.titleLanded" fallback="Nearby" />}>
-          {near ? (
-            <NearbyAmenities ctx={near} label={name} />
-          ) : (
-            <EmptyState title={<T k="private.noCoords" fallback="Location not available" />}>
-              <T k="private.noCoordsLanded" fallback="This address has not been geocoded (OneMap), so nearby schools, stations and distances can't be computed yet." />
-            </EmptyState>
-          )}
+          <div className="space-y-4">
+            {near ? (
+              <NearbyAmenities ctx={near} label={name} />
+            ) : (
+              <EmptyState title={<T k="private.noCoords" fallback="Location not available" />}>
+                <T k="private.noCoordsLanded" fallback="This address has not been geocoded (OneMap), so nearby schools, stations and distances can't be computed yet." />
+              </EmptyState>
+            )}
+            <Card>
+              <CardHeader
+                title={<T k="private.landed.nearbySalesTitle" fallback="Nearby landed sales" />}
+                description={
+                  <T
+                    k="private.landed.nearbySalesDesc"
+                    fallback="Landed house sales on other streets within {m} m, in the last {n} months."
+                    vars={{ m: NEARBY_LANDED_RADIUS_M, n: NEARBY_LANDED_MONTHS }}
+                  />
+                }
+              />
+              {nearbySales && nearbySales.sales.length ? (
+                <>
+                  <SalesTable
+                    // where the house number is not published, the street stands in for the address
+                    rows={nearbySales.sales.map((s) => ({ ...toSaleRow(s.tx, s.addressSlug), address: s.tx.address ?? s.street.street }))}
+                    variant="landed"
+                  />
+                  <CardBody className="pt-0">
+                    {nearbySales.total > nearbySales.sales.length ? (
+                      <p className="mt-3 text-sm text-muted">
+                        <T
+                          k="private.landed.nearbySalesMore"
+                          fallback="Showing the latest {shown} of {n} nearby sales."
+                          vars={{ shown: nearbySales.sales.length, n: formatInt(nearbySales.total) }}
+                        />
+                      </p>
+                    ) : null}
+                    <SourceLine>
+                      <T
+                        k="private.landed.nearbySalesSource"
+                        fallback="URA private residential transactions; straight-line distance to each house, or to its street where the house is not geocoded. Where the house number is not published, the street is shown."
+                      />
+                      {` · ${formatMonth(monthLabel(nearbySales.fromMonth))} – ${formatMonth(monthLabel(nearbySales.toMonth))}`}
+                    </SourceLine>
+                  </CardBody>
+                </>
+              ) : (
+                <CardBody>
+                  <EmptyState title={<T k="private.landed.nearbySalesNone" fallback="No nearby landed sales to show" />}>
+                    {point ? (
+                      <T
+                        k="private.landed.nearbySalesNoneBody"
+                        fallback="No landed sales on other streets within {m} m in the last {n} months. Nearby sales need geocoded addresses or streets (OneMap), so sales that can't be placed on the map are not counted."
+                        vars={{ m: NEARBY_LANDED_RADIUS_M, n: NEARBY_LANDED_MONTHS }}
+                      />
+                    ) : (
+                      <T
+                        k="private.landed.nearbySalesNoPoint"
+                        fallback="Nearby sales need geocoded addresses: this address has not been geocoded (OneMap) yet, so sales around it can't be found."
+                      />
+                    )}
+                  </EmptyState>
+                </CardBody>
+              )}
+            </Card>
+          </div>
         </Section>
 
         <Section

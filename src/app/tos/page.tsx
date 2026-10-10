@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { site } from "@/lib/config/site";
+import { configuredContactEmail, site } from "@/lib/config/site";
 import { formatSgd } from "@/lib/format";
 import { pageMetadata } from "@/lib/seo";
 import { PUBLIC_API_RATE_LIMIT } from "@/lib/api/constants";
@@ -14,13 +14,14 @@ export const metadata = pageMetadata({
   path: "/tos/",
 });
 
-const mail = `mailto:${site.contactEmail}`;
 const { monthlyPrice, yearlyPrice, trialDays } = site.plus;
 
 export default function TermsPage() {
+  // Without NEXT_PUBLIC_CONTACT_EMAIL the contact section is left out rather than publishing a placeholder.
+  const email = configuredContactEmail();
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Terms of use" }]} />
+      <Breadcrumbs items={[{ label: "Terms of use", k: "trust.tos.title" }]} />
       <PageHeader title={<T k="trust.tos.title" fallback="Terms of use" />} description={<T k="trust.tos.intro" fallback="Please read these terms before you use the site, the apps or the public API." />}>
         <LastUpdated />
       </PageHeader>
@@ -145,11 +146,13 @@ export default function TermsPage() {
           </p>
         </LegalSection>
 
-        <LegalSection id="contact" title={<T k="trust.tos.contact" fallback="13. Contact" />}>
-          <p>
-            Questions about these terms: <a href={mail}>{site.contactEmail}</a>.
-          </p>
-        </LegalSection>
+        {email ? (
+          <LegalSection id="contact" title={<T k="trust.tos.contact" fallback="13. Contact" />}>
+            <p>
+              Questions about these terms: <a href={`mailto:${email}`}>{email}</a>.
+            </p>
+          </LegalSection>
+        ) : null}
       </LegalBody>
     </PageContainer>
   );

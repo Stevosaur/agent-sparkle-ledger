@@ -24,7 +24,7 @@ export default function ListsPage() {
   const asOf = meta.latestMonth.hdb ?? meta.latestMonth.private;
   return (
     <PageContainer className="pb-16">
-      <Breadcrumbs items={[{ label: "Rankings" }]} />
+      <Breadcrumbs items={[{ label: "Rankings", k: "nav.lists" }]} />
       <PageHeader
         eyebrow={<T k="insights.lists.eyebrow" fallback="Rankings" />}
         title={<T k="insights.lists.title" fallback="Singapore property rankings" />}
