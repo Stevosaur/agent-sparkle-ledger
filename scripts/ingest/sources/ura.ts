@@ -340,7 +340,7 @@ export async function fetchUra(accessKey: string, now = new Date()) {
   }
 
   const rentals: RawPrivateRental[] = [];
-  for (const refPeriod of lastQuarters(now, 13)) {
+  for (const refPeriod of lastQuarters(now, 21)) { // ~5 years of rental contracts
     try {
       const result = await ura.invoke<UraRentProject[]>({ service: "PMI_Resi_Rental", refPeriod });
       const parsed = parseRentals(result);

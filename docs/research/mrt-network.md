@@ -370,7 +370,7 @@ PTC Punggol [NE17] · PE1 Cove · PE2 Meridian · PE3 Coral Edge · PE4 Riviera 
 | 1 (2027) | Hong Kah | JS4 | | 1.35809 | 103.72611 | MP2019 |
 | 1 (2027) | Corporation | JS5 | | 1.35297 | 103.71381 | MP2019 |
 | 1 (2027) | Jurong West | JS6 | | 1.34919 | 103.70826 | MP2019 |
-| 1 (2027) | Bahar Junction | JS7 | JRL branch junction | 1.34619 | 103.70303 | MP2019 |
+| 1 (2027) | Bahar Junction | JS7 / JW0 | JRL branch junction | 1.34619 | 103.70303 | MP2019 |
 | 1 (2027) | Boon Lay | JS8 | EW27 | 1.338476 | 103.705718 | existing LTA station (approx.) |
 | 1 (2027) | Gek Poh | JW1 | | 1.34835 | 103.69812 | MP2019 |
 | 1 (2027) | Tawas | JW2 | | 1.35066 | 103.69189 | MP2019 |
@@ -414,7 +414,8 @@ PTC Punggol [NE17] · PE1 Cove · PE2 Meridian · PE3 Coral Edge · PE4 Riviera 
 ### 4.5 CRL Punggol Extension (CPE): expected **2032** (UNVERIFIED)
 
 My understanding (UNVERIFIED, not searched):
-- About 4 km from Pasir Ris (CR5) to Punggol, with new stations **Elias** and **Riviera**. Riviera is an interchange with PE4 Riviera LRT.
+- Runs from Pasir Ris (CR5) to Punggol, with new stations **Elias** and **Riviera**. Riviera is an interchange with PE4 Riviera LRT.
+- **Length: roughly 7 km (UNVERIFIED; my recollection of LTA's figure is about 7.3 km).** *Corrected 2026-10-10:* this previously said "about 4 km", which is geometrically impossible: the straight-line distance from the MP2019 Pasir Ris CRL box (1.37126, 103.94888) to Punggol (1.404816, 103.902205) is **6.4 km**, and via Riviera it is at least 4.5 + 1.9 = **6.4 km**. Do not show a length in the UI until LTA's figure is read.
 - The terminus is at **Punggol** (NE17/PTC). The station codes are possibly `CP1`–`CP4`.
 - None of these stations is in URA MP2019.
 
@@ -470,7 +471,7 @@ Search results did list a Wikipedia page titled "Changi Terminal 5 MRT station".
 
 ### 4.9 Machine-readable future-station seed (matches the `MrtStation` type in `src/lib/data/types.ts`)
 
-- Only rows with an **LTA-published or strongly corroborated** year and a credible coordinate are seeded. Everything else stays out of distance calculations until verified.
+- Rows need a credible coordinate. The TEL5/DTL3e rows have a corroborated year (2026). **The JRL (2027/2028/2029) and CRL (2030) years are UNVERIFIED and are seeded provisionally** (*corrected 2026-10-10:* this line previously claimed every seeded year was LTA-published or strongly corroborated, which contradicted the caveats below). Everything with a `null` coordinate stays out of distance calculations until verified.
 - `codes` holds only codes that are corroborated; rows with UNVERIFIED codes have `codes: []`.
 
 ```json
@@ -512,7 +513,7 @@ Search results did list a Wikipedia page titled "Changi Terminal 5 MRT station".
 
 Caveats on the seed:
 - **The JRL and CRL years (2027/2028/2029/2030) are UNVERIFIED** (§4.3–4.4). Before shipping, either verify them or render them as "planned (LTA target ~YYYY)".
-- Future lines at existing interchanges are omitted from the seed. These are JRL at Choa Chu Kang, Boon Lay and Jurong East; CRL at Pasir Ris, Hougang, Ang Mo Kio and Bright Hill; and the TEL5 and DTL3e interchange at Sungei Bedok, which *is* included because it is a new station. **Model future lines at an existing station by adding `"JRL"` or `"CRL"` to a separate `futureLines` field.** Do not create a duplicate station, or "nearest MRT" will double-count.
+- Future lines at existing interchanges are omitted from the seed. These are JRL at Choa Chu Kang, Boon Lay and Jurong East; CRL at Pasir Ris, Hougang, Ang Mo Kio and Bright Hill; and the TEL5 and DTL3e interchange at Sungei Bedok, which *is* included because it is a new station. **Model future lines at an existing station by adding `"JRL"` or `"CRL"` to a separate `futureLines` field.** Do not create a duplicate station, or "nearest MRT" will double-count. (As of 2026-10-10 the `MrtStation` interface in `src/lib/data/types.ts` has **no** `futureLines` field; it would have to be added.)
 - **Never seed stations with `null` coordinates.**
 
 ---
@@ -533,8 +534,8 @@ Caveats on the seed:
      - Assert at ingest that no unmapped `^[A-Z]{2,3}\d+$` names remain.
   2. **The same station can appear as both MRT and LRT:** `BUKIT PANJANG MRT STATION` and `BUKIT PANJANG LRT STATION`, `CHOA CHU KANG MRT/LRT STATION`, `PUNGGOL MRT/LRT STATION`. Merge them by base name.
   3. **The dataset includes the unopened `MARINA SOUTH MRT STATION`** (TE21). Use an explicit allow-list of operating names (§3.1); do not treat "every name in the dataset" as operational.
-  4. **`EXIT_CODE` formats vary:** `"Exit A"`, `"Exit 1"`, and plain `"1"`/`"2"` (Punggol Coast).
-  5. **Duplicate exit codes within a station occur.** Examples: Bukit Panjang MRT has `Exit A` three times; Expo, HarbourFront and Choa Chu Kang also repeat codes. Do not key on `(station, exit)` uniquely.
+  4. **`EXIT_CODE` formats vary:** `"Exit A"`, `"Exit 1"`, and bare codes without the `Exit ` prefix. In the 2026-10-01 snapshot 590 of 613 exits use `Exit …` and **23 are bare**, at 10 stations: bare letters at Buangkok (`A`), Bugis (`E`–`H`), Paya Lebar (`E`, `F`), Tai Seng (`C`) and Telok Ayer (`D`, `E`); bare digits at Cantonment (`1`–`4`), Hume (`1`, `2`), Keppel (`1`–`3`), Prince Edward Road (`1`, `2`) and Punggol Coast (`1`, `2`). *Corrected 2026-10-10:* this previously named Punggol Coast as the only bare-code case. Normalise with `/^(Exit\s+)?/i`.
+  5. **Duplicate exit codes within a station occur.** Full list in the 2026-10-01 snapshot: Bukit Panjang MRT `Exit A` ×3; Choa Chu Kang MRT `Exit A`, `Exit C`, `Exit D` ×2 each; Bedok North `Exit B` ×2; Expo `Exit A` ×2; HarbourFront `Exit A` ×2; Upper Changi `Exit A` ×2. Do not key on `(station, exit)` uniquely.
 - **Expected counts at ingest** (snapshot of 2026-10-01): 613 features and 188 `STATION_NA` groups after mapping the code-only names. That is 184 operating names, plus 3 MRT/LRT duplicates, plus Marina South.
   - Assert 600–700 features and an operating-name match of 184/184.
   - When TEL5 and DTL3e open, expect +3 names: Bedok South, Sungei Bedok and Xilin. Their exits may appear **before** opening, so status must come from the allow-list, not from presence in the data.
@@ -542,7 +543,7 @@ Caveats on the seed:
 ### 5.2 URA Master Plan 2019 Rail Station layer (GEOJSON): **for future stations** [PRIMARY]
 
 - **Dataset ID** `d_8d886e3a83934d7447acdf5bc6959999`. Page: https://data.gov.sg/datasets/d_8d886e3a83934d7447acdf5bc6959999/view. Retrieve it with poll-download as in §5.1.
-- **Features:** 257 `Polygon`/`MultiPolygon` features in WGS84.
+- **Features:** 257 features in WGS84 (253 `Polygon`, 4 `MultiPolygon`; `RAIL_TYPE` 212 `MRT` / 45 `LRT`; `GRND_LEVEL` 146 `UNDERGROUND` / 111 `ABOVEGROUND`).
 - **`properties`:** `OBJECTID`, `NAME`, `RAIL_TYPE` (`MRT`/`LRT`), `GRND_LEVEL` (`ABOVEGROUND`/`UNDERGROUND`), `INC_CRC`, `FMEL_UPD_D`, `SHAPE.AREA`, `SHAPE.LEN`.
   - Example: `{"NAME":"PUNGGOL CENTRAL","RAIL_TYPE":"LRT","GRND_LEVEL":"ABOVEGROUND","FMEL_UPD_D":"20191209180316",...}`.
 - **Pitfalls:**
@@ -551,6 +552,7 @@ Caveats on the seed:
   3. **There are spelling differences against LTA:** `JELEPANG` (LTA: Jelapang), `SUM KEE` (LTA: Sam Kee), `ONE NORTH` (LTA: one-north), `BUGIS MRT`, `WOODLANDS NORTH STATION`. Fort Canning (DT20) appears as `RIVER VALLEY`.
   4. **Some features have `NAME` = `null` or `"<Null>"`.** One `<Null>` polygon at about 1.27420, 103.86308 is the Marina South TE21 box. Three `null` LRT polygons at about 1.252–1.255, 103.818–103.821, on Sentosa, are almost certainly **Sentosa Express**, which is not part of the LTA MRT/LRT network. Five other `null` MRT polygons sit at existing city-centre stations. **Drop all null-named features.**
   5. **The layer reflects the 2019 plan.** It lacks Brickland, Sungei Kadut, the DTL-extension stations, CRL Phase 2, the CRL Punggol extension and T5.
+  6. **Bendemeer is mislabelled.** There are two `JALAN BESAR` polygons (both `MRT`, `UNDERGROUND`): one at about 1.30554, 103.85565 (the real Jalan Besar DT22) and one at about 1.31367, 103.86299, which is **Bendemeer DT23** (LTA exit centroid 1.313667, 103.863146). There is no `BENDEMEER` feature. A name-based join merges them and moves Jalan Besar about 640 m. Found 2026-10-10.
 - **Centroid method:** area-weighted shoelace centroid of each polygon's outer ring, averaged across a station's parts and weighted by area. Use only the `UNDERGROUND` part when a new underground line is being added at an existing elevated station, for example the CRL at Pasir Ris and Ang Mo Kio.
 
 ### 5.3 URA "Amendment to Master Plan 2019 Rail Station layer" [PRIMARY; content not inspected]
@@ -562,7 +564,7 @@ Caveats on the seed:
 
 ```
 GET https://www.onemap.gov.sg/api/common/elastic/search?searchVal=KEPPEL%20MRT%20STATION&returnGeom=Y&getAddrDetails=Y&pageNum=1
-Authorization: <token>   # a token is now required; see docs/research/onemap-api.md §1.2
+Authorization: <token>   # the docs now require a token (tokenless calls still answered on 2026-10-01..03); see docs/research/onemap-api.md §1.2
 ```
 
 - **Response fields:** `found`, `totalNumPages`, `pageNum`, `results[]` with `SEARCHVAL`, `BLK_NO`, `ROAD_NAME`, `BUILDING`, `ADDRESS`, `POSTAL`, `X`, `Y`, `LATITUDE`, `LONGITUDE`. All values are strings; parse them with `parseFloat`.
@@ -574,7 +576,7 @@ Authorization: <token>   # a token is now required; see docs/research/onemap-api
 ### 5.5 LTA DataMall static geospatial files (alternative; not reachable from this container)
 
 These are listed on https://datamall.lta.gov.sg/content/datamall/en/static-data.html (per the sgraildata README):
-- **Station point layer:** `https://datamall.lta.gov.sg/content/dam/datamall/datasets/Geospatial/TrainStation_Apr2025.zip`. This is a shapefile in SVY21 (EPSG:3414), so reproject it to EPSG:4326. Its attributes are `STN_NAME` and `STN_NO` [PRIMARY-DATA, older export]. The April 2025 vintage **predates CCL6** and still uses CE1/CE2.
+- **Station point layer:** `https://datamall.lta.gov.sg/content/dam/datamall/datasets/Geospatial/TrainStation_Apr2025.zip`. This is a shapefile in SVY21 (EPSG:3414), so reproject it to EPSG:4326. Its attributes are `STN_NAME` and `STN_NO` [PRIMARY-DATA for the **older** export mirrored as `MRTLRTStnPtt.json`; the April 2025 file itself was not inspected, so its attribute names are assumed to match]. The April 2025 vintage **predates CCL6**, so it should still use CE1/CE2 (inferred from its date, not observed).
 - **"Train Station Codes and Chinese Names"** XLS: `https://datamall.lta.gov.sg/content/dam/datamall/datasets/Geospatial/Train%20Station%20Codes%20and%20Chinese%20Names.zip`.
 - **Prefer §5.1 plus the hand-curated code table in §3.1.**
 
@@ -598,7 +600,7 @@ These are listed on https://datamall.lta.gov.sg/content/datamall/en/static-data.
 
 1. The exact opening dates of TEL4 (23 Jun 2024), Teck Lee (15 Aug 2024), Punggol Coast (10 Dec 2024) and Hume (28 Feb 2025). All four stations are confirmed open by the LTA data.
 2. JRL station codes and stage years (2027/2028/2029), and any revision announced in 2025–2026.
-3. CRL Phase 1 year (2030), CRL Punggol extension (2032), CRL Phase 2 (2032), all CRL codes, and the CPE station names (Elias, Riviera).
+3. CRL Phase 1 year (2030), CRL Punggol extension (2032), CRL Phase 2 (2032), all CRL codes, the CPE station names (Elias, Riviera) and the CPE length (≥ 6.4 km by geometry; ~7.3 km recalled).
 4. The station names and codes in the January 2025 "three new stations … by 2035" announcement (Sungei Kadut interchange and the DTL-extension station names), plus Brickland's year (2034?) and code (NS3A?).
 5. Founders' Memorial station: its code (TE22A?) and year.
 6. Opening plans for Mount Pleasant TE10, Marina South TE21 and Bukit Brown CC18.
@@ -633,3 +635,70 @@ These are listed on https://datamall.lta.gov.sg/content/datamall/en/static-data.
 - TEL5 status as of 8 Oct 2026: https://bedoksouthmrtcondo.com/insights/bedok-south-mrt-completion-date-timeline/ and https://bayshore.sg/guides/bedok-south-mrt-bayshore-2026/
 - https://thesmartlocal.com/read/dtl-extension-2026/
 
+
+---
+
+## Verification log
+
+Adversarial fact-check, **2026-10-10**.
+
+**Access during this pass.**
+- WebSearch was unavailable: the shared 200-search budget for the turn was already used up.
+- WebFetch failed with `getaddrinfo ENOTFOUND` on `www.lta.gov.sg` and `en.wikipedia.org`.
+- `curl` got a proxy 403 on every non-GitHub host tried. These included LTA, DataMall, data.gov.sg, OneMap, URA, MOT, Straits Times, CNA, Land Transport Guru, sgtrains and AsiaOne.
+- Only `raw.githubusercontent.com` was reachable.
+
+**What this pass could check.**
+- It **recomputed every data-derived claim** from the mirrored primary files:
+  - the LTA exit snapshot `WeeJC8954/sg-smart-commute/assets/mrt_stations.json`;
+  - the URA MP2019 layer and the older LTA `MRTLRTStnPtt.json` (both mirrored in `cheeaun/sgraildata`);
+  - sgraildata's `sg-rail.geojson`, `CHANGELOG.md`, `README.md` and the Wikipedia scrapes `data/raw/wikipedia-mrt.json` / `wikipedia-lrt.json`.
+- It also used the repo's own `docs/research/datagov-api.md`, `docs/research/onemap-api.md` and `src/lib/data/types.ts`.
+
+**What it could not check.** News and LTA-page claims could not be re-read. They keep their earlier labels: the reviewer's background knowledge never upgrades a label, but a claim it contradicts is flagged.
+
+| # | Claim | Verdict | Source / method |
+|---|---|---|---|
+| 1 | §3.1 table: 184 names, codes, lat/lng (6 dp), exit counts | **confirmed** (all 184 reproduce exactly, 0 mismatches) | Recomputed mean of exits per merged name from the `mrt_stations.json` mirror |
+| 2 | 184 names = 146 MRT + 42 LRT − 4 shared (Bukit Panjang, Choa Chu Kang, Punggol, Sengkang) | **confirmed** | Arithmetic on §3.1; Wikipedia scrape lists 146 MRT / 42 LRT |
+| 3 | 29 stations serve ≥ 2 lines | **confirmed** | Count on §3.1 |
+| 4 | Per-line counts NSL 27, EWL 35, NEL 17, CCL 33, DTL 35, TEL 27, BPLRT 13, SKLRT 14, PGLRT 15 | **confirmed** | Count on §3.1; §3 sequences (216 items) match §3.1 codes exactly |
+| 5 | CCL has 12 interchanges (list in §2) | **confirmed** | Count on §3.1 |
+| 6 | QA: centroids ≤ 244 m from sgraildata points (Marine Parade 244, Tampines 179, rest ≤ 150) | **confirmed**; note added (Kaki Bukit trailing space in sgraildata, 75 m) | Haversine against `sg-rail.geojson` station points (184) |
+| 7 | Exit snapshot: 613 features, 188 groups = 184 + 3 MRT/LRT duplicates (Bukit Panjang, Choa Chu Kang, Punggol) + Marina South; latest update `20260717145318`; 7 code-only names (CC9, DT18, DT4, NE18, CC30, CC31, CC32) | **confirmed** | Mirror `counts`, `source`, `codeOnlyMappings` |
+| 8 | Marina South TE21 coordinate 1.274020, 103.862211 (mean of Exit 1–4) | **confirmed** | Recomputed |
+| 9 | Admiralty example `Exit A` at `[103.80099, 1.440346]` | **confirmed** | Mirror |
+| 10 | `EXIT_CODE` formats: plain codes only at Punggol Coast | **corrected**: 23 bare codes at 10 stations | Mirror exit strings |
+| 11 | Duplicate exit codes (Bukit Panjang ×3, Expo, HarbourFront, Choa Chu Kang) | **confirmed + completed**: Bedok North and Upper Changi added | Mirror |
+| 12 | OneMap POIs 41–85 m from exits, observed 2026-10-02 | **confirmed** | Mirror `codeOnlyMappings` evidence (69, 85, 58, 60, 50, 75, 41 m) and its `docs/data-sources.md` |
+| 13 | OneMap search "a token is now required" | **confirmed with nuance**: docs say so; tokenless calls still answered 2026-10-01..03 | `docs/research/onemap-api.md` §1.2; sg-smart-commute `docs/data-sources.md` |
+| 14 | OneMap search endpoint and response fields | **confirmed** (third-party docs + repo research) | Same as #13 |
+| 15 | MP2019 layer: 257 features, `FMEL_UPD_D` `20191209180316`, property names, `PUNGGOL CENTRAL` example | **confirmed**; wording refined (253 Polygon + 4 MultiPolygon) | Mirror GeoJSON |
+| 16 | MP2019 trailing-space names (5 listed) | **confirmed** (exactly those 5) | Mirror |
+| 17 | MP2019 spelling variants `JELEPANG`, `SUM KEE`, `ONE NORTH`, `BUGIS MRT`, `WOODLANDS NORTH STATION`; `RIVER VALLEY` = Fort Canning | **confirmed** (`RIVER VALLEY` polygon ≈ 1.2935, 103.8447 vs Fort Canning 1.2926, 103.8443) | Mirror |
+| 18 | MP2019 null names: 3 Sentosa LRT, 1 `<Null>` Marina South box at 1.27420, 103.86308, 5 null MRT at city stations | **confirmed** (the 5 are at Downtown, Chinatown, Newton, Maxwell, Orchard Boulevard) | Mirror |
+| 19 | MP2019 lacks Brickland, Sungei Kadut, DTL extension, CRL2, CPE, T5 | **confirmed** (no such names) | Name scan of mirror |
+| 20 | New pitfall: Bendemeer polygon labelled `JALAN BESAR` | **added** (new finding) | Mirror geometry vs LTA exit centroid |
+| 21 | All MP2019 future-station centroids (§4.1–4.4, incl. Hougang largest underground part 1.37091, 103.89119 and the Pasir Ris / Ang Mo Kio underground parts) | **confirmed** (all reproduce to 5 dp) | Area-weighted shoelace centroid recomputed |
+| 22 | "Typically within ~100 m of the eventual station centre" | **corrected → quantified**: median 25 m, p90 68 m, 6/154 > 100 m, post-2019 openings 4–180 m | MP2019 vs LTA exit centroids for 154 matching stations |
+| 23 | §4.9 seed: 32 rows, coordinates equal the §4 tables | **confirmed**; seed-rule sentence **corrected** (JRL/CRL years are UNVERIFIED but seeded) | Script diff of JSON vs tables |
+| 24 | Seed "matches the `MrtStation` type" | **confirmed** structurally (`JRL`, `CRL` are in `MrtLineCode`); note added that `futureLines` does not exist in the type. The type comment's example name is upper case (`"TAMPINES"`) while the seed uses mixed case, so pick one convention | `src/lib/data/types.ts` |
+| 25 | CPE "about 4 km" | **corrected** → ≥ 6.4 km by geometry (≈7.3 km recalled, UNVERIFIED) | Haversine on the doc's own coordinates |
+| 26 | JRL Stage 3 "Bahar Junction – Peng Kang Hill" | **corrected** → "Tawas – Peng Kang Hill" (internal contradiction with Stage 1 rows) | Doc's own table; 10 + 7 + 7 = 24 |
+| 27 | JRL Bahar Junction code `JS7` only | **corrected** → `JS7 / JW0` (still UNVERIFIED; it mirrors Tengah `JS3 / JE0`) | Internal consistency + reviewer knowledge |
+| 28 | Older LTA `STN_NO` export "still has CE1/CE2, lacks TEL3–4" | **confirmed with precision added** (Orchard and Marina Bay already carry TE14/TE20; it lists shells CC18, DT4, PW2) | `MRTLRTStnPtt.json` mirror |
+| 29 | `STN_NO` formats `NS24/NE6/CC1`, `EW13/NS25`; Tanah Merah `EW4` only; `STC` / `PTC` | **confirmed** | `MRTLRTStnPtt.json` mirror |
+| 30 | Teck Lee open evidence "in LTA `STN_NO`" | **corrected**: `STN_NO` presence is not opening evidence; it was replaced by the exit dataset + Wikipedia scrape | Mirror (the export predates TEL3 yet lists PW2) |
+| 31 | CE1/CE2 → CC34/CC33 on 12 Jul 2026 | **confirmed at CORROBORATED level** (sgraildata 5.1.0 dated 12 Jul 2026; Wikipedia scrape shows `NS27/CC33/TE20`, `CC34/DT16`); no LTA page read | sgraildata `CHANGELOG.md`, `wikipedia-mrt.json` |
+| 32 | CCL6 (CC30–CC32) open by Jul 2026 | **confirmed** that the stations are in the 2026 LTA exit data and the Jul 2026 Wikipedia scrape (sgraildata 5.0.0 added them 7 Jul 2026). The exact dates (preview 4 Jul, service 12 Jul) are **unverifiable this pass** and keep the earlier [VERIFIED-SEARCH] | Mirrors; LTA page unreachable |
+| 33 | sgraildata 4.0.0 added Hume and Punggol Coast; v5.1.0 dated 12 Jul 2026; 184 station points | **confirmed** | `CHANGELOG.md`, `sg-rail.geojson` |
+| 34 | Dataset IDs `d_b39d3a…5da5` (collection 367) and `d_8d886e…9999` | **confirmed** (independent third-party asset metadata + sgraildata README links) | Mirrors |
+| 35 | KML twin `d_f820139e…1122`, amendment layer `d_9a6bdc9d…248f` | **UNVERIFIED** (search-listed only, consistent with `datagov-api.md`) | — |
+| 36 | `poll-download` endpoint, `{code, data:{url}, errorMsg}`, no `status` for geospatial | **confirmed** (consistent with `datagov-api.md`; third party saw HTTP 201 + signed URL for this dataset) | Repo research + sg-smart-commute `docs/data-sources.md` |
+| 37 | DataMall `TrainStation_Apr2025.zip` and "Train Station Codes and Chinese Names" URLs | **confirmed as listed by the sgraildata README**; the file contents were not inspected, so the attribute names and CE1/CE2 were re-labelled as inferred | sgraildata `README.md` |
+| 38 | Opening dates TEL4 23 Jun 2024, Teck Lee 15 Aug 2024, Punggol Coast 10 Dec 2024, Hume 28 Feb 2025; TEL1 31 Jan 2020, TEL2 28 Aug 2021, TEL3 13 Nov 2022; BP14 closure 13 Jan 2019 | **UNVERIFIED** (not refuted; consistent with reviewer knowledge). TEL2's date is weakly corroborated by sgraildata 2.0.0 "Add Phase 2 of TEL", dated 28 Aug 2021 | No primary source reachable |
+| 39 | TEL5/DTL3e codes (TE30, TE31/DT37, DT36), "2H 2026" target, still not open on 2026-10-08 | **unverifiable this pass**; earlier labels kept. **Re-check the LTA newsroom before deploy.** | No primary source reachable |
+| 40 | "Three new stations" URL cited for both DTL3e 2H 2026 (§4.1) and the 2035 north-west stations (§4.7) | **flagged**: attribution in §4.1 marked UNVERIFIED | Internal consistency |
+| 41 | JRL years 2027/2028/2029, CRL1 2030, CPE 2032, CRL2 2032 (6 stations, ~15 km, announced Sep 2022), CRL codes CR2–CR13, Brickland 2034 / NS3A, Founders' Memorial TE22A / ~2028, T5 conversion | **UNVERIFIED** (not refuted; labels unchanged) | No primary source reachable |
+| 42 | Operators and colour hex values | **UNVERIFIED** (display only; unchanged) | — |
+| 43 | Weekday sanity check of the cited dates | **no anomaly**. 23 Jun 2024, 13 Nov 2022 and 12 Jul 2026 are Sundays. 4 Jul 2026 is a Saturday. The TEL and DTL closure windows (22 May–4 Jul and 10 Jul–5 Sep 2026) each run Friday to Saturday | Python `datetime` |

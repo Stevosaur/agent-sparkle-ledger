@@ -26,6 +26,13 @@ Research date: **2026-10-10**. Scope:
   - **[CORROBORATED]**: two or more independent implementations agree.
   - **[VERIFIED-BY-TEST]**: I computed or checked it myself.
   - **UNVERIFIED**: my best understanding from memory of the URA docs. Before relying on these items, confirm them against one live response.
+  - **Single source** / **[FIXTURE + PARSER]**: added in the 2026-10-10 fact-check. A single source is one implementation or one docstring with no independent second source. A fixture value comes from a test fixture, not a captured live response.
+- **Adversarial fact-check, 2026-10-10.** A second pass tried to refute every concrete claim. Results are in **"Verification log"** at the end. Constraints and new evidence in that pass:
+  - URA, data.gov.sg, epsg.io and spatialreference.org were still unreachable, and the web-search budget was already used up.
+  - New evidence came from three places:
+    - A live URA capture dated 2026-10-05 that is committed in property-intelligence-SG (`audit/2026-10-05/phase2-source-reconciliation.json`).
+    - The EPSG registry inside PROJ 9.8.1 (`pyproj` 3.8.0).
+    - The npm and PyPI registries.
 
 ---
 
@@ -53,6 +60,7 @@ Research date: **2026-10-10**. Scope:
 
 - **Migration date:** the docs and the endpoints moved from `www.ura.gov.sg` to `eservice.ura.gov.sg`, with the `/v1` path suffix. I could not confirm the official cut-over date. My best understanding is around 2023–2024 (**UNVERIFIED**). Nothing published in 2025 or 2026 that changes the endpoints was found, and both 2026 clients use the `eservice…/v1` URLs.
 - **Base constant to use in code:** `const URA_BASE = "https://eservice.ura.gov.sg/uraDataService";`
+- property-intelligence-SG's `capture-ura-source.js` tries the `/v1` pair first. It falls back to `eservice.ura.gov.sg/uraDataService/insertNewToken.action` and `…/invokeUraDS`, with no `/v1`. Whether that fallback pair works is UNVERIFIED. Its 2026-10-05 capture succeeded, but the committed audit does not record which pair was used. Use `/v1`.
 
 ### 1.3 Token request
 
@@ -119,7 +127,7 @@ Headers:
   - Transactions: **132,246** rows in total. Batch 1: 292 projects, 19,889 rows. Batch 2: 1,524 projects, 29,178 rows. Batch 3: 1,642 projects, 53,974 rows. Batch 4: 387 projects, 29,205 rows.
   - Rentals: **451,165** contracts across `21q3`–`26q3`. Each full quarter has about 19,000–28,000 contracts.
 - **Where to call from:** URA asks that calls come from your own server, not from your app's end users. sgprop: "URA asks that calls come from your own machine or server, not from an app's end users, so don't ship a key inside a client-side product." [Single secondary source: sgprop `ura.py` and README. Official wording UNVERIFIED]
-- Whether `eservice.ura.gov.sg` is reachable from GitHub-hosted runners or Vercel (non-Singapore IPs) is **UNVERIFIED**. The 2026 clients ran from a laptop and a droplet. Add a clear failure message and keep the last good snapshot.
+- Whether `eservice.ura.gov.sg` is reachable from GitHub-hosted runners or Vercel (non-Singapore IPs) is **UNVERIFIED**. property-intelligence-SG's 2026-10-05 capture ran on a Windows machine; its audit paths are `C:\Dev\…`. Where sgprop's runs came from is not recorded (corrected 2026-10-10: the earlier "a laptop and a droplet" claim had no source). Add a clear failure message and keep the last good snapshot.
 
 ---
 
@@ -644,3 +652,127 @@ export const postalToDistrict = (postal: string): string | null =>
 - The error-response strings and HTTP codes.
 - The full verbatim URA API ToS and SODL attribution wording.
 - Whether URA's gateway accepts requests from non-Singapore cloud IPs (GitHub Actions or Vercel).
+
+---
+
+## Verification log
+
+Adversarial fact-check on **2026-10-10**. Every concrete claim in this note was tested, with the aim of refuting it. Primary government hosts (`*.ura.gov.sg`, `data.gov.sg`, `datamall.lta.gov.sg`) and `epsg.io` / `spatialreference.org` were unreachable: DNS failure in the fetch tool, no response through the proxy. The shared web-search budget was already exhausted, so no new search-engine extracts were available. Verdicts therefore rest on these sources:
+
+| Key | Source |
+|---|---|
+| S1 | `ong6/sgprop`, cloned at last commit 2026-09-24: `ura.py`, `schema.py`, `svy21.py`, `sync.py`, `config.py`, `export.py`, `README.md`, `AGENTS.md`, `tests/test_sgprop.py` |
+| S2 | `samucospace/property-intelligence-SG`, cloned at last commit 2026-10-08: `server/ingestion.js`, `server/utils/projectUpsert.js`, `server/queryEngine.js`, `server/scripts/capture-ura-source.js`, and the **live-capture audit** `audit/2026-10-05/phase2-source-reconciliation.json` and `phase2-rehearsal-report.json` |
+| S3 | `chengguan/ura_api`, cloned (commits 2021-09-19 to 2023-05-19; file header "19 May 2020"), plus the `https://pypi.org/pypi/ura-api/json` release list |
+| S4 | `Caisho/ura-transactions`, cloned: `README.md`, `src/*.py`, `data/ura-postal-districts/ura-postal-districts-point.geojson` |
+| S5 | `cgcai/SVY21`, cloned at last commit 2020-07-21 |
+| S6 | EPSG registry in PROJ 9.8.1 via `pyproj` 3.8.0: `CRS.from_epsg(3414)` and `TransformerGroup(4757, 4326)` |
+| S7 | `proj4@2.12.1` run locally, plus `npm view proj4 time` and `npm view proj4 dist-tags` |
+| S8 | `hongyime/sgSHIOK2026` `qa/verification/P1-research.md` row A3 (third-party capture of the SODL page) |
+| S9 | `yinshanyang/singapore` `maps/1-region.geojson` and `maps/2-planning-area.geojson` (MP2014), spatially joined locally |
+| S10 | Local Node v22.22.0 tests: default fetch User-Agent, `TextDecoder` behaviour |
+| SNIP | The original research's search-engine extracts of official pages. These **could not be re-checked** in this pass. |
+
+### Corrections made
+
+| # | Claim (before) | Verdict | Now says | Source |
+|---|---|---|---|---|
+| C1 | `PMI_Resi_Rental` window "about the past 3 years" | **Corrected** | About 5 years. On 2026-10-05, `21q1`/`21q2` were empty, `21q3` was partial (3,942), and `21q4`–`26q3` were full (451,165 contracts in total). Request about 21 quarters. | S2 audit |
+| C2 | 10.764 quote attributed to "9,997 D19 rows" | **Corrected** | The quoted comment says "3,000 D19 rows". The 9,997 figure is the README's full-row match and the psf match (9,946 when dividing by 2-dp sqft). | S1 `schema.py` L18–19, L129–130; README |
+| C3 | TS header says "Port of cgcai/SVY21 (MIT …)" | **Corrected** | cgcai/SVY21 has **no licence file**. The comment and a licensing note were updated; use `proj4` (MIT) where provenance matters. | S5 (no LICENSE; README "Feel free to port"), S7 `package.json` |
+| C4 | LIVIA test vector `lng 103.9461807234` for the TS code | **Corrected** | The TS returns `103.94618072325` → `…7233`; proj4 and PROJ give `…72338` → `…7234`. Use a 1e-9° tolerance. | S6, S7, local run |
+| C5 | "Datum / ellipsoid: WGS84" | **Corrected** | The datum is SVY21 (EPSG 6757 / CRS 4757) on the WGS 84 ellipsoid. EPSG "SVY21 to WGS 84 (1)" is a null transformation with 1 m accuracy. | S6 |
+| C6 | SODL template "{name of Website}, which …" | **Corrected (still UNVERIFIED verbatim)** | "… from {source of data} which is made available …" per the captured text. The footer was reordered to dataset → date → source. | S8; consistent with `onemap-api.md` §3 |
+| C7 | "There is no `marketSegment` on rental projects (none of the parsers reads one)" | **Corrected** | Presence is UNVERIFIED. property-intelligence-SG reads it for every project payload and **defaults to 'OCR'** (a pattern to avoid). | S2 `projectUpsert.js` L139, `ingestion.js` L212 |
+| C8 | "Rental `rent` has been seen as a JSON number" / numbers-as-strings, labelled [LIVE-2026] | **Corrected label** | The evidence is sgprop's **test fixture**, not a live response. The JSON types are UNVERIFIED; parse tolerantly. | S1 `tests/test_sgprop.py` |
+| C9 | Several items labelled [CORROBORATED] with only one source: the Tue/Fri schedule, rental 15th schedule, pipeline schedule, developer-sales schedule and window, Planning_Decision params, other gateway services, "free", server-side-only rule, rental propertyType values | **Corrected label** | Relabelled "single source". | S1, S2, S3 |
+| C10 | "The 2026 clients ran from a laptop and a droplet" | **Corrected** | property-intelligence-SG ran on Windows (`C:\Dev\…`). sgprop's host is unknown. | S2 audit JSON |
+| C11 | "A full run needs about 20 calls" | **Corrected** | About 27 calls with about 21 rental quarters, plus 36 if developer sales are included. | arithmetic from C1 |
+| C12 | Header names "exactly … case as shown" | **Softened** | HTTP header names are case-insensitive. ura_api sent lower-case `token` and its tests passed. | S3 `ura_api.py` |
+
+### Claims confirmed
+
+| Claim | Verdict | Source |
+|---|---|---|
+| Docs and sign-up page `https://eservice.ura.gov.sg/maps/api/` | Confirmed (secondary) | S1 `config.py` L55, `ura.py` docstring, README |
+| Legacy reg form `https://www.ura.gov.sg/maps/api/reg.html` | Confirmed | S3 README L5 and code header; S4 README L29 |
+| Access key arrives by email; the token is generated from it | Confirmed (secondary) | S4 README: "you will receive an email with an access key … The email will also contain a user manual … in PDF format" |
+| Token URL `…/uraDataService/insertNewToken/v1` | Confirmed | S1 `TOKEN_URL`; S2 `ingestion.js` L101 |
+| Service URL `…/uraDataService/invokeUraDS/v1?service=…` | Confirmed | S1 `SERVICE_URL`; S2 `ingestion.js` L107 |
+| Legacy `www.ura.gov.sg/uraDataService/insertNewToken.action` and `invokeUraDS` | Confirmed (legacy use) | S3, S4 |
+| Token envelope `Status == "Success"`, `Result` is a string | Confirmed | S1 `token()`; S2 L102 |
+| GET works in 2026; ura_api used POST | Confirmed | S1, S2 (GET); S3 (`requests.post`) |
+| Token "lasts one day" | Confirmed (sgprop wording) | S1 docstring. The legacy-manual quote is unverifiable. |
+| sgprop drops the token and retries once when `Message` mentions "token" | Confirmed | S1 `call()` |
+| UA strings: sgprop `Mozilla/5.0 (sgprop; +https://github.com/ong6/sgprop)` with the comment "URA's gateway rejects urllib's default agent."; ura_api `Mozilla/5.0`; PI-SG `SingaporeHomeIntel/1.0 (URA Data Sync Service)` | Confirmed | S1 `ura.py`; S3; S2 L68 |
+| Node `fetch` default `User-Agent: node` | Confirmed | S10 (Node 22.22.0) |
+| sgprop: 4xx no retry, 5xx and timeout retried, 3 attempts, backoff of 2 s × attempt, 120 s timeout | Confirmed | S1 `_get_json` |
+| sgprop 50% batch guard (`MIN_BATCH_RATIO = 0.5`) | Confirmed | S1 `sync.py` L14 |
+| "Accented project names (ENCHANTÉ) arrive as Windows-1252." UTF-8 `fatal` decode throws, and the windows-1252 fallback decodes `É` | Confirmed | S1 `ura.py`; S10 |
+| `_num` treats `""`, `"-"`, `"NA"`, `None` (and `"na"`) as missing | Confirmed | S1 `schema.py` |
+| Full sync: 1 token + 16 calls, ~40 s | Confirmed | S1 README |
+| Transactions: past 5 years | Confirmed (secondary) | S1 docstring "last 5 years"; S1 README "5 yrs"; official snippet not re-checked |
+| `refPeriod` `YYqN` (`14q1` = 2014 Q1) | Confirmed | S3 docstring verbatim; S1 `recent_quarters`; S2 L119 regex |
+| Developer sales `refPeriod` MMYY (`0913` = Sep 2013; `0926` = Sep 2026) | Confirmed | S3 docstring verbatim; S1 `developer_sales` docstring; arithmetic |
+| Developer-sales scope and "End of day of every 15th of the month …" text | Confirmed verbatim in the docstring | S3. The 2026 currency of that text is UNVERIFIED. |
+| Pipeline "End of day of every 4th Friday of January, April, July and October …" | Confirmed verbatim in the docstring | S3 |
+| `Planning_Decision` `year` **or** `last_dnload_date=dd/mm/yyyy`; no-param call returns a falsy value | Confirmed | S3 code and `tests/test_ura_api.py` (`assertFalse(planning_decisions())`) |
+| `Car_Park_Availability`, `Car_Park_Details`, `Season_Car_Park_Details`, `EAU_Appr_Resi_Use` (returns `isResiUse`) | Confirmed (single source) | S3 |
+| Batch 1 = D01–07, batch 2 = D08–14 | Confirmed (ura_api README quote verbatim) | S3 README L26 |
+| Exactly 4 batches, all non-empty in 2026 | Confirmed | S1 `TRANSACTION_BATCHES`; S2 audit counts |
+| "URA revises older records, so each sync replaces what it fetched instead of appending." | Confirmed verbatim | S1 README |
+| Transaction field names and project-level fields (`project`, `street`, `x`, `y`, `marketSegment`, `transaction[]`, `area`, `floorRange`, `noOfUnits`, `contractDate`, `typeOfSale`, `price`, `nettPrice`, `propertyType`, `district`, `typeOfArea`, `tenure`) | Confirmed (parsers + fixture) | S1 `schema.py`; S2 `ingestion.js` |
+| `typeOfSale` 1/2/3 = New Sale / Sub Sale / Resale | Confirmed | S1 `SALE_TYPES`; S2 L248; S4 `app.py` L70 |
+| About 20% of transactions have no coordinates, mostly new launches | Confirmed (single source) | S1 `AGENTS.md` L37 |
+| Bulk purchase: `price` and `area` are totals | Confirmed (single source) | S1 `schema.py` comment |
+| Caisho expands `ST.` → `SAINT` | Confirmed | S4 `utils.py` |
+| Transaction `propertyType` values listed | Confirmed (as seen in filters) | S2 `queryEngine.js` L469, `yieldMetrics.js` |
+| `contractDate` MMYY → `20YY-MM` | Confirmed | S1 `mmyy_to_month`; S2 rental date code |
+| Tenure regexes `/(\d+)\s*y/`, `/(?:from\|commencing from)\s*(\d{4})/`, `freehold` | Confirmed identical | S1 `parse_tenure` |
+| Fixture psf: 2,268,888 / (143 × 10.764) = 1,474.02 | Confirmed (computed) | local arithmetic |
+| Rental fields `areaSqm`, `areaSqft`, `leaseDate`, `noOfBedRoom`, `rent`, `propertyType`, `district` | Confirmed (parsers + fixture) | S1, S2 |
+| Bands use a hyphen in the API (`"1500-1600"`) and "a to b" on eservice; the sqm band disagrees at boundaries (700–800 sqft: `60 to 70` sqm in the API vs `70 to 80` on eservice); the sqft band always matches | Confirmed | S1 README, `export.py` `_band` |
+| Open-ended bands `"<400"`, `">3000"` handled by PI-SG | Confirmed that the guard exists; whether such values occur is UNVERIFIED | S2 L55 |
+| Band midpoint (1500 + 1600) / 2 = 1550 | Confirmed (arithmetic) | local |
+| sgprop publish hour 18:00 SGT; 22:00 SGT = 14:00 UTC | Confirmed (`PUBLISH_HOUR = 18`; SGT is UTC+8 with no DST) | S1 |
+| SVY21 / EPSG:3414 parameters (origin 1°22′N 103°50′E, k = 1, FE 28001.642, FN 38744.572, WGS 84 ellipsoid) and proj4 string | Confirmed | S6 (PROJ omits `+towgs84`; equivalent result) |
+| cgcai and sgprop constants `1.366666`, `103.833333`, 38744.572, 28001.642, k = 1 | Confirmed | S5 `svy21.js` L5–19; S1 `svy21.py` L15–18 |
+| TS vs proj4 < 0.2 mm on a 1 km grid E 2,000–56,000 / N 21,000–51,000 | Confirmed (max 0.18 mm) | S7 |
+| Truncated origin shifts results by about 7 cm in lat and 4 cm in lng | Confirmed (7.4 cm / 3.7 cm) | S7 |
+| Test vectors: origin → (1.3666666667, 103.8333333333); AMK → (1.3699285644, 103.8569506831); cgcai truncated value (1.3699278978, 103.8569503498) | Confirmed | S6, S7; S5 README (1.3699278977737488, 103.85695034976467) |
+| `proj4@2.12.1` published 2024-09-06; npm `latest` = 2.22.0 (published 2026-08-31) | Confirmed | S7 |
+| proj4 takes `[easting, northing]` and returns `[lng, lat]` | Confirmed | S7 |
+| `ura-api` 0.0.6 on PyPI | Confirmed (releases 0.0.1–0.0.6) | S3 PyPI JSON |
+| Last-commit dates for sgprop (2026-09-24) and PI-SG (2026-10-08) | Confirmed | git log of the clones |
+| URA API ToS URL `https://www.ura.gov.sg/eservices-info/maps/api-terms-of-service/` | Confirmed (secondary) | S1 README "Data licence" |
+| sgprop: "made available under the Singapore Open Data Licence and URA API terms" | Confirmed (paraphrase of the README) | S1 README |
+| `https://data.gov.sg/open-data-licence` is the SODL URL | Confirmed (secondary) | S1 README; S8 |
+| Central Region = 22 planning areas (list as given) | Confirmed for MP2014 | S9 spatial join |
+| AMK in North-East, Clementi in West, Bishan and Queenstown in Central (D20 / D05 straddle examples) | Confirmed (region membership) | S9 |
+| 28-district table (sectors and locations) | Confirmed: matches Caisho's dataset exactly | S4, programmatic comparison |
+| `SECTOR_TO_DISTRICT`: 81 sectors (01–82 except 74), consistent with the table | Confirmed | programmatic comparison |
+
+### Unverifiable in this pass (left marked UNVERIFIED)
+
+| Claim | Why |
+|---|---|
+| Batches 3 and 4 = D15–20 and D21–28 | No primary access. The reviewer's recollection agrees. The 2026 batch row counts cannot settle it. |
+| Tue/Fri public-holiday rule; rental "15th"; rental-median window, threshold (≥ 10 contracts) and schedule | Only sgprop or memory available |
+| Field lists for `PMI_Resi_Rental_Median`, `PMI_Resi_Developer_Sales`, `PMI_Resi_Pipeline`, `Planning_Decision`; the `2013Q4` refPeriod format | From memory only. No 2026 client parses them. |
+| `nettPrice` semantics; basement `floorRange` `B1-B5`; `typeOfArea` `"Unknown"` | Not observed in any accessible source |
+| Sub Sale definition wording; `contractDate` = OTP issue vs exercise | Primary unreachable |
+| PMI e-service "within the last 60 months" quote; GovTech "you will receive an email with an access key …" quote; official "past 5 years" quote | Search snippets from the first pass; could not be re-checked (no search budget, hosts unreachable) |
+| Migration date for `www` → `eservice…/v1`; access-key expiry; token-per-day limits; error strings and HTTP codes; reachability from non-Singapore cloud IPs | No source |
+| SODL verbatim text (commercial use, endorsement, misrepresentation clauses); the URA ToS stating SODL v1.0 governs | Primary unreachable; partial support from S8 and S1 |
+| CCR = D09, D10, D11 + Downtown Core + Sentosa; RCR and OCR definitions | Primary unreachable. This is the long-standing URA definition, and the reviewer knows of no change in 2024–2026. |
+| The 11 "Central Area" planning areas | S9 confirms they are all Central Region areas, but S9 has no Central Area attribute |
+| Which postal sectors fall in which planning area (D04 / D05 / D20 straddles); Sentosa postcodes 098/099 | No geocoding source reachable |
+| URA "List of Postal Districts" URL; SLA SVY21 page URL | Hosts unreachable |
+| LIVIA fixture coordinates being URA's real values | The fixture may be hand-made |
+
+### 2024–2026 changes checked
+
+- **Endpoints.** Both 2026 clients use `eservice.ura.gov.sg/uraDataService/…/v1` and the `AccessKey`/`Token` headers. No newer change was found.
+- **Rental window.** The live 2026-10-05 data reaches back about 5 years. Any 3-year figure (sgprop's default, older descriptions) must not be used as the API limit.
+- **proj4.** The npm `latest` tag moved to 2.22.0 on 2026-08-31. Pinning 2.12.1 is still valid.
+- **EPSG:3414.** The definition is unchanged in PROJ 9.8.1.

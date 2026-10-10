@@ -11,7 +11,7 @@
   "lat": 1.31665,
   "lng": 103.94923,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: TEL Stage 5 / DTL extension targeted for 2H 2026; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "SUNGEI BEDOK",
@@ -27,7 +27,7 @@
   "lat": 1.3204,
   "lng": 103.95721,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: TEL Stage 5 / DTL extension targeted for 2H 2026; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "XILIN",
@@ -41,7 +41,7 @@
   "lat": 1.32873,
   "lng": 103.96487,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: TEL Stage 5 / DTL extension targeted for 2H 2026; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "CHOA CHU KANG WEST",
@@ -49,11 +49,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2027,
+  "expectedYear": 2028,
   "lat": 1.37922,
   "lng": 103.74003,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026 (Committee of Supply): JRL Stage 1 Choa Chu Kang\u2013Boon Lay/Tawas delayed to mid-2028; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "TENGAH",
@@ -61,11 +61,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2027,
+  "expectedYear": 2028,
   "lat": 1.36638,
   "lng": 103.73009,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026 (Committee of Supply): JRL Stage 1 Choa Chu Kang\u2013Boon Lay/Tawas delayed to mid-2028; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "HONG KAH",
@@ -73,11 +73,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2027,
+  "expectedYear": 2028,
   "lat": 1.35809,
   "lng": 103.72611,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026 (Committee of Supply): JRL Stage 1 Choa Chu Kang\u2013Boon Lay/Tawas delayed to mid-2028; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "CORPORATION",
@@ -85,11 +85,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2027,
+  "expectedYear": 2028,
   "lat": 1.35297,
   "lng": 103.71381,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026 (Committee of Supply): JRL Stage 1 Choa Chu Kang\u2013Boon Lay/Tawas delayed to mid-2028; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "JURONG WEST",
@@ -97,11 +97,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2027,
+  "expectedYear": 2028,
   "lat": 1.34919,
   "lng": 103.70826,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026 (Committee of Supply): JRL Stage 1 Choa Chu Kang\u2013Boon Lay/Tawas delayed to mid-2028; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "BAHAR JUNCTION",
@@ -109,11 +109,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2027,
+  "expectedYear": 2028,
   "lat": 1.34619,
   "lng": 103.70303,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026 (Committee of Supply): JRL Stage 1 Choa Chu Kang\u2013Boon Lay/Tawas delayed to mid-2028; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "GEK POH",
@@ -121,11 +121,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2027,
+  "expectedYear": 2028,
   "lat": 1.34835,
   "lng": 103.69812,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026 (Committee of Supply): JRL Stage 1 Choa Chu Kang\u2013Boon Lay/Tawas delayed to mid-2028; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "TAWAS",
@@ -133,11 +133,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2027,
+  "expectedYear": 2028,
   "lat": 1.35066,
   "lng": 103.69189,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026 (Committee of Supply): JRL Stage 1 Choa Chu Kang\u2013Boon Lay/Tawas delayed to mid-2028; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "TENGAH PLANTATION",
@@ -145,11 +145,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2028,
+  "expectedYear": null,
   "lat": 1.35733,
   "lng": 103.73345,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "TENGAH PARK",
@@ -157,11 +157,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2028,
+  "expectedYear": null,
   "lat": 1.35233,
   "lng": 103.73679,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "BUKIT BATOK WEST",
@@ -169,11 +169,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2028,
+  "expectedYear": null,
   "lat": 1.34567,
   "lng": 103.7395,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "TOH GUAN",
@@ -181,11 +181,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2028,
+  "expectedYear": null,
   "lat": 1.33991,
   "lng": 103.7425,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "JURONG TOWN HALL",
@@ -193,11 +193,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2028,
+  "expectedYear": null,
   "lat": 1.32638,
   "lng": 103.74521,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "PANDAN RESERVOIR",
@@ -205,11 +205,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2028,
+  "expectedYear": null,
   "lat": 1.32046,
   "lng": 103.7448,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "ENTERPRISE",
@@ -217,11 +217,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2029,
+  "expectedYear": null,
   "lat": 1.33273,
   "lng": 103.70858,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "TUKANG",
@@ -229,11 +229,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2029,
+  "expectedYear": null,
   "lat": 1.32541,
   "lng": 103.70925,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "JURONG HILL",
@@ -241,11 +241,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2029,
+  "expectedYear": null,
   "lat": 1.31862,
   "lng": 103.71013,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "JURONG PIER",
@@ -253,11 +253,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2029,
+  "expectedYear": null,
   "lat": 1.31313,
   "lng": 103.7104,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "NANYANG GATEWAY",
@@ -265,11 +265,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2029,
+  "expectedYear": null,
   "lat": 1.35369,
   "lng": 103.6866,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "NANYANG CRESCENT",
@@ -277,11 +277,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2029,
+  "expectedYear": null,
   "lat": 1.34841,
   "lng": 103.68081,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "PENG KANG HILL",
@@ -289,11 +289,11 @@
   "lines": [
    "JRL"
   ],
-  "expectedYear": 2029,
+  "expectedYear": null,
   "lat": 1.34321,
   "lng": 103.67856,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA, Mar 2026: JRL Stage 2 and Stage 3 opening dates to be confirmed; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "AVIATION PARK",
@@ -305,7 +305,7 @@
   "lat": 1.37021,
   "lng": 104.00351,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: Cross Island Line Phase 1 (Aviation Park\u2013Bright Hill) targeted for 2030; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "LOYANG",
@@ -317,7 +317,7 @@
   "lat": 1.37114,
   "lng": 103.97192,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: Cross Island Line Phase 1 (Aviation Park\u2013Bright Hill) targeted for 2030; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "PASIR RIS EAST",
@@ -329,7 +329,7 @@
   "lat": 1.36702,
   "lng": 103.96058,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: Cross Island Line Phase 1 (Aviation Park\u2013Bright Hill) targeted for 2030; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "TAMPINES NORTH",
@@ -341,7 +341,7 @@
   "lat": 1.36946,
   "lng": 103.93813,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: Cross Island Line Phase 1 (Aviation Park\u2013Bright Hill) targeted for 2030; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "DEFU",
@@ -353,7 +353,7 @@
   "lat": 1.36234,
   "lng": 103.899,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: Cross Island Line Phase 1 (Aviation Park\u2013Bright Hill) targeted for 2030; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "SERANGOON NORTH",
@@ -365,7 +365,7 @@
   "lat": 1.3706,
   "lng": 103.87379,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: Cross Island Line Phase 1 (Aviation Park\u2013Bright Hill) targeted for 2030; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "TAVISTOCK",
@@ -377,7 +377,7 @@
   "lat": 1.37019,
   "lng": 103.86325,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: Cross Island Line Phase 1 (Aviation Park\u2013Bright Hill) targeted for 2030; coordinates from URA Master Plan 2019 rail station layer"
  },
  {
   "name": "TECK GHEE",
@@ -389,6 +389,6 @@
   "lat": 1.36542,
   "lng": 103.84352,
   "approximate": true,
-  "source": "docs/research/mrt-network.md \u00a74.9"
+  "source": "LTA: Cross Island Line Phase 1 (Aviation Park\u2013Bright Hill) targeted for 2030; coordinates from URA Master Plan 2019 rail station layer"
  }
 ]

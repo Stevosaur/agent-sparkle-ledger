@@ -74,10 +74,10 @@ Missing values are the literal string `"na"` (legacy metadata: `"na" : Data not 
 | # | Column | Official title | Observed content / enum (2026 snapshot, 337 rows) |
 |---|---|---|---|
 | 1 | `school_name` | School name | UPPERCASE, e.g. `ADMIRALTY PRIMARY SCHOOL`. Join key to the other MOE datasets. |
-| 2 | `url_address` | URL address | e.g. `https://admiraltypri.moe.edu.sg/` (mixed http/https) |
+| 2 | `url_address` | URL address | e.g. `https://admiraltypri.moe.edu.sg/`. Mixed: 285 `http://`, 43 `https://`, and **9 with no scheme at all** (e.g. `www.acsj.moe.edu.sg`, `valourpri.moe.edu.sg`). Prefix `https://` when the scheme is missing before rendering a link. |
 | 3 | `address` | Address | e.g. `11 WOODLANDS CIRCLE   ` — **335/337 have trailing spaces**; `.trim()` |
 | 4 | `postal_code` | Postal code | 6 digits as text, **but 4 rows lost their leading zero**: `88256` (CANTONMENT PRIMARY), `99757` (CHIJ (KELLOCK)), `99138` (CHIJ ST. THERESA'S CONVENT), `99840` (RADIN MAS PRIMARY). Always `padStart(6,'0')`. |
-| 5 | `telephone_no` | Telephone no | 8 digits, `na` possible |
+| 5 | `telephone_no` | Telephone no | Free text, **not always 8 digits**: 327 rows are 8 digits, 10 are not (e.g. `6256 6701`, `+65 69296290`, `64582177 (Secondary)`, `62803880 (Sec)`). No `na` in the 2026 snapshot, but the legacy metadata allows it. Display as-is; do not validate as `^\d{8}$`. |
 | 6 | `telephone_no_2` | Telephone no 2 | usually `na` |
 | 7 | `fax_no` | Fax no | |
 | 8 | `fax_no_2` | Fax no 2 | |
@@ -138,7 +138,11 @@ All CSV; last updated June 2024 in the Jan 2025 capture. Example CCA record: `{"
 
 ### 1.6 P1 vacancies and balloting data
 
-MOE publishes per-school vacancies, applicants and balloting results per phase on moe.gov.sg each year (page "P1 Registration Exercise: Vacancies and balloting data"; the 2023 page existed at `https://www.moe.gov.sg/primary/p1-registration/vacancies-and-balloting`). **No data.gov.sg dataset** was found for it. Treat as curated data scraped or keyed per exercise year, with source URL and retrieval date. UNVERIFIED that the URL path is unchanged in 2026.
+MOE publishes per-school vacancies, applicants and balloting results per phase on moe.gov.sg each year. **Two different pages exist** (corrected 2026-10-10 from the archived MOE navigation links):
+- Past per-school data, titled "2023 P1 Registration Exercise: Vacancies and balloting data": `https://www.moe.gov.sg/primary/p1-registration/past-vacancies-and-balloting-data`.
+- `https://www.moe.gov.sg/primary/p1-registration/vacancies-and-balloting` is a different page, "Vacancies and balloting updates: 2023 P1 Registration Exercise" (Last Updated 04 Sep 2023). It carries live status during the exercise, not the archive table.
+
+**No data.gov.sg dataset** was found for it. Treat as curated data scraped or keyed per exercise year, with source URL and retrieval date. UNVERIFIED that either URL path is unchanged in 2026.
 
 ---
 
@@ -165,11 +169,11 @@ Same list on "Understand how balloting works" (Last Updated 23 May 2023), which 
 
 ### 2.2 How the distance is measured
 
-- **Official definition** [PRIMARY-ARCHIVED, MOE "Address used for P1 registration", Last Updated 03 Aug 2023], verbatim:
+- **Official definition** [PRIMARY-ARCHIVED, MOE page titled "Address used for registration" (URL `/primary/p1-registration/home-address`), Last Updated 03 Aug 2023], verbatim:
   > The HSD used will be the shortest distance from a point on the boundary around the school to the registrant's official residential address.
   So the reference is the **school's land boundary**, not a school centre point, and the result is a **category** (within 1 km / 1-2 km / outside 2 km), not a continuous number.
 - **Home side.** 2026 property-analysis write-ups paraphrase MOE as "the shortest distance from the home building outline to the school boundary" (`evancjx/housing-estate-framework`, Aug-Sep 2026, citing `https://www.moe.gov.sg/primary/p1-registration/home-address`). Whether the home side is an address point or the building footprint polygon is **UNVERIFIED**. Either way, blocks of one project can fall into different categories.
-- **Who computes it.** The MOE distance checker "contains information from the Singapore Land Authority's (SLA) School Query Service. Information is accurate as of May 2023 for the registration of children admitting to Primary 1 in 2024." [PRIMARY-ARCHIVED] ⇒ SLA refreshes the data **once per exercise year** (around May, before the July exercise).
+- **Who computes it.** The MOE distance checker "contains information from the Singapore Land Authority's (SLA) School Query Service. Information is accurate as of May 2023 for the registration of children admitting to Primary 1 in 2024." [PRIMARY-ARCHIVED, `/distance` page, Last Updated 01 Feb 2024] ⇒ *Inference, not stated by MOE:* SLA refreshes the data **once per exercise year** (around May, before the July exercise). The once-a-year cadence is UNVERIFIED; it rests on this one sentence.
 - **Official checker:** OneMap SchoolQuery. Current link used in Aug-Sep 2026: `https://www.onemap.gov.sg/school` [SECONDARY]; older links `https://www.onemap.gov.sg/main/v2/schoolquery` and `https://www.onemap.gov.sg/#/SchoolQueryInfo`.
 - **No public API.** The OneMap API docs (see onemap-api.md) list no SchoolQuery endpoint. A Sept 2026 project states "No supported SchoolQuery API has been assumed". Do **not** scrape private OneMap endpoints (OneMap terms). UNVERIFIED that no licensed export exists; ask SLA if exact categories are required.
 
@@ -187,27 +191,29 @@ Same list on "Understand how balloting works" (Last Updated 23 May 2023), which 
 
 | Exercise year (P1 entry year) | Phase 2B reserved | Phase 2C reserved | Distance treatment in Phase 2C | Confidence |
 |---|---|---|---|---|
-| Up to 2021 | 20 | 20 | Standard order (§2.1) | Phase 2C was "doubled to 40" from 2022 [SECONDARY: `wsgzao.github.io` post]; the 20/20 split itself is UNVERIFIED |
-| **2022 → 2026** (2023 → 2027 entry) | **20** | **40** | Standard order | [PRIMARY-ARCHIVED] 2023-2024 pages, verbatim: "we are reserving 20 places in each primary school in Phase 2B and 40 places in each primary school in Phase 2C. This means a total of 60 reserved places will be set aside in all schools at the start of the P1 Registration Exercise." 2026 exercise still had 40 (news summary of 5 Aug 2026: Princess Elizabeth Primary "drew 159 applicants for 40 places") [SECONDARY] |
+| Before 2022 (from 2014, UNVERIFIED start year) | 20 | 20 | Standard order (§2.1) | Phase 2C was "doubled to 40" from 2022 [SECONDARY: `wsgzao.github.io` post]. The 20/20 split, and the start year 2014 for reserved places (background knowledge, not re-checked this run), are UNVERIFIED. Do not label this row "up to 2021" without a start year: reserved places did not exist in every earlier year. |
+| **2022 → 2026** (2023 → 2027 entry) | **20** | **40** | Standard order | [PRIMARY-ARCHIVED] MOE "Vacancies and balloting updates: 2023 P1 Registration Exercise" (Last Updated 04 Sep 2023), verbatim: "we are reserving 20 places in each primary school in Phase 2B and 40 places in each primary school in Phase 2C. This means a total of 60 reserved places will be set aside in all schools at the start of the P1 Registration Exercise." The same 20/40 figures are on "Understand how balloting works" (23 May 2023) and "Registration phases and key dates" (05 Jan 2024). **2026 exercise still had 40** [CORROBORATED]: the CNA standfirst of 10 Sep 2026 says 60 is "an increase from 40", and CNA reported 2026 Phase 2C results on 5 Aug 2026 ("Nearly half of all primary schools oversubscribed in Phase 2C"). The earlier per-school example (Princess Elizabeth Primary "drew 159 applicants for 40 places") could not be traced to a source: UNVERIFIED, do not reuse. |
 | **2027 onwards** (2028 entry) | UNVERIFIED (commentators say places move "from Phase 2A and Phase 2B") | **60 at most schools** (up from 40) | Standard order at most schools; **two-track scheme at 12 schools** (below) | Announced **10 Sep 2026** [CORROBORATED: CNA RSS item + CNA follow-up + 2026 codebase + forum discussion] |
 
-Other mechanics that apply in every year above [PRIMARY-ARCHIVED, 2023-2024 pages]:
+Other mechanics [PRIMARY-ARCHIVED, 2023-2024 pages]. **Corrected scope:** these are verified for the 2023 exercise and assumed for 2022-2026. They do **not** apply to "every year above". Before 2022 the post-2A split was different (background knowledge: half to 2B and half to 2C, with Phase 2A split into 2A(1)/2A(2); UNVERIFIED). Whether they survive the 2027 changes is UNVERIFIED.
 - "At the end of Phase 2A, one-third of remaining places will be allocated to Phase 2B, and two-thirds to Phase 2C."
 - "If there are vacancies left at the end of Phase 2B, the remaining places will be carried forward to Phase 2C."
 - A cap on PR intake applies in Phases 2C and 2C Supplementary "in a few schools".
 - Phase 2C is "for a child who is not yet registered in a primary school"; unsuccessful after Phase 2C Supplementary → "posted to a school with available vacancy".
 
 **The 2027 change (announced 10 Sep 2026; first applies to the 2027 P1 Registration Exercise, for P1 entry in 2028):**
-- CNA headline (10 Sep 2026, 11:04 UTC): "Primary 1 registration: More Phase 2C places from 2027, new two-track scheme at 12 schools". Standfirst: "Most primary schools will set aside 60 places for Phase 2C, an increase from 40." URL: `https://www.channelnewsasia.com/singapore/p1-registration-phase-2c-two-track-schools-6375426`.
-- CNA follow-up (11-12 Sep 2026, `https://www.channelnewsasia.com/singapore/p1-registration-parents-alumni-phase-2a-6378766`), as summarised: "At 12 schools, mainly in Bukit Timah and some in Marine Parade, the Phase 2C places will be divided equally between applicants living within 2km and those living farther away. Families in either group will not receive priority based on exact home-to-school distance."
+- CNA headline (10 Sep 2026; RSS feed item published 11:04 UTC = 19:04 SGT): "Primary 1 registration: More Phase 2C places from 2027, new two-track scheme at 12 schools". Standfirst: "Most primary schools will set aside 60 places for Phase 2C, an increase from 40." URL: `https://www.channelnewsasia.com/singapore/p1-registration-phase-2c-two-track-schools-6375426`. [Re-confirmed 2026-10-10 from the RSS archive JSON.]
+- CNA follow-up (**11 Sep 2026**, RSS 13:29 UTC; title "'More than just a privilege': Increase in Phase 2C places draws mixed reactions from alumni parents"; `https://www.channelnewsasia.com/singapore/p1-registration-parents-alumni-phase-2a-6378766`), as summarised in the 12 Sep 2026 digest: "The Ministry of Education (MOE) announced that most primary schools will reserve 60 places for Phase 2C applicants from next year, up from 40. At 12 schools, mainly in Bukit Timah and some in Marine Parade, the Phase 2C places will be divided equally between applicants living within 2km and those living farther away. Families in either group will not receive priority based on exact home-to-school distance." The same digest quotes NUS Assoc Prof Vincent Chua that seats are being reallocated "from Phase 2A and Phase 2B". [Re-confirmed 2026-10-10.]
+- Whether the 12 two-track schools also reserve 60 (rather than some other number) is UNVERIFIED: the sources say "most primary schools" reserve 60.
 - Two-track details (from `hoyeehong/near-school`, Sept 2026, citing MOE `https://www.moe.gov.sg/primary/p1-registration/changes-to-p1-registration-framework`) [SECONDARY]:
   - "12 designated schools split Phase 2C places between homes within 2 km and beyond 2 km. There is no home-school distance priority within each track. This does not apply to all schools."
   - "Singapore Citizens in both tracks are considered before Permanent Residents. Places left after admitting Citizens in one track flow to Citizens in the other track."
   - The ≤2 km track covers both the official within-1km and 1-2km categories.
-  - With 60 places, that is 30 + 30 (forum discussion, 28 Sep 2026) [SECONDARY].
+  - If such a school reserves 60 places, that is 30 + 30 (forum discussion, 28 Sep 2026) [SECONDARY; the 60 for these 12 schools is UNVERIFIED, see above].
 - **The 12 two-track schools** [SECONDARY, single source `hoyeehong/near-school` `data/demo.ts`; consistent with CNA's "mainly Bukit Timah, some Marine Parade". **Verify every name against the MOE page before publishing.**]
-  Bukit Timah side: Nanyang Primary School; Raffles Girls' Primary School; Methodist Girls' School (Primary); Pei Hwa Presbyterian Primary School; Singapore Chinese Girls' School (Primary) (MOE directory name: `SINGAPORE CHINESE GIRLS' PRIMARY SCHOOL`); Anglo-Chinese School (Primary); Anglo-Chinese School (Junior); St. Margaret's School (Primary).
-  Marine Parade side: Tao Nan School; CHIJ (Katong) Primary; Ngee Ann Primary School; Tanjong Katong Primary School.
+  Bukit Timah / central group: Nanyang Primary School; Raffles Girls' Primary School; Methodist Girls' School (Primary); Pei Hwa Presbyterian Primary School; Singapore Chinese Girls' School (Primary) (MOE directory name: `SINGAPORE CHINESE GIRLS' PRIMARY SCHOOL`); Anglo-Chinese School (Primary); Anglo-Chinese School (Junior); St. Margaret's School (Primary).
+  Marine Parade / east group: Tao Nan School; CHIJ (Katong) Primary; Ngee Ann Primary School; Tanjong Katong Primary School.
+  *Check against the MOE directory (2026 snapshot):* all 12 names exist exactly as `school_name` values (SCGS under its directory name above). CNA's "mainly Bukit Timah, some Marine Parade" is a loose description, **not** the MOE `dgp_code`: the first group is `BUKIT TIMAH` ×4 (Nanyang, RGPS, MGS (Primary), Pei Hwa), `NOVENA` ×2 (SCGPS, ACS (Primary)) and `CENTRAL` ×2 (ACS (Junior), St. Margaret's (Primary)); the second is `MARINE PARADE` ×3 and `BEDOK` ×1 (CHIJ (Katong) Primary). Do not filter two-track schools by planning area; use the explicit list.
 - The official MOE page `changes-to-p1-registration-framework` could not be read: exact Phase 2A/2B changes, the PR treatment inside the tracks, and the full list are **UNVERIFIED** beyond the above.
 
 ### 2.5 What the app may and may not show (engineering rules)
@@ -224,7 +230,7 @@ Other mechanics that apply in every year above [PRIMARY-ARCHIVED, 2023-2024 page
 ### 3.0 Common mechanics
 
 - **GeoJSON and KML datasets: skip initiate, call poll-download only** (datagov-api.md §3.3). `GET https://api-open.data.gov.sg/v1/public/api/datasets/{id}/poll-download` → `data.url` → fetch the file. A 2026 codebase also gets a URL for a CSV this way; the documented CSV flow is initiate then poll.
-- Rate limiting: HTTP 429, or `json.code === 24` in the body (seen handled in `ElsonNg/CribCheck`). Back off ≥ 11 s without a key.
+- Rate limiting: HTTP 429, or `json.code === 24` in the body (seen handled in `ElsonNg/CribCheck`, re-checked 2026-10-10). Back off **≥ 12 s** without a key (corrected from 11 s: the stricter of the two documented figures is the Download Dataset guide's "5 requests per minute", i.e. one call per 12 s; see datagov-api.md §2.2).
 - Geometry is WGS84 `[lng, lat]`. Some files carry a third Z value (`[lng, lat, 0]`): read only `[0]` and `[1]`.
 - `LANDXADDRESSPOINT`/`LANDYADDRESSPOINT`, `X`/`Y`, `X_COORDINATE`/`Y_COORDINATE` are **SVY21 (EPSG:3414)** metres, sometimes `0` placeholders. Use the GeoJSON geometry instead.
 - `FMEL_UPD_D` = source record timestamp `yyyyMMddHHmmss` (e.g. `20250807100106`). `INC_CRC` = record hash; use with `OBJECTID` for change detection.
@@ -257,7 +263,7 @@ Real Description sample (Gyms@SG): `<center><table><tr><th colspan='2' align='ce
 | Markets & food centres | `d_a57a245b3cf3ec76ad36d55393a16e97` (GeoJSON), `d_b5f8a5a4584b6e537c0ab81a48ca3497` (twin) | NEA Market and Food Centre | NEA (1389) | GeoJSON | | 2024-06-06 | KML-style |
 | **Supermarkets (locations)** | `d_cac2c32f01960a3ad7202a99c27268a0` | Supermarkets (GEOJSON) | SFA (1451) | GeoJSON | — | 2024-06-06 | KML-style; **see §3.3: reported deleted Aug 2026** |
 | (twin) | `d_8a77ee0446716b2ce475a587004afc73` | Supermarkets (KML) | SFA (1451) | KML | — | | **reported deleted** |
-| Supermarket licences | `d_11edd0117280c5776651d7891114c88c` | List of Supermarket Licences | NEA, now SFA (1388) | CSV | | coverage **26 Jun 2016**; re-uploaded 2024-06-06 | no coords |
+| Supermarket licences | `d_11edd0117280c5776651d7891114c88c` | List of Supermarket Licences | NEA per Jan 2025 metadata (`managedBy`, `sources`); "now SFA" is UNVERIFIED (1388) | CSV | | coverage **26 Jun 2016**; re-uploaded 2024-06-06 | no coords |
 | **Parks (points)** | `d_0542d48f0991541706b58059381a6eca` | Parks | NParks (1491) | GeoJSON, ~160 KB | **461** (Jul 2026) | 2025-12-05 | Flat |
 | Parks (polygons) | `d_77d7ec97be83d44f61b85454f844382f` | NParks Parks and Nature Reserves | NParks (1489) | GeoJSON, ~2.9 MB | 461 (Aug 2026) | 2025-12-05 | Flat |
 | Park connectors | `d_a69ef89737379f231d2ae93fd1c5707f` | Park Connector Loop | NParks (1490) | GeoJSON (lines) | 1,177 lines (2026) | 2024-11-25 | Flat (UNVERIFIED) |
@@ -272,7 +278,7 @@ Real Description sample (Gyms@SG): `<center><table><tr><th colspan='2' align='ce
 | Pre-schools | `d_61eefab99958fd70e6aab17320a71f1c` (GeoJSON), `d_a72bcd23e208d995f3bd4eececeaca43` (KML) | Pre-Schools Location (childcare + kindergartens) | ECDA (2064) | GeoJSON | | 2024-06-06 | KML-style (`CENTRE_NAME`, `CENTRE_CODE`) |
 | Pre-school list | `d_696c994c50745b079b3684f0e90ffc53` | Listing of Centres | ECDA (56) | CSV | | 2025-01-14 | no coords |
 | Kindergartens | `d_7fe9a72b1afff18e48111772c8d0fd39` (GeoJSON), `d_95aa63998d7de94dd4cb3e8e43a5f6d5` (KML) | Kindergartens | ECDA (2034) | GeoJSON | | 2025-11-08 | Flat |
-| Childcare | `d_5d668e3f544335f8028f546827b773b4` (GeoJSON; used by 2 codebases, collection UNVERIFIED), `d_b34f9bdbe99067eecb5d5f3be8187cfb` (KML, collection 2015) | Child Care Services | ECDA | GeoJSON | | KML 2024-06-06 | Flat (UNVERIFIED) |
+| Childcare | `d_5d668e3f544335f8028f546827b773b4` (GeoJSON), `d_b34f9bdbe99067eecb5d5f3be8187cfb` (KML) | Child Care Services | ECDA (2015; both IDs confirmed as children of collection 2015 in the Jan 2025 mirror) | GeoJSON | | both 2024-06-06 | Flat (UNVERIFIED) |
 | Sport facilities | `d_9b87bab59d036a60fad2a91530e10773` | SportSG Sport Facilities (GEOJSON) | SportSG (1631) | GeoJSON | 45 (Sep 2026) | 2025-11-13 | Flat (since late 2025; older copies KML-style) |
 | Gyms | `d_b3ae090692ecf632116c9885cfbd3424` (GeoJSON), `d_8166b1ebbba81cd153aee73f8b5ec88b` (KML) | Gyms@SG | HPB (117) | GeoJSON | | 2024-06-06 | KML-style |
 | Polyclinic proxy | `d_0cdfbf7e277e8bfa1ef79fadf4b71b56` | Breast Screening Centre (GEOJSON) ("Location of polyclinics offering BSS services") | HPB (115) | GeoJSON | | 2024-06-06 | — not a full polyclinic list |
@@ -287,7 +293,7 @@ Sources: Dec 2025 metadata mirror `https://raw.githubusercontent.com/jmbish04/sg
 
 ### 3.2 Hawker centres `d_4a086da0a5553be1d89383cd90d07ecd` [PRIMARY-MIRROR: metadata + real file]
 
-Properties (20, all flat): `OBJECTID` (num), `LANDXADDRESSPOINT`, `LANDYADDRESSPOINT` (SVY21), `ADDRESSBUILDINGNAME`, `ADDRESSPOSTALCODE` (metadata says NUMERIC, file holds a 6-char string), `ADDRESSSTREETNAME`, `DESCRIPTION` (e.g. upgrading programme), `NAME`, `PHOTOURL`, `ADDRESSBLOCKHOUSENUMBER`, `STATUS`, `AWARDED_DATE` (`dd/MM/yyyy` or null), `IMPLEMENTATION_DATE`, `INFO_ON_CO_LOCATORS`, `ADDRESS_MYENV`, `EST_ORIGINAL_COMPLETION_DATE` (e.g. `"1983"`), `HUP_COMPLETION_DATE` (`dd/MM/yyyy` or null), `NUMBER_OF_COOKED_FOOD_STALLS` (int), `INC_CRC`, `FMEL_UPD_D`.
+Properties (20, all flat): `OBJECTID` (num), `LANDXADDRESSPOINT`, `LANDYADDRESSPOINT` (SVY21), `ADDRESSBUILDINGNAME`, `ADDRESSPOSTALCODE` (metadata says NUMERIC, file holds a 6-char string), `ADDRESSSTREETNAME`, `DESCRIPTION` (e.g. upgrading programme), `NAME`, `PHOTOURL`, `ADDRESSBLOCKHOUSENUMBER`, `STATUS`, `AWARDED_DATE` (`dd/MM/yyyy` or null), `IMPLEMENTATION_DATE`, `INFO_ON_CO_LOCATORS`, `ADDRESS_MYENV`, `EST_ORIGINAL_COMPLETION_DATE` (**mixed formats** in the 2026 file: a year `"1983"`, a future year `"2027"`, or a date `"30/3/2022"` with no zero padding; parse leniently), `HUP_COMPLETION_DATE` (`dd/MM/yyyy` or null), `NUMBER_OF_COOKED_FOOD_STALLS` (int), `INC_CRC`, `FMEL_UPD_D`.
 
 `STATUS` values in the 2026 file (129 features): `Existing` 103, `Existing (new)` 16, `Under Construction` 6, `Existing (replacement)` 3, `Interim Centre` 1. Treat `Under Construction` as planned; everything else as open. Unknown values: skip and log.
 
@@ -318,7 +324,7 @@ Legacy CSV `d_68a42f09f350881996d83f9cd73ab02f` columns: `name_of_centre, locati
 
 ### 3.4 Parks
 
-`d_0542d48f0991541706b58059381a6eca` "Parks" (points; "indicative Managed Areas of Parks which are under the purview of NParks"). Properties: `OBJECTID, NAME, X, Y, INC_CRC, FMEL_UPD_D` (X/Y = SVY21). 461 features in a July 2026 download, latest `FMEL_UPD_D` 20260703041208. Names are abbreviated and include playgrounds and open spaces: `PK` = park, `PG` = playground (26 names contain "PLAYGROUND"/`PG`), `OS` = open space, e.g. `NOVENA RISE PK`, `CARMICHAEL RD PG`, `HANDY RD OS`, `CONEY ISLAND PARK`. Filter or label by suffix.
+`d_0542d48f0991541706b58059381a6eca` "Parks" (points; "indicative Managed Areas of Parks which are under the purview of NParks"). Properties: `OBJECTID, NAME, X, Y, INC_CRC, FMEL_UPD_D` (X/Y = SVY21). 461 features in a July 2026 download, latest `FMEL_UPD_D` 20260703041208. Names are abbreviated and include playgrounds and open spaces: `PK` = park, `PG` = playground, `OS` = open space. **Corrected counts (recomputed from the same July 2026 file):** 26 names contain the word `PLAYGROUND` and a further 136 contain the abbreviation `PG` (134 end in ` PG`), so **162 of 461** are playground-type entries, not 26. 112 contain `PK`, 117 contain `PARK`, 17 end in `OS`. Examples: e.g. `NOVENA RISE PK`, `CARMICHAEL RD PG`, `HANDY RD OS`, `CONEY ISLAND PARK`. Filter or label by suffix.
 Real feature: `{"type":"Feature","geometry":{"type":"Point","coordinates":[103.84285301571919,1.3246275300259491]},"properties":{"OBJECTID":95822,"NAME":"NOVENA RISE PK","X":29061.08694996,"Y":34096.10124219,"INC_CRC":"E0CE377939D35367","FMEL_UPD_D":"20260422000138"}}` (source `hamburtab/homelens-sg/data/raw/official_layers/parks.geojson`).
 
 `d_77d7ec97be83d44f61b85454f844382f` "NParks Parks and Nature Reserves" (Polygon/MultiPolygon). Properties: `OBJECTID_1, L_CODE, NAME, N_RESERVE, INC_CRC, FMEL_UPD_D, SHAPE_1.AREA, SHAPE_1.LEN`. Use for "distance to park edge"; a centroid is not an entrance.
@@ -343,9 +349,12 @@ Properties used by two 2026 codebases: `OBJECTID, NAME, ADDRESSBLOCKHOUSENUMBER,
 
 ### 3.8 OneMap themes as an alternative source (token required)
 
-`GET https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName={QUERYNAME}[&extents=minLat,minLng,maxLat,maxLng]` with `Authorization: <token>` (see onemap-api.md §1.6; the first element of `SrchResults` is metadata; points have `LatLng: "lat,lng"`).
+`GET https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName={QUERYNAME}[&extents=…]` with `Authorization: <token>` (see onemap-api.md §1.6 and §2.2; the first element of `SrchResults` is metadata; points have `LatLng: "lat,lng"`).
+- The `extents` bbox format (`minLat,minLng,maxLat,maxLng` was stated here before) is **UNVERIFIED**; onemap-api.md also marks it UNVERIFIED. Filter by bbox client-side unless it is tested.
+- Auth header: the only official sample with saved output for themes (SLA workshop notebook, May 2025) sends `Authorization: Bearer <token>`. onemap-api.md recommends the raw token. If the raw token gets 401 on `retrieveTheme`, retry once with the `Bearer ` prefix.
 Relevant `QUERYNAME`s from a 2026 `getAllThemesInfo` dump (168 themes; `sanjeevr123/HomeCompass/onemap_all_themes_full.json`) with their `EXPIRY_DATE`:
-`ssot_hawkercentres` (NEA, 31/12/2028; note: **not** the old `hawkercentre`), `libraries` (NLB, 31/12/2028), `communityclubpassionwave` (PA, 31/12/2027), `communityclubs` (PA, expired 30/12/2022), `residentscommittee` (PA, 31/12/2027), `kindergartens` (ECDA, 31/12/2026), `childcare` (ECDA, 31/12/2026), `nationalparks` (NParks, 31/03/2026), `nparks_parks` (31/03/2026), `park_connector_loop` (31/03/2026), `moh_hospitals` (MOH, 31/12/2026), `vaccination_polyclinics` (MOH, 27/01/2029), `sportsg_sport_facilities` (expired 31/12/2024), `eldercare` (expired 31/12/2020).
+`ssot_hawkercentres` (NEA, 31/12/2028; note: **not** the old `hawkercentre`, which is absent from the dump), `libraries` (NLB, 31/12/2028), `communityclubpassionwave` (PA, 31/12/2027), `communityclubs` (PA, expired 30/12/2022), `residentscommittee` (PA, 31/12/2027), `kindergartens` (ECDA, 31/12/2026), `childcare` (ECDA, 31/12/2026), `nationalparks` (NParks, **expired 31/03/2026**), `nparks_parks` (**expired 31/03/2026**), `park_connector_loop` (**expired 31/03/2026**), `moh_hospitals` (MOH, 31/12/2026), `vaccination_polyclinics` (MOH, 27/01/2029), `sportsg_sport_facilities` (expired 31/12/2024), `eldercare` (expired 31/12/2020).
+- **Correction (2026-10-10):** the three NParks themes were listed above without an "expired" label, but 31/03/2026 is already past. Treat them as stale, like the other expired themes. `kindergartens`, `childcare` and `moh_hospitals` expire on 31/12/2026, less than three months from the research date. The dates come from a dump of unknown capture date, so re-read `getAllThemesInfo` live.
 - No CHAS-clinic and no supermarket theme in that list.
 - Themes past `EXPIRY_DATE` may still return data but should be treated as stale. Prefer data.gov.sg for ingestion; OneMap theme terms of use apply.
 
@@ -356,7 +365,7 @@ Relevant `QUERYNAME`s from a 2026 `getAllThemesInfo` dump (168 themes; `sanjeevr
 ### 4.1 GLS: what exists
 
 - **How GLS works** [PRIMARY-MIRROR, URA's own text in data.gov.sg collection 1669 description]: "URA acts as agent for the State in carrying out land sales for commercial, hotel and private residential developments… The release of state land is carried out through the Government Land Sales (GLS) programme. Each programme is planned for and announced every 6 months. The GLS sites are released through two main systems - the reserve list and the confirmed list."
-- **Sellers:** URA (private residential, commercial, hotel, white sites), HDB (executive condominium and some private residential sites; results published as HDB news releases, e.g. `https://www.hdb.gov.sg/hdb-pulse/news/2026/final-tender-result-for-land-parcel-at-miltonia-close`), JTC (industrial sites, IGLS). [SECONDARY for the HDB part]
+- **Sellers:** URA (private residential, commercial, hotel, white sites), HDB (executive condominium and some private residential sites; results published as HDB news releases, e.g. `https://www.hdb.gov.sg/hdb-pulse/news/2026/final-tender-result-for-land-parcel-at-miltonia-close`, URL UNVERIFIED because hdb.gov.sg was not reachable this run), JTC (industrial sites, IGLS; JTC confirmed as `managedBy` of collection 287). [SECONDARY for the HDB part]
 - **Machine-readable data on data.gov.sg** [PRIMARY-MIRROR]:
 
 | Dataset | ID | Format | Coverage / freshness | Notes |
@@ -369,7 +378,7 @@ Relevant `QUERYNAME`s from a 2026 `getAllThemesInfo` dump (168 themes; `sanjeevr
 
 - **URA web sources for current sites and tender results** (no API; curate):
   - GLS map: `https://www.ura.gov.sg/maps/?service=glsrelease` ("upcoming and sold sites under the GLS programme") [SECONDARY description].
-  - Half-yearly programme announcements and tender results are URA media releases at `https://www.ura.gov.sg/news/media/pr{YY}-{NN}/` with annex PDFs of all bids at `https://www.ura.gov.sg/-/media/Corporate/Media-Room/{YYYY}/{Mon}/pr{YY}-{NN}a.pdf` (example: `pr24-40`, annex `pr24-37a.pdf`) [SECONDARY, pattern from a 2026 report].
+  - Half-yearly programme announcements and tender results are URA media releases at `https://www.ura.gov.sg/news/media/pr{YY}-{NN}/` with annex PDFs of all bids at `https://www.ura.gov.sg/-/media/Corporate/Media-Room/{YYYY}/{Mon}/pr{YY}-{NN}a.pdf` [SECONDARY, pattern from a 2026 report; UNVERIFIED, ura.gov.sg not reachable this run]. *Fact-check note:* the example given earlier (`pr24-40` with annex `pr24-37a.pdf`) contradicts the pattern, which puts the release number in the annex name. The two numbers must belong to two different releases. Do not derive annex URLs from release numbers; take the annex link from the release page.
   - URA Data Service (`https://www.ura.gov.sg/uraDataService/invokeUraDS?service=…`) has no GLS service in any reviewed code; UNVERIFIED that none exists.
 - **Recommended data model for curated GLS rows:** `site_name, agency (URA|HDB|JTC), programme_half (e.g. 2H2026), list_type (confirmed|reserve), launch_date, tender_close_date, award_date, site_area_m2, max_gfa_m2, est_units, zoning, lease_years, successful_tenderer, winning_bid_sgd, psf_ppr, bids_count, polygon (from URA Sale Sites when available), source_url, retrieved_at`.
 
