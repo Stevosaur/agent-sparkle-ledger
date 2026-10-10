@@ -70,6 +70,7 @@ export async function handlePublicGet(req: NextRequest, sMaxAge: number, produce
 /* ------------------------------------------------------------------ */
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const DECIMAL_RE = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 
 /** Validate a path slug; unknown shapes are treated as not found. */
 export function requireSlug(slug: string | undefined, what: string): string {
@@ -85,7 +86,9 @@ export function numberParam(params: URLSearchParams, name: string, opts: { min: 
     if (opts.fallback !== undefined) return opts.fallback;
     throw new ApiError(400, "invalid_parameter", `Query parameter "${name}" is required.`);
   }
-  const value = Number(raw.replace(/[,_\s]/g, ""));
+  const cleaned = raw.replace(/[,_\s]/g, "");
+  // Plain decimal numbers only (Number() would also accept "0x10", "0b1" and "Infinity").
+  const value = DECIMAL_RE.test(cleaned) ? Number(cleaned) : Number.NaN;
   if (!Number.isFinite(value)) throw new ApiError(400, "invalid_parameter", `Query parameter "${name}" must be a number.`);
   if (opts.integer && !Number.isInteger(value)) throw new ApiError(400, "invalid_parameter", `Query parameter "${name}" must be a whole number.`);
   if (value < opts.min || value > opts.max) throw new ApiError(400, "invalid_parameter", `Query parameter "${name}" must be between ${opts.min} and ${opts.max}.`);

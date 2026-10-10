@@ -170,7 +170,7 @@ function mop(): Article {
         ["Flat", "MOP"],
         [
           ["Standard flats (BTO from the October 2024 sales exercise)", years(HDB_MOP_YEARS)],
-          ["Flats launched before October 2024", years(HDB_MOP_YEARS)],
+          ["Flats launched before October 2024, other than Prime Location Public Housing (PLH) flats", years(HDB_MOP_YEARS)],
           ["Resale flats bought on the open market, with or without CPF housing grants", years(HDB_MOP_YEARS)],
           ["Plus and Prime flats, new or resale", years(HDB_MOP_YEARS_PLUS_PRIME)],
           ["Flats bought under the Fresh Start Housing Scheme", years(20)],
@@ -182,7 +182,7 @@ function mop(): Article {
       h("What changes after the MOP"),
       ul([
         "You may sell the flat.",
-        "Owners of Standard flats may rent out the whole flat. Plus and Prime flats can never be rented out whole; owners of 3-room or larger flats, Plus and Prime included, may rent out bedrooms with HDB approval.",
+        "Owners of Standard flats may rent out the whole flat. Plus and Prime flats can never be rented out whole, however long they have been owned.",
         "You may buy private residential property, in Singapore or overseas.",
       ]),
       p(`Buying a private home while keeping the flat makes it your second residential property for ABSD. For a Singapore citizen, the ABSD rate on a second property is ${pct(absdRate("SC", 2))} under the rates in force from 27 Apr 2023.`),
@@ -309,7 +309,7 @@ function leaseDecay(): Article {
       p(`Every HDB flat sits on a ${HDB_LEASE_YEARS}-year lease counted from the lease commencement date, which all flats in a block share. Once the remaining lease gets short enough, it starts to limit how much CPF buyers can use and how much they can borrow.`),
       p("This guide covers how remaining lease is measured, the CPF and loan rules tied to it, and what SLA's Bala's Table can and cannot tell you."),
       h("Measuring remaining lease"),
-      p(`HDB's resale records publish the remaining lease at the time of sale from 2015 onwards. For older records we estimate it from the lease commencement year, which can be out by up to a year because only the year is published. Example: a block whose lease began in ${exampleLeaseStart} has about ${Math.round(left)} years left in ${exampleYear}.`),
+      p(`HDB's resale records publish the remaining lease at the time of sale from 2015 onwards. For older records we estimate it from the lease commencement year. Only the year is published, so the estimate is usually within about a year of HDB's own figure. Example: a block whose lease began in ${exampleLeaseStart} has about ${Math.round(left)} years left in ${exampleYear}.`),
       h("CPF and loan rules"),
       ul([
         `CPF savings cannot be used for a flat with less than ${CPF_MIN_REMAINING_LEASE} years of lease left.`,
@@ -318,7 +318,7 @@ function leaseDecay(): Article {
       ]),
       p(`Example: the youngest buyer is ${youngest} and the flat has ${lease} years left, so the lease runs out at age ${youngest + lease}, ${CPF_LEASE_COVER_AGE - youngest - lease} years short of ${CPF_LEASE_COVER_AGE}. CPF use is pro-rated to about ${formatPct(cpf.shareOfValuationLimit)} of the Valuation Limit (${lease} ÷ ${CPF_LEASE_COVER_AGE - youngest}). Check the exact figure with the CPF Board for your case.`),
       h("Bala's Table"),
-      p("Bala's Table is the table the Singapore Land Authority uses to value a leasehold interest in land as a percentage of the freehold value, for 1 to 99 years remaining. SLA uses it to work out premiums on State land leases. Its curve falls slowly while the lease is long, steepens in the middle years and drops fastest in the final decades."),
+      p("Bala's Table values a leasehold interest in land as a percentage of the freehold value, for 1 to 99 years remaining. It has long been used in working out premiums on State land. Since 1 Aug 2022 it is the 'Leasehold Table' that adjusts the Land Betterment Charge, which the Singapore Land Authority collects, for land with 99 years or less of lease left. Its curve falls slowly while the lease is long, steepens in the middle years and drops fastest in the final decades."),
       ...balaBlocks,
       p("Read it with care:"),
       ul([
@@ -329,6 +329,7 @@ function leaseDecay(): Article {
       p("To see how remaining lease and price per square foot line up in recent resales, open the remaining-lease module on our insights page."),
     ],
     sources: [
+      { label: "URA circular DC22-08: Land Betterment Charge and the Leasehold Table (5 Jul 2022)", url: "https://www.ura.gov.sg/Corporate/Guidelines/Circulars/dc22-08" },
       { label: "SLA: differential premium policy (Appendix 1, leasehold values as a percentage of freehold)", url: "https://www.sla.gov.sg/qql/slot/u143/State-Land-n-Property/Land%20Sales%20and%20Lease%20Management/DP%20policy.pdf" },
       { label: "Centre for Liveable Cities: Bala's Table", url: "https://isomer-user-content.by.gov.sg/50/ade6cd16-890b-4a1b-9d1d-d0e189daba03/balas-table.pdf" },
       { label: "CPF: using your CPF to buy a home", url: "https://www.cpf.gov.sg/member/home-ownership/using-your-cpf-to-buy-a-home" },
@@ -554,7 +555,6 @@ function enbloc(): Article {
       p("This guide explains why, shows how our en-bloc tiers turn those two facts into a rating, and covers how HDB redevelopment differs."),
       h("Why tenure matters"),
       p("Redeveloping a 99-year leasehold site usually needs a lease top-up, which raises the land cost. Freehold and 999-year sites need no top-up. SLA's Chief Valuer assesses lease top-up premiums case by case."),
-      p("Collective sales have typically involved older freehold or 999-year developments, or 99-year developments where a lease top-up made sense."),
       h("How our en-bloc tiers work"),
       ul([
         "Tier A: freehold or 999-year, about 30 years or older.",
@@ -563,7 +563,7 @@ function enbloc(): Article {
         "Executive condominiums are rated unlikely while EC resale restrictions apply.",
       ]),
       table(["Example development", "Tier", "Reading"], rows, "Tiers computed with our en-bloc rule"),
-      p("The tier is a transparent heuristic, not a prediction. A sale also depends on owners agreeing to sell, the value of the land and planning rules, none of which the tier models. For freehold projects we measure age from the earliest recorded sale, which understates age when the sales history is short."),
+      p("The tier is a transparent heuristic, not a prediction. A sale also depends on owners agreeing to sell, the value of the land and planning rules, none of which the tier models. Freehold and 999-year projects have no lease start that reflects the building's age, so we measure it from the earliest developer sale in URA's records, a proxy for the launch year. Those records cover about five years, so older freehold projects have no developer sale on record; we list them as 'not enough data' rather than guess."),
       h("HDB flats are different"),
       p("HDB owners don't sell their blocks collectively. Under the Selective En bloc Redevelopment Scheme (SERS), which is still active, the government selects HDB blocks for redevelopment and HDB publishes rehousing options for affected owners. The Voluntary Early Redevelopment Scheme (VERS) has been announced, but no flats have been offered under it as at Oct 2026; check HDB for updates."),
     ],

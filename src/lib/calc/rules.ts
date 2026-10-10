@@ -240,8 +240,8 @@ export const HDB_LOAN_STRESS_RATE_PCT = 3;
 /**
  * CPF Ordinary Account interest rate for 1 Oct – 31 Dec 2026: 2.5% (the legislated floor binds).
  * Source: https://www.cpf.gov.sg/member/growing-your-savings/earning-higher-returns/earning-attractive-interest
- * Status: unverified-high-confidence for Q4 2026 (rates-data.md §2: not re-fetched; corroborated by loan-rules.md §6).
- * Reviewed quarterly — re-check every quarter.
+ * Status: unverified-high-confidence for Q4 2026 (rates-data.md §2: not re-fetched; corroborated by loan-rules.md §6;
+ * RULE_META.cpfOaRate). Reviewed quarterly — re-check every quarter.
  */
 export const CPF_OA_RATE_PCT = 2.5;
 /** HDB concessionary loan rate = CPF OA rate + 0.1 point, revised quarterly. Status: unverified-high-confidence (rates-data.md §2). */
@@ -291,7 +291,10 @@ export const BANK_LTV = [
   { standard: 0.45, reduced: 0.25, minCashStandard: 0.25, minCashReduced: 0.25 },
   { standard: 0.35, reduced: 0.15, minCashStandard: 0.25, minCashReduced: 0.25 },
 ] as const;
-/** LTV for non-individual (company) borrowers: 15% since 6 Jul 2018. Status: unverified (loan-rules.md §2.1). */
+/**
+ * LTV for non-individual (company) borrowers: 15% since 6 Jul 2018 (cut from 20%; not changed on 16 Dec 2021).
+ * Status: unverified (loan-rules.md §2.1, verification log #13; RULE_META.bankLtvNonIndividual).
+ */
 export const BANK_LTV_NON_INDIVIDUAL = 0.15;
 /**
  * Reduced-LTV tenure triggers: tenure > 25 years for HDB flats, > 30 years for other residential property.
@@ -335,7 +338,7 @@ export const CPF_WITHDRAWAL_LIMIT_MULTIPLE = 1.2;
 export const HDB_MOP_YEARS = 5;
 /** MOP for Plus and Prime flats (new or resale; launched from the Oct 2024 BTO exercise): 10 years. Status: verified-search (hdb-rules.md §1.1). */
 export const HDB_MOP_YEARS_PLUS_PRIME = 10;
-/** MOP for PLH flats (Nov 2021 BTO up to the Oct 2024 framework): 10 years. Status: unverified-high-confidence (hdb-rules.md §1.1). */
+/** MOP for PLH flats (Nov 2021 BTO up to the Oct 2024 framework): 10 years. Status: unverified-high-confidence (hdb-rules.md §1.1; RULE_META.hdbMopPlh). */
 export const HDB_MOP_YEARS_PLH = 10;
 /** MOP for flats bought under the Fresh Start Housing Scheme: 20 years. Status: verified-search (hdb-rules.md §1.1). */
 export const HDB_MOP_YEARS_FRESH_START = 20;
@@ -410,7 +413,13 @@ export const RULE_META = {
   bankStressRate: { status: "verified-search", effectiveFrom: "2022-09-30", source: "https://www.mas.gov.sg/regulation/explainers/tdsr-for-property-loans/calculating-tdsr", research: "loan-rules.md §1.3" },
   hdbStressRate: { status: "verified-search", effectiveFrom: "2022-09-30", source: "https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/29092022-propertymeasures2022", research: "loan-rules.md §1.4" },
   bankLtv: { status: "unverified", effectiveFrom: "2018-07-06", source: MAS_NEW_HOUSING_LOANS, research: "loan-rules.md §2.1", note: "Full table unverified; first-loan 75% / 55% verified-secondary." },
-  bankLtvNonIndividual: { status: "unverified", effectiveFrom: "2018-07-06", source: MAS_NEW_HOUSING_LOANS, research: "loan-rules.md §2.1" },
+  bankLtvNonIndividual: {
+    status: "unverified",
+    effectiveFrom: "2018-07-06",
+    source: MAS_NEW_HOUSING_LOANS,
+    research: "loan-rules.md §2.1",
+    note: "15% for companies; no reduced column or minimum-cash rule was researched. The affordability solver also assumes a company has no CPF.",
+  },
   bankMinCash: { status: "unverified", effectiveFrom: "2018-07-06", source: MAS_NEW_HOUSING_LOANS, research: "loan-rules.md §2.1" },
   bankLtvTriggers: { status: "verified-secondary", effectiveFrom: "2012-10-06", source: MAS_NEW_HOUSING_LOANS, research: "loan-rules.md §2.2" },
   bankMaxTenure: { status: "verified-secondary", effectiveFrom: "2013-08-27", source: MAS_NEW_HOUSING_LOANS, research: "loan-rules.md §2.2" },
@@ -418,14 +427,36 @@ export const RULE_META = {
   jointBorrowerLoanCount: { status: "unverified", effectiveFrom: null, source: MAS_NEW_HOUSING_LOANS, research: "loan-rules.md §2.1" },
   hdbLoanLtv: { status: "verified-search", effectiveFrom: "2024-08-20", source: HDB_CREDIT, research: "loan-rules.md §3" },
   hdbLoanLtvProration: { status: "unverified", effectiveFrom: "2019-05-10", source: HDB_CREDIT, research: "loan-rules.md §3–4", note: "Pro-rating is confirmed; the formula 75% × remaining lease ÷ (95 − youngest age) is assumed." },
+  cpfOaRate: {
+    status: "unverified-high-confidence",
+    effectiveFrom: "2026-10-01",
+    source: "https://www.cpf.gov.sg/member/growing-your-savings/earning-higher-returns/earning-attractive-interest",
+    research: "rates-data.md §2",
+    note: "2.5% for 1 Oct – 31 Dec 2026 (the legislated floor binds); not re-fetched. Reviewed quarterly.",
+  },
   hdbLoanRate: { status: "unverified-high-confidence", effectiveFrom: "2026-10-01", source: "https://www.hdb.gov.sg/managing-my-home/finances/loan-matters/interest-rate", research: "rates-data.md §2", note: "CPF OA rate + 0.1%, reviewed quarterly." },
   hdbLoanMsr: { status: "verified-secondary", effectiveFrom: null, source: HDB_CREDIT, research: "loan-rules.md §3" },
+  hdbLoanDownpaymentCpf: {
+    status: "unverified",
+    effectiveFrom: null,
+    source: HDB_CREDIT,
+    research: "loan-rules.md §7 Example C, §3",
+    note: "With an HDB loan the down payment can be paid from CPF OA and/or cash; the split, staging and the $20,000 OA retention rule are unverified and not modelled.",
+  },
   hdbLoanTenure: { status: "verified-secondary", effectiveFrom: null, source: HDB_CREDIT, research: "loan-rules.md §3", note: "25 years or to age 65; which age measure is used is unverified." },
   cpfMinLease: { status: "unverified", effectiveFrom: "2019-05-10", source: CPF_HOME, research: "loan-rules.md §4" },
   cpfFullUse: { status: "unverified", effectiveFrom: "2019-05-10", source: CPF_HOME, research: "loan-rules.md §4" },
   cpfProration: { status: "unverified", effectiveFrom: "2019-05-10", source: CPF_HOME, research: "loan-rules.md §4", note: "Formula remaining lease ÷ (95 − youngest age) is the research's best understanding." },
   cpfWithdrawalLimit: { status: "unverified", effectiveFrom: null, source: CPF_HOME, research: "loan-rules.md §4" },
-  hdbMop: { status: "verified-search", effectiveFrom: null, source: "https://www.hdb.gov.sg/cs/infoweb/residential/selling-a-flat/eligibility/", research: "hdb-rules.md §1.1", note: "5 years Standard / pre-Oct-2024 / resale; 10 years Plus, Prime (PLH: unverified-high-confidence); 20 years Fresh Start." },
+  hdbMop: { status: "verified-search", effectiveFrom: null, source: "https://www.hdb.gov.sg/cs/infoweb/residential/selling-a-flat/eligibility/", research: "hdb-rules.md §1.1", note: "5 years Standard / pre-Oct-2024 / resale; 10 years Plus, Prime; 20 years Fresh Start. PLH: see hdbMopPlh." },
+  hdbMopPlh: {
+    status: "unverified-high-confidence",
+    // first applied in the Nov 2021 BTO exercise; the exact launch day is not in the research
+    effectiveFrom: null,
+    source: "https://www.mynicehome.gov.sg/hdb-how-to/buy-your-flat/what-are-standard-prime-and-plus-hdb-flats/",
+    research: "hdb-rules.md §1.1, §1.4",
+    note: "PLH flats (Nov 2021 BTO exercise to the Oct 2024 framework): 10-year MOP. Not re-confirmed in the research session.",
+  },
   propertyTaxOwnerOccupied: { status: "unverified", effectiveFrom: "2025-01-01", source: "https://www.iras.gov.sg/taxes/property-tax/property-owners/property-tax-rates/residential-property", research: "loan-rules.md §5.1", note: "2026 bands unknown; rebates not modelled." },
   propertyTaxNonOwnerOccupied: { status: "unverified", effectiveFrom: "2024-01-01", source: "https://www.iras.gov.sg/taxes/property-tax/property-owners/property-tax-rates/residential-property", research: "loan-rules.md §5.2" },
   remainingLeaseEstimate: {

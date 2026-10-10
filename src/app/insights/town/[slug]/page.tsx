@@ -168,7 +168,8 @@ export default async function TownPage({ params }: Props) {
               <Stat label={<T k="insights.col.medianPsf" fallback="Median psf" />} value={formatPsf(town.tx.medianPsf12m)} sub={<T k="insights.town.allTypes12m" fallback="All flat types, 12 months" />} />
               <Stat label={<T k="insights.col.medianPrice" fallback="Median price" />} value={formatSgd(townScan?.cur.medianPrice)} sub={<T k="insights.town.allTypes12m" fallback="All flat types, 12 months" />} />
               <Stat label={<T k="insights.col.rentals12m" fallback="Rentals (12m)" />} value={formatInt(rentTotal?.count ?? 0)} sub={rentTotal?.medianRent ? `${formatSgd(rentTotal.medianRent)}/mo median` : undefined} />
-              {mop ? (
+              {/* only when completion years are known: a town without them would otherwise read as "0 flats" */}
+              {mop && mop.blocksWithoutYear < blocks.length ? (
                 <Stat
                   label={<T k="insights.town.mop" fallback="Flats reaching MOP {from}–{to}" vars={{ from: mopFrom, to: mopTo }} />}
                   value={formatInt(mop.demandUnits)}

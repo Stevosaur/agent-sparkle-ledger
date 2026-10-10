@@ -97,13 +97,14 @@ export function totalInterest(principal: number, annualRatePct: number, years: n
 export function refinanceSavings(balance: number, currentRatePct: number, newRatePct: number, remainingYears: number, fees = 0, horizonYears = Math.min(3, remainingYears)) {
   const cur = monthlyPayment(balance, currentRatePct, remainingYears);
   const nxt = monthlyPayment(balance, newRatePct, remainingYears);
-  const months = Math.round(horizonYears * 12);
+  // no instalments are saved after the loan is repaid: a horizon longer than the remaining tenure is clamped to it
+  const months = Math.max(0, Math.min(Math.round(horizonYears * 12), Math.round(remainingYears * 12)));
   return {
     currentPayment: cur,
     newPayment: nxt,
     monthlySaving: cur - nxt,
     savingOverHorizon: (cur - nxt) * months - fees,
     interestSavedOverHorizon: interestPaidOver(balance, currentRatePct, remainingYears, months) - interestPaidOver(balance, newRatePct, remainingYears, months) - fees,
-    horizonYears,
+    horizonYears: Math.min(horizonYears, months / 12),
   };
 }

@@ -14,7 +14,7 @@ export const revalidate = 300;
 
 export const metadata = pageMetadata({
   title: "Homes for sale and rent",
-  description: `HDB flats, condos and landed homes for sale or rent, listed by owners on ${site.name}, each with a fair-value range from recent government-recorded deals.`,
+  description: `HDB flats, condos and landed homes for sale or rent, listed by owners on ${site.name}. HDB and condo listings show a fair-value range from recent government-recorded deals.`,
   path: "/homes/",
 });
 
@@ -25,7 +25,7 @@ export default async function HomesPage() {
       <Breadcrumbs items={[{ label: "Homes" }]} />
       <PageHeader
         title={<T k="homes.title" fallback="Homes for sale and rent" />}
-        description={<T k="homes.intro" fallback="Listings from owners, each with a fair-value range worked out from recent HDB and URA records, so you can see how the asking price compares." />}
+        description={<T k="homes.intro" fallback="Listings from owners. HDB and condo listings show a fair-value range worked out from recent HDB and URA records, so you can see how the asking price compares." />}
       >
         <div className="flex flex-wrap gap-2">
           <ButtonLink href="/homes/new/">

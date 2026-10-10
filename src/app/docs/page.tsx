@@ -180,7 +180,7 @@ export default function DocsPage() {
                     <T k="trust.docs.slash" fallback="Trailing slash" />
                   </dt>
                   <dd className="mt-0.5 text-muted">
-                    <T k="trust.docs.slashBody" fallback="Paths end with a slash, before any query string. Requests without it are redirected (308)." />
+                    <T k="trust.docs.slashBody" fallback="Paths end with a slash, before any query string. Requests without it get a 308 redirect that carries no CORS headers, so browsers block it on cross-origin calls: always include the slash." />
                   </dd>
                 </div>
               </dl>

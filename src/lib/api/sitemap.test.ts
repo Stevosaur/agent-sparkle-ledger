@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getArticles } from "@/lib/news";
+import { LIST_IDS } from "@/lib/rankings";
 import { STATIC_PATHS, chunkAt, chunkCount, collectSitemapPaths, sitemapIds, sitemapUrl, toSitemapEntries } from "./sitemap";
 
 describe("sitemap chunking", () => {
@@ -43,6 +44,13 @@ describe("sitemap contents (fixtures)", () => {
     const articles = getArticles();
     expect(articles.length).toBeGreaterThan(0);
     for (const a of articles) expect(paths).toContain(`/news/${a.slug}/`);
+  });
+
+  it("lists every ranking and the public tool pages, but not redirects", () => {
+    for (const id of LIST_IDS) expect(paths).toContain(`/lists/${id}/`);
+    for (const p of ["/trendmaker/", "/compare-units/", "/homes/fit/"]) expect(paths).toContain(p);
+    // /new-launch/ permanently redirects to /listings/
+    expect(paths).not.toContain("/new-launch/");
   });
 
   it("excludes landed projects from condo URLs, private routes and duplicates", () => {

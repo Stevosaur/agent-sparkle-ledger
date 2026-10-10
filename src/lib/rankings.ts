@@ -1,6 +1,7 @@
 import "server-only";
 import { getHdbBlocks, getTowns } from "@/lib/data/hdb";
 import { getLaunches, getProjects } from "@/lib/data/private";
+import { yearOfMonth } from "@/lib/data/months";
 import { HDB_FLAT_TYPES, type HdbBlock, type MarketSegment, type NewLaunch, type PrivateProject, type TownSummary } from "@/lib/data/types";
 import { enblocTier, type EnblocResult } from "@/lib/calc/enbloc";
 import { HDB_MOP_YEARS } from "@/lib/calc/rules";
@@ -183,7 +184,7 @@ export const LIST_DEFS: Record<ListId, ListDef> = {
     defaultFlatType: null,
     methodology: [
       "Tier A: freehold or 999-year and about 30+ years old. Tier B: freehold or 999-year and 20+ years old, or a 99-year lease that is 40+ years old. Tier C: a 99-year lease 25+ years old. Executive condominiums are rated unlikely.",
-      "Age runs from the lease start for 99-year projects. Freehold and 999-year projects have no usable start year, so the earliest recorded sale is used, which understates age when sales history is short.",
+      "Age runs from the lease start for 99-year projects. Freehold and 999-year projects have no usable start year, so age runs from their earliest developer (new) sale on record, a proxy for the launch year. Older projects have no developer sale in URA's five-year record, so their age is unknown and they are listed as \"Not enough data\" rather than guessed.",
       "This is a heuristic based only on tenure and age. Collective sales also depend on owners' consent, land value and planning rules, none of which are modelled.",
     ],
     source: SRC_PRIVATE,
@@ -238,6 +239,8 @@ export interface RankingInputs {
   hdbRents: Map<string, RentStat>;
   privateProjectStats: Map<string, PrivateProjectStats>;
   privateRents: Map<string, PrivateProjectRent>;
+  /** month index of each project's earliest developer (New Sale) record */
+  privateFirstNewSale: Map<string, number>;
 }
 
 function hdbLabel(b: HdbBlock): string {
@@ -539,8 +542,10 @@ export function buildEnblocRows(inp: RankingInputs): RankRow[] {
   for (const p of inp.projects) {
     if (p.isLanded) continue;
     const long = p.tenure?.kind === "freehold" || (p.tenure?.years ?? 0) >= 999;
-    const firstYear = p.tx.first ? Number(p.tx.first.slice(0, 4)) : null;
-    const startYear = long ? firstYear : (p.tenure?.startYear ?? null);
+    // Freehold / 999-year: the earliest developer sale is a launch-year proxy. The earliest sale of any kind is
+    // not: URA's record only reaches back about five years, so an old project would look five years old.
+    const firstNew = inp.privateFirstNewSale.get(p.slug);
+    const startYear = long ? (firstNew != null ? yearOfMonth(firstNew) : null) : (p.tenure?.startYear ?? null);
     const result = enblocTier({
       tenureKind: p.tenure?.kind ?? null,
       leaseYears: p.tenure?.years ?? null,
@@ -563,7 +568,7 @@ export function buildEnblocRows(inp: RankingInputs): RankRow[] {
       cells: [
         p.tenure ? (p.tenure.kind === "freehold" ? "Freehold" : `${p.tenure.years ?? "?"}-yr lease${p.tenure.startYear != null && !long ? ` from ${p.tenure.startYear}` : ""}`) : "Unknown",
         age >= 0 ? `${age} yrs` : "—",
-        startYear == null ? "—" : long ? "Earliest sale record" : "Lease start",
+        startYear == null ? (long && p.tenure ? "No developer sale on record" : "—") : long ? "Earliest developer sale" : "Lease start",
       ],
       age,
     });
@@ -626,6 +631,7 @@ export function getRankingInputs(): RankingInputs {
     hdbRents: getHdbRentScan().byBlockType,
     privateProjectStats: getPrivateSalesScan().projects,
     privateRents: getPrivateRentScan().projects,
+    privateFirstNewSale: getPrivateSalesScan().firstNewSale,
   }));
 }
 

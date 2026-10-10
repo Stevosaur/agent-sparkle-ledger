@@ -50,15 +50,20 @@ const load = cache(async (id: string): Promise<HomeListing | null> => {
   return getListing(id.toLowerCase());
 });
 
+/** Fair value is needed by generateMetadata and the page; compute it once per listing object. */
+const fairValue = cache((listing: HomeListing) => fairValueForListing(listing));
+
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const listing = await load(id);
   if (!listing) return { title: "Listing not found", robots: { index: false } };
   const prop = resolveListingProperty(listing.ref);
   const what = listing.listingType === "sale" ? "for sale" : "for rent";
+  // only claim a fair-value range when the page actually shows one (landed homes and thin data do not)
+  const withRange = fairValue(listing).ok ? ", with a fair-value range from recent government-recorded deals" : "";
   return pageMetadata({
     title: listing.title,
-    description: `${prop?.label ?? "Home"} ${what} at ${formatAsking(listing.askingPrice, listing.listingType)}, with a fair-value range from recent government-recorded deals.`,
+    description: `${prop?.label ?? "Home"} ${what} at ${formatAsking(listing.askingPrice, listing.listingType)}${withRange}.`,
     path: `/homes/${listing.id}/`,
     noindex: Boolean(listing.sample),
   });
@@ -151,7 +156,7 @@ export default async function ListingPage({ params }: Params) {
   if (!listing) notFound();
 
   const prop = resolveListingProperty(listing.ref);
-  const fair = fairValueForListing(listing);
+  const fair = fairValue(listing);
   const typeLabel = TYPE_LABEL[listing.listingType];
   const pageUrl = absoluteUrl(`/homes/${listing.id}/`);
   const wa = whatsappHref(listing.whatsapp, `Hi, I saw your listing "${listing.title}" on ${site.name}: ${pageUrl}`);

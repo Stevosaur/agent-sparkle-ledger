@@ -207,7 +207,11 @@ export function TrackedHomeCard({ home, onChange, onRemove }: { home: TrackedHom
                   </span>
                 }
                 value={formatSgd(est.latest.value)}
-                sub={t("account.tracked.asOf", "{quarter} · {n} sales", { quarter: est.latest.quarter, n: est.latest.sales })}
+                sub={
+                  est.latest.sales === 1
+                    ? t("account.tracked.asOfOne", "{quarter} · 1 sale", { quarter: est.latest.quarter })
+                    : t("account.tracked.asOf", "{quarter} · {n} sales", { quarter: est.latest.quarter, n: est.latest.sales })
+                }
               />
               {home.purchasePrice != null ? <Stat label={t("account.tracked.paid", "Purchase price")} value={formatSgd(home.purchasePrice)} sub={home.purchaseMonth ? formatMonth(home.purchaseMonth) : undefined} /> : null}
               {est.gain ? (

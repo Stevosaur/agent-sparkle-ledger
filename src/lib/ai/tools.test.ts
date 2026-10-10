@@ -72,6 +72,10 @@ describe("tool dispatch", () => {
     const sales = await run("get_recent_sales", { ref: "hdb:blk-999-tampines-st-99" });
     expect(sales.data.totalRecorded).toBe(0);
     expect(sales.data.note).toMatch(/No sales/);
+    // no "only the latest 10" note when nothing was withheld
+    const capped = await run("get_recent_sales", { ref: "hdb:blk-999-tampines-st-99", limit: 20 }, { ...ctx, maxSales: 10 });
+    expect(capped.data).not.toHaveProperty("capNote");
+    expect(String(block.data.mopNote)).toMatch(/Plus or Prime/);
     const missing = await run("get_property_summary", { ref: "condo:does-not-exist" });
     expect(missing.data.found).toBe(false);
     const invalid = await run("get_property_summary", { ref: "not a ref" });

@@ -47,3 +47,11 @@ export function refusalFallbacksEnabled(model: string): boolean {
   if (process.env.ANTHROPIC_FALLBACKS?.trim().toLowerCase() === "off") return false;
   return FALLBACK_MODELS.has(model);
 }
+
+/** Singapore has no daylight saving: SGT is always UTC+8. */
+const SGT_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/** Calendar date in Singapore, "YYYY-MM-DD" (the server clock runs in UTC). */
+export function sgtDate(now: Date): string {
+  return new Date(now.getTime() + SGT_OFFSET_MS).toISOString().slice(0, 10);
+}

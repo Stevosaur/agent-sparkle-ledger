@@ -109,6 +109,7 @@ function inputs(over: Partial<RankingInputs> = {}): RankingInputs {
     hdbRents: new Map(),
     privateProjectStats: new Map(),
     privateRents: new Map(),
+    privateFirstNewSale: new Map(),
     ...over,
   };
 }
@@ -229,14 +230,35 @@ describe("en-bloc ranking", () => {
       projects: [
         project("young", { tenure: { raw: "99", kind: "leasehold", years: 99, startYear: 2015 } }),
         project("old99", { tenure: { raw: "99", kind: "leasehold", years: 99, startYear: 1980 } }),
-        project("fh", { tenure: { raw: "Freehold", kind: "freehold", years: null, startYear: null }, tx: { ...tx0, first: "1990-05" } }),
+        project("fh", { tenure: { raw: "Freehold", kind: "freehold", years: null, startYear: null }, tx: { ...tx0, first: "2021-09" } }),
         project("ec", { propertyTypes: ["Executive Condominium"] }),
       ],
+      privateFirstNewSale: new Map([["fh", monthIndex("1990-05")]]),
     });
     const rows = buildEnblocRows(inp);
     expect(rows.map((r) => r.id)).toEqual(["condo:fh", "condo:old99", "condo:ec", "condo:young"]); // ec (16 yrs) and young (11 yrs) share the "Unlikely" tier
     expect(rows[0].metric).toBe("Tier A · Higher en-bloc potential");
-    expect(rows[0].cells).toEqual(["Freehold", "36 yrs", "Earliest sale record"]);
+    expect(rows[0].cells).toEqual(["Freehold", "36 yrs", "Earliest developer sale"]);
+  });
+  it("does not take a freehold project's first resale in a short record as its age", () => {
+    // URA's record starts in 2021, so an old freehold condo's earliest sale is a 2021 resale: its age is unknown, not 5 years
+    const inp = inputs({
+      projects: [
+        project("old-fh", { tenure: { raw: "Freehold", kind: "freehold", years: null, startYear: null }, tx: { ...tx0, first: "2021-09" } }),
+        project("new-fh", { tenure: { raw: "Freehold", kind: "freehold", years: null, startYear: null }, tx: { ...tx0, first: "2023-03" } }),
+        project("lease999", { tenure: { raw: "999 yrs lease commencing from 1885", kind: "leasehold", years: 999, startYear: 1885 }, tx: { ...tx0, first: "2021-10" } }),
+      ],
+      privateFirstNewSale: new Map([["new-fh", monthIndex("2023-03")]]),
+    });
+    const rows = buildEnblocRows(inp);
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    expect(byId.get("condo:new-fh")?.metric).toBe("En bloc unlikely for now");
+    expect(byId.get("condo:new-fh")?.cells).toEqual(["Freehold", "3 yrs", "Earliest developer sale"]);
+    expect(byId.get("condo:old-fh")?.metric).toBe("Not enough data");
+    expect(byId.get("condo:old-fh")?.cells).toEqual(["Freehold", "—", "No developer sale on record"]);
+    // a 999-year lease start (1885) is the land tenure, not the building's age
+    expect(byId.get("condo:lease999")?.metric).toBe("Not enough data");
+    expect(rows.map((r) => r.id)).toEqual(["condo:new-fh", "condo:lease999", "condo:old-fh"]);
   });
 });
 

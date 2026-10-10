@@ -1,6 +1,7 @@
 import { T } from "@/components/i18n/t";
 import { EmptyState } from "@/components/ui/notice";
 import { getCoverage } from "@/lib/data/meta";
+import { formatInt } from "@/lib/format";
 import { freeTopRows, LIST_DEFS, type ListId, type RankGroup } from "@/lib/rankings";
 import { RankTable } from "./rank-table";
 
@@ -45,7 +46,7 @@ export function ListTop({ id, compact = false, headingLevel = 3 }: { id: ListId;
                 <T k={group.labelKey} fallback={group.label} />
                 {total > 0 ? (
                   <span className="ml-2 font-normal normal-case tracking-normal">
-                    <T k="insights.rankedCount" fallback="{n} ranked" vars={{ n: total }} />
+                    <T k="insights.rankedCount" fallback="{n} ranked" vars={{ n: formatInt(total) }} />
                   </span>
                 ) : null}
               </Heading>

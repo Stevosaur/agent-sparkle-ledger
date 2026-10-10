@@ -6,7 +6,8 @@ const store = new Map<string, unknown>();
 
 /**
  * Per-process memoisation keyed by the dataset snapshot (DATA_DIR + generatedAt), so a new snapshot
- * (or a different DATA_DIR in tests) never serves stale aggregates.
+ * (or a different DATA_DIR in tests) never serves stale aggregates. In development, editing a module that
+ * computes a memoised value does not clear it; edit this file (or restart the server) to reset.
  */
 export function memoBySnapshot<T>(name: string, compute: () => T): T {
   const key = `${name}::${dataDir()}::${getMeta().generatedAt}`;

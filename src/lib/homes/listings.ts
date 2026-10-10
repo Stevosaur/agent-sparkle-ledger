@@ -86,8 +86,15 @@ export interface ActiveListingsResult {
   unavailable: boolean;
 }
 
-/** Newest active listings (optionally one type), capped at ACTIVE_LISTING_CAP. */
-export async function getActiveListings(opts: { type?: ListingType } = {}): Promise<ActiveListingsResult> {
+/** Filters that map onto table columns, so they run in the database before the ACTIVE_LISTING_CAP cut. */
+export type ColumnFilters = Partial<Pick<ListingFilters, "kind" | "minPrice" | "maxPrice" | "bedrooms">>;
+
+/**
+ * Newest active listings (optionally one type), capped at ACTIVE_LISTING_CAP. Column filters narrow the
+ * query itself, so a filtered search is not limited to the newest 1,000 listings overall; callers still
+ * apply matchesFilters for the derived fields (area, resolved kind).
+ */
+export async function getActiveListings(opts: { type?: ListingType; filters?: ColumnFilters } = {}): Promise<ActiveListingsResult> {
   const backend = listingsBackend();
   if (backend === "sample") {
     const all = sampleListings();
@@ -97,6 +104,11 @@ export async function getActiveListings(opts: { type?: ListingType } = {}): Prom
   if (!client) return { listings: [], backend: "none", unavailable: false };
   let query = client.from(LISTING_TABLE).select(PUBLIC_COLUMNS).eq("status", "active");
   if (opts.type) query = query.eq("listing_type", opts.type);
+  const f = opts.filters;
+  if (f?.kind) query = query.like("ref", `${f.kind}:%`);
+  if (f?.minPrice != null) query = query.gte("asking_price", f.minPrice);
+  if (f?.maxPrice != null) query = query.lte("asking_price", f.maxPrice);
+  if (f?.bedrooms != null) query = f.bedrooms >= 5 ? query.gte("bedrooms", 5) : query.eq("bedrooms", f.bedrooms);
   const { data, error } = await query.order("created_at", { ascending: false }).limit(ACTIVE_LISTING_CAP);
   if (error) {
     console.error("[homes] listing query failed:", error.code, error.message);
@@ -163,7 +175,8 @@ export const PAGE_SIZE = 24;
 export async function searchListings(filters: ListingFilters, opts: { offset?: number; limit?: number } = {}): Promise<ListingsPage> {
   const offset = Math.max(0, Math.floor(opts.offset ?? 0));
   const limit = Math.min(48, Math.max(1, Math.floor(opts.limit ?? PAGE_SIZE)));
-  const { listings, backend, unavailable } = await getActiveListings({ type: filters.type });
+  const { kind, minPrice, maxPrice, bedrooms } = filters;
+  const { listings, backend, unavailable } = await getActiveListings({ type: filters.type, filters: { kind, minPrice, maxPrice, bedrooms } });
   const matching = listings.map(toSummary).filter((s) => matchesFilters(s, filters));
   return { listings: matching.slice(offset, offset + limit), total: matching.length, backend, ...(unavailable ? { unavailable } : {}) };
 }

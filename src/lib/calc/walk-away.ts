@@ -27,7 +27,8 @@ export interface WalkAwayInput {
 
 export function walkAwayPrice(input: WalkAwayInput) {
   const bsd = buyerStampDuty(input.price, "residential", { date: input.purchaseDate }).total;
-  // ABSD in force at the purchase date when the research covers it (from 6 Jul 2018); otherwise today's rate
+  // ABSD in force at the purchase date when the research covers it (from 6 Jul 2018); otherwise today's rate, which the
+  // research does NOT support for earlier purchases — `absdFromDatedTable: false` tells the UI to say so.
   const datedRate = absdRateAt(input.buyerProfile, input.propertyCount, input.purchaseDate);
   const absd = flatDuty(input.price, datedRate ?? currentAbsdRate(input.buyerProfile, input.propertyCount));
 
@@ -58,6 +59,8 @@ export function walkAwayPrice(input: WalkAwayInput) {
     breakEven,
     bsd,
     absd,
+    /** false when the purchase predates the researched ABSD tables (6 Jul 2018) and today's rate was used instead */
+    absdFromDatedTable: datedRate != null,
     interestPaid,
     agentFee: breakEven * input.agentFeePct,
     ssd: ssd.total,

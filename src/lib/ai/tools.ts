@@ -15,15 +15,16 @@ import { getMeta } from "@/lib/data/meta";
 import { getRates } from "@/lib/data/rates";
 import { getSeries } from "@/lib/data/stats";
 import { nearestStations } from "@/lib/data/geo";
-import { monthLabel } from "@/lib/data/months";
+import { monthIndex, monthLabel } from "@/lib/data/months";
 import { search } from "@/lib/data/search";
 import { affordability } from "@/lib/calc/affordability";
 import { maxBankTenure, maxTenureForStandardLtv } from "@/lib/calc/loan";
-import { BANK_STRESS_RATE_PCT, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, HDB_MOP_YEARS, RULE_META, ruleNeedsDisclaimer } from "@/lib/calc/rules";
+import { BANK_STRESS_RATE_PCT, HDB_LOAN_MAX_TENURE, HDB_LOAN_RATE_PCT, HDB_MOP_YEARS, HDB_MOP_YEARS_PLUS_PRIME, RULE_META, ruleNeedsDisclaimer } from "@/lib/calc/rules";
 import { titleCase, slugify } from "@/lib/slug";
 import { formatPropertyRef, parsePropertyRef, type PropertyRef } from "@/lib/property-ref";
 import { toJsonSchema } from "@/lib/api/json-schema";
 import { BUYER_PROFILES } from "@/lib/api/schemas";
+import { sgtDate } from "./config";
 import {
   SOURCES,
   condoDto,
@@ -207,8 +208,9 @@ function notFound(ref: string) {
   return { found: false, message: `No property matches ${ref} in this site's data. Use search_properties to find the right reference.` };
 }
 
+/** Month index (months since Jan 1990) of today's date in Singapore. */
 function currentMonthIndex(now: Date): number {
-  return (now.getUTCFullYear() - 1990) * 12 + now.getUTCMonth();
+  return monthIndex(sgtDate(now));
 }
 
 function resolveRef(raw: string): PropertyRef | null {
@@ -238,7 +240,7 @@ function propertySummary(rawRef: string, ctx: ToolContext) {
         mopYear: b.yearCompleted != null ? b.yearCompleted + HDB_MOP_YEARS : null,
         mopNote:
           b.yearCompleted != null
-            ? `Owners who collected keys at completion reach the ${HDB_MOP_YEARS}-year Minimum Occupation Period around ${b.yearCompleted + HDB_MOP_YEARS}; each owner's MOP counts from their own key collection or resale completion.`
+            ? `Owners who collected keys at completion reach the ${HDB_MOP_YEARS}-year Minimum Occupation Period around ${b.yearCompleted + HDB_MOP_YEARS}; each owner's MOP counts from their own key collection or resale completion. Flats sold under the Plus or Prime models have a ${HDB_MOP_YEARS_PLUS_PRIME}-year MOP instead; this dataset does not record which model a block was sold under.`
             : "Completion year is not recorded for this block, so its MOP year is unknown.",
         upcomingMrtWithin1500m: b.lat == null || b.lng == null ? "Block location not available" : upcoming,
         meta: dataMeta("hdb", SOURCES.hdbInfo),
@@ -300,8 +302,11 @@ function recentSales(input: { ref: string; limit: number }, ctx: ToolContext) {
   if (!ref) return { found: false, message: `"${input.ref}" is not a valid reference. Use search_properties first.` };
   const refId = formatPropertyRef(ref);
   const limit = Math.min(input.limit, ctx.maxSales);
-  const capNote =
-    input.limit > ctx.maxSales ? `Only the latest ${ctx.maxSales} sales are available here; the full history is on the property page with a free account.` : undefined;
+  // Only mention the cap when it actually withheld sales.
+  const capNote = (total: number) =>
+    input.limit > ctx.maxSales && total > ctx.maxSales
+      ? { capNote: `Only the latest ${ctx.maxSales} sales are available here; the full history is on the property page with a free account.` }
+      : {};
 
   const wrap = (name: string, path: string, total: number, sales: unknown[], meta: ReturnType<typeof dataMeta>) => ({
     found: true,
@@ -312,7 +317,7 @@ function recentSales(input: { ref: string; limit: number }, ctx: ToolContext) {
     returned: sales.length,
     sales,
     ...(total === 0 ? { note: "No sales are recorded for this property in the dataset." } : {}),
-    ...(capNote ? { capNote } : {}),
+    ...capNote(total),
     meta,
   });
 

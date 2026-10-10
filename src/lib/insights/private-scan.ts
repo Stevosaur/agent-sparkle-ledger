@@ -43,6 +43,8 @@ export interface PrivateSalesScan {
   latestMonth: number | null;
   windows: { cur: MonthWindow; prev12: MonthWindow; prev5y: MonthWindow } | null;
   projects: Map<string, PrivateProjectStats>;
+  /** month index of each project's earliest developer (New Sale) record in the snapshot: a launch-year proxy */
+  firstNewSale: Map<string, number>;
   /** non-landed sales, latest 12 months */
   districts: { district: number; cur: WindowStat }[];
   /** condo / apartment sales (excluding ECs and landed) by market segment, matching the private:<seg>:Condo series */
@@ -58,6 +60,7 @@ const EMPTY_SCAN: PrivateSalesScan = {
   latestMonth: null,
   windows: null,
   projects: new Map(),
+  firstNewSale: new Map(),
   districts: [],
   segments: [],
   groups: [],
@@ -100,6 +103,7 @@ function computePrivateSalesScan(): PrivateSalesScan {
   const distAcc = new Map<number, WindowAcc>();
   const segAcc = new Map<MarketSegment, { cur: WindowAcc; prev12: WindowAcc }>();
   const groupAcc = new Map<PrivateGroup, { cur: WindowAcc; prev12: WindowAcc }>();
+  const firstNewSale = new Map<string, number>();
   const monthly = new Map<number, SaleTypeCounts>();
   for (let m = monthlyFrom; m <= latest; m++) monthly.set(m, { newSale: 0, subSale: 0, resale: 0 });
   const st12: SaleTypeCounts = { newSale: 0, subSale: 0, resale: 0 };
@@ -113,6 +117,10 @@ function computePrivateSalesScan(): PrivateSalesScan {
       const m = t.monthIndex;
       const isCur = inWindow(m, w.cur);
       const key = t.typeOfSale === "New Sale" ? "newSale" : t.typeOfSale === "Sub Sale" ? "subSale" : "resale";
+      if (key === "newSale") {
+        const prev = firstNewSale.get(t.projectSlug);
+        if (prev === undefined || m < prev) firstNewSale.set(t.projectSlug, m);
+      }
       const row = monthly.get(m);
       if (row) row[key] += t.units;
       if (isCur) st12[key] += t.units;
@@ -151,6 +159,7 @@ function computePrivateSalesScan(): PrivateSalesScan {
     latestMonth: latest,
     windows: w,
     projects,
+    firstNewSale,
     districts: [...distAcc.entries()].map(([district, acc]) => ({ district, cur: acc.stat() })).sort((a, b) => a.district - b.district),
     segments: SEGMENTS.filter((s) => segAcc.has(s)).map((segment) => ({ segment, cur: segAcc.get(segment)!.cur.stat(), prev12: segAcc.get(segment)!.prev12.stat() })),
     groups: (["Condo", "EC", "Landed"] as PrivateGroup[]).filter((g) => groupAcc.has(g)).map((group) => ({ group, cur: groupAcc.get(group)!.cur.stat(), prev12: groupAcc.get(group)!.prev12.stat() })),

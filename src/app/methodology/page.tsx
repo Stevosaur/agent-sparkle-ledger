@@ -237,8 +237,8 @@ export default function MethodologyPage() {
                 Price per square foot (psf) = price ÷ (area in square metres × {SQFT_PER_SQM}). Areas are shown in square metres with square feet alongside.
               </li>
               <li>
-                HDB resale months are registration months (approval months for 1990 to 1999). URA months are contract dates. &ldquo;Latest 12 months&rdquo; figures run to the
-                dataset&rsquo;s latest month, not today.
+                HDB resale months are approval months up to February 2012 and registration months from March 2012, as HDB publishes them. URA months are contract
+                dates. &ldquo;Latest 12 months&rdquo; figures run to the dataset&rsquo;s latest month, not today.
               </li>
               <li>
                 Remaining lease at sale is HDB&rsquo;s published figure where available (sales from 2015). Otherwise it is estimated as a {HDB_LEASE_YEARS}-year lease starting in the

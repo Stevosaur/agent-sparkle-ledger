@@ -35,3 +35,11 @@ describe("system prompt", () => {
     expect(noPrivate).toContain("general page");
   });
 });
+
+describe("sgtDate", () => {
+  it("gives the calendar date in Singapore (UTC+8), not UTC", async () => {
+    const { sgtDate } = await import("./config");
+    expect(sgtDate(new Date("2026-09-30T15:59:59Z"))).toBe("2026-09-30");
+    expect(sgtDate(new Date("2026-09-30T16:00:00Z"))).toBe("2026-10-01");
+  });
+});

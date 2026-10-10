@@ -91,6 +91,12 @@ describe("public API responses match their documented schemas", () => {
     expect(m.schedule).toHaveLength(25);
     expect(m.schedule.at(-1)!.balance).toBe(0);
     expectApiError(() => v1Mortgage(qs("principal=500000&rate=2.6&years=50")), 400);
+    // decimal only: no hex / binary / Infinity
+    expectApiError(() => v1Mortgage(qs("principal=0x10&rate=2.6&years=25")), 400);
+    expectApiError(() => v1StampDuty(qs("price=0b101")), 400);
+    expectApiError(() => v1StampDuty(qs("price=Infinity")), 400);
+    expect(v1StampDuty(qs("price=1.5e6")).input.price).toBe(1_500_000);
+    expect(v1Mortgage(qs("principal=500000&rate=.5&years=25")).input.ratePct).toBe(0.5);
   });
 });
 

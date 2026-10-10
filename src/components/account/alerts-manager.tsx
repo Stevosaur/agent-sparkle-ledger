@@ -127,9 +127,10 @@ export function AlertsManager() {
         <Card>
           <ul className="divide-y divide-line">
             {data.items.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+              <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-5 py-3">
                 <BellRing className={a.active ? "size-4 shrink-0 text-brand-700" : "size-4 shrink-0 text-muted"} aria-hidden />
-                <div className="min-w-0 flex-1">
+                {/* min-w-48: on phones the name keeps its width and the badge / buttons wrap below it */}
+                <div className="min-w-48 flex-1">
                   {a.href ? (
                     <Link href={a.href} className="block truncate font-medium text-ink hover:text-brand-700 hover:underline">
                       {a.label}
@@ -143,8 +144,8 @@ export function AlertsManager() {
                     {a.lastCheckedMonth ? ` · ${t("account.alerts.upTo", "latest seen {month}", { month: formatMonth(a.lastCheckedMonth) })}` : ""}
                   </span>
                 </div>
-                {!a.active ? <Badge>{t("account.alerts.paused", "Paused")}</Badge> : null}
-                <div className="flex items-center gap-1">
+                <div className="ml-auto flex items-center gap-1">
+                  {!a.active ? <Badge className="mr-1">{t("account.alerts.paused", "Paused")}</Badge> : null}
                   <Button type="button" variant="outline" size="sm" onClick={() => toggle(a)} disabled={busyId === a.id}>
                     {a.active ? t("account.alerts.pause", "Pause") : t("account.alerts.resume", "Resume")}
                   </Button>

@@ -273,6 +273,7 @@ export interface SsdBand {
 export interface SsdResult extends SsdBand {
   /** regime by date of acquisition: "2025-07-04", "2017-03-11", "2011-01-14", "pre-2011" or "invalid-date" */
   regime: string;
+  /** status of the regime's rates; "unverified-conflict" when `nearAnniversary` (the band itself is contested) */
   status: RuleStatus;
   /** false when the acquisition predates the modelled regimes (2010 SSD rules) or a date is invalid */
   supported: boolean;
@@ -331,7 +332,8 @@ export function sellerStampDuty(value: number, purchaseDate: DateInput, saleDate
   return {
     ...primary,
     regime: regime.since,
-    status,
+    // the band of a sale within ±1 day of an anniversary rests on the contested day-count convention
+    status: nearIdx >= 0 ? RULE_META.ssdAnniversary.status : status,
     supported: true,
     acquired: base.acquired,
     disposed: base.disposed,

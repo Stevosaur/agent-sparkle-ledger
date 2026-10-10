@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getMeta } from "@/lib/data/meta";
 import { resolveProperty } from "@/lib/data/resolve";
 import { formatPropertyRef } from "@/lib/property-ref";
-import { FALLBACK_BETA, MAX_TOKENS, MAX_TOOL_ROUNDS, aiEffort, aiModel, refusalFallbacksEnabled, type Effort } from "./config";
+import { FALLBACK_BETA, MAX_TOKENS, MAX_TOOL_ROUNDS, aiEffort, aiModel, refusalFallbacksEnabled, sgtDate, type Effort } from "./config";
 import { dynamicContext, systemPrompt } from "./prompt";
 import { executeTool, toolDefinitions, type ToolContext } from "./tools";
 import type { AskContext, AskStreamEvent, AskTurn } from "./protocol";
@@ -93,7 +93,7 @@ export async function runAsk(opts: RunAskOptions): Promise<RunAskResult> {
   const system: Anthropic.Beta.BetaTextBlockParam[] = [
     // Stable prefix (tools + this block) is cached across questions.
     { type: "text", text: systemPrompt(), cache_control: { type: "ephemeral" } },
-    { type: "text", text: dynamicContext({ meta, today: now.toISOString().slice(0, 10), lang: opts.lang, page: describeContext(opts.context) }) },
+    { type: "text", text: dynamicContext({ meta, today: sgtDate(now), lang: opts.lang, page: describeContext(opts.context) }) },
   ];
 
   const messages: Anthropic.Beta.BetaMessageParam[] = [

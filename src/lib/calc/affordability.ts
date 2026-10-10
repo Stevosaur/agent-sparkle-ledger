@@ -82,6 +82,8 @@ const PRICE_CEILING = 1e10;
  *   affordable ⇔ cashNeed ≤ cash
  * cashNeed rises with P, so the limit is found by bisection, then rounded down to the S$1,000.
  * Tenure is capped first (bank: 30 / 35 years; HDB loan: 25 years and age 65), and the LTV tier follows the capped tenure.
+ * `buyerProfile: "ENTITY"` with a bank loan uses the non-individual 15% LTV and no CPF (a company has no CPF account).
+ * With an HDB loan the whole down payment may come from CPF (loan-rules.md §7 Example C; the split is UNVERIFIED).
  */
 export function affordability(input: AffordabilityInput): AffordabilityResult {
   const hdbLoan = input.lender === "hdb";
@@ -89,11 +91,17 @@ export function affordability(input: AffordabilityInput): AffordabilityResult {
   const youngest = input.youngestBuyerAge ?? age;
   const tenure = hdbLoan ? hdbLoanMaxTenure(input.tenureYears, age) : Math.max(0, Math.min(input.tenureYears, maxBankTenure(input.propertyClass)));
 
+  // A company (ABSD profile "ENTITY") borrows as a non-individual: 15% LTV (loan-rules.md §2.1, UNVERIFIED), and it has
+  // no CPF account, so the whole down payment is its own cash. Before this, entities got the individual 75% tier.
+  const entity = !hdbLoan && input.buyerProfile === "ENTITY";
   const hdbLtv = hdbLoan ? hdbLoanLtvDetail(input.remainingLeaseYears, youngest) : null;
-  const ltvInfo = hdbLtv ? { ltv: hdbLtv.ltv, minCashPct: 0, reduced: hdbLtv.prorated } : bankLtv(input.propertyClass, input.outstandingLoans, tenure, age);
+  const ltvInfo = hdbLtv
+    ? { ltv: hdbLtv.ltv, minCashPct: 0, reduced: hdbLtv.prorated }
+    : bankLtv(input.propertyClass, input.outstandingLoans, tenure, age, { nonIndividual: entity });
 
-  const displayRate = hdbLoan ? HDB_LOAN_RATE_PCT : input.interestRatePct;
-  const thereafter = Number.isFinite(displayRate) ? displayRate : hdbLoan ? HDB_LOAN_RATE_PCT : BANK_STRESS_RATE_PCT;
+  const thereafter = hdbLoan ? HDB_LOAN_RATE_PCT : Number.isFinite(input.interestRatePct) ? input.interestRatePct : BANK_STRESS_RATE_PCT;
+  // repayment shown at the entered rate (bank) or the HDB rate; a missing bank rate falls back to the 4% floor, not NaN
+  const displayRate = thereafter;
   const serv = maxServiceableLoan(
     {
       monthlyIncome: input.monthlyIncome,
@@ -108,9 +116,13 @@ export function affordability(input: AffordabilityInput): AffordabilityResult {
     input.lender,
   );
 
-  const cpf = input.remainingLeaseYears != null ? cpfUsage(input.remainingLeaseYears, youngest) : { allowed: true, full: true, shareOfValuationLimit: 1 };
+  const cpf = entity
+    ? { allowed: false, full: false, shareOfValuationLimit: 0 }
+    : input.remainingLeaseYears != null
+      ? cpfUsage(input.remainingLeaseYears, youngest)
+      : { allowed: true, full: true, shareOfValuationLimit: 1 };
   const cash = Math.max(0, input.cash || 0);
-  const cpfOa = Math.max(0, input.cpfOa || 0);
+  const cpfOa = entity ? 0 : Math.max(0, input.cpfOa || 0);
 
   const evaluate = (p: number) => {
     const loan = Math.min(ltvInfo.ltv * p, serv.maxLoan);
@@ -148,13 +160,16 @@ export function affordability(input: AffordabilityInput): AffordabilityResult {
   const cashUsed = r.cashNeeded;
 
   const rules: RuleKey[] = ["bsdResidential", "bsdRounding", "absdRates", "absdRounding"];
-  if (hdbLoan) rules.push("hdbLoanLtv", "hdbLoanMsr", "hdbStressRate", "hdbLoanRate", "hdbLoanTenure");
-  else {
+  if (hdbLoan) rules.push("hdbLoanLtv", "hdbLoanMsr", "hdbStressRate", "hdbLoanRate", "hdbLoanTenure", "hdbLoanDownpaymentCpf");
+  else if (entity) {
+    rules.push("tdsr", "bankStressRate", "bankLtvNonIndividual", "bankMaxTenure");
+    if (msrApplies(input.propertyClass)) rules.push("msr");
+  } else {
     rules.push("tdsr", "bankStressRate", "bankLtv", "bankMinCash", "bankLtvTriggers", "bankMaxTenure", "incomeWeightedAge");
     if (msrApplies(input.propertyClass)) rules.push("msr");
   }
   if (hdbLtv?.prorated) rules.push("hdbLoanLtvProration");
-  if (input.remainingLeaseYears != null) rules.push("cpfMinLease", "cpfFullUse", "cpfProration");
+  if (input.remainingLeaseYears != null && !entity) rules.push("cpfMinLease", "cpfFullUse", "cpfProration");
 
   const loanLimitedBy = ltvInfo.ltv * price >= serv.maxLoan ? ("servicing" as const) : ("ltv" as const);
   return {

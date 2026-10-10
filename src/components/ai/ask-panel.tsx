@@ -204,11 +204,11 @@ export function AskPanel({ context, title, suggestions }: AskPanelProps) {
           <ol ref={listRef} className="max-h-[28rem] space-y-4 overflow-y-auto" aria-label={t("ai.conversation", "Conversation")}>
             {exchanges.map((e) => (
               <li key={e.id} className="space-y-2">
-                <p className="ml-auto w-fit max-w-[90%] rounded-2xl rounded-br-sm bg-brand-50 px-3 py-2 text-sm text-brand-900">
+                <p className="ml-auto w-fit max-w-[90%] rounded-2xl rounded-br-sm bg-brand-50 px-3 py-2 text-sm break-words text-brand-900">
                   <span className="sr-only">{t("ai.you", "You")}: </span>
                   {e.question}
                 </p>
-                <div aria-live="polite" aria-busy={e.status === "streaming"} className="max-w-full rounded-2xl rounded-bl-sm border border-line bg-canvas/60 px-3 py-2">
+                <div aria-live="polite" aria-busy={e.status === "streaming"} className="max-w-full rounded-2xl rounded-bl-sm border border-line bg-canvas/60 px-3 py-2 break-words">
                   <span className="sr-only">{t("ai.assistant", "Assistant")}: </span>
                   {e.answer ? <MarkdownLite text={e.answer} /> : null}
                   {e.status === "streaming" && (!e.answer || e.tool) ? (

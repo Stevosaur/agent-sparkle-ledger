@@ -5,6 +5,7 @@ import { GatedPanel } from "@/components/gating/gated-panel";
 import { Button } from "@/components/ui/button";
 import { Field, Select } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
+import { formatInt } from "@/lib/format";
 import { useT } from "@/lib/i18n/provider";
 import type { ListColumn, ListFilter, ListGroupDef, RankGroup } from "@/lib/rankings";
 import { RankTable, type RankedRow } from "./rank-table";
@@ -156,7 +157,7 @@ function RankingExplorer({ def, options }: { def: FullRankingDef; options: Ranki
       ) : (
         <>
           <p className="text-sm text-muted" aria-live="polite">
-            {t("insights.showing", "Showing {shown} of {total}", { shown: current.rows.length, total: current.total })}
+            {t("insights.showing", "Showing {shown} of {total}", { shown: formatInt(current.rows.length), total: formatInt(current.total) })}
           </p>
           <div className="rounded-xl border border-line bg-surface">
             <RankTable rows={current.rows} metricHeader={def.metricHeader} metricHeaderKey={def.metricHeaderKey} columns={def.columns} empty={t("insights.noRows", "Nothing matches these filters yet.")} />

@@ -227,6 +227,11 @@ export const API_LICENCE_NOTES: { title: string; body: string; url?: string }[] 
     url: "https://eservice.ura.gov.sg/maps/api/",
   },
   {
+    title: "Locations",
+    body: "Block and project coordinates (lat, lng) and postal codes are looked up with OneMap, from the Singapore Land Authority, and are subject to the OneMap terms of use.",
+    url: "https://www.onemap.gov.sg/",
+  },
+  {
     title: "Derived figures",
     body: `Summaries, medians and calculator outputs are computed by ${site.name} from the sources above. They are information only, not financial advice, and may contain errors.`,
   },

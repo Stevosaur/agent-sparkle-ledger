@@ -113,8 +113,10 @@ The free trial is only offered to accounts that have never had a subscription or
 Users link Telegram from `/profile/` ("Link Telegram" opens `https://t.me/<bot>?start=<one-time code>`);
 `/stop` in the chat unlinks it. An alert fires when the property's latest recorded month (HDB block,
 condo, landed address or street) or a launch's latest sales report is newer than the month the alert
-last saw. Alerts of users whose Plus has lapsed, or who haven't linked Telegram, wait without being
-consumed. Email delivery is reserved in the schema but not implemented.
+last saw. Each run sends one message per chat covering all of that user's fired alerts (Telegram rate-limits
+single chats). Alerts of users whose Plus has lapsed, or who haven't linked Telegram, wait without being
+consumed; a chat that has blocked the bot is unlinked. Email delivery is reserved in the schema but not
+implemented.
 
 ## Account API reference
 

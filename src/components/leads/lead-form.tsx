@@ -286,7 +286,7 @@ export function LeadForm({ type, context, title, description, submitLabel, initi
         <CardBody className="flex flex-col items-center gap-3 py-8 text-center" role="status" aria-live="polite">
           <CheckCircle2 className="size-8 text-up" aria-hidden />
           <div className="text-base font-semibold text-ink">{t("homes.lead.successTitle", "Request received")}</div>
-          <p className="max-w-md text-sm text-muted">{t("homes.lead.successBody", "Thank you. We will contact you within one to two working days.")}</p>
+          <p className="max-w-md text-sm text-muted">{t("homes.lead.successBody", "Thank you. We will get back to you using the contact details you gave.")}</p>
           <Button type="button" variant="outline" size="sm" onClick={reset}>
             {t("homes.lead.sendAnother", "Send another request")}
           </Button>
