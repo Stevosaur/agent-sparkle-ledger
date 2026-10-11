@@ -134,10 +134,10 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     tag: "Private",
     summary: "Condo project summary and latest sales",
     description: "Project facts (district, market segment, tenure, property types), a sales summary and the 10 most recent transactions. Requires URA private transaction data; deployments without it return 404 for every project.",
-    params: [slugParam("Project slug from the official project name, e.g. the-hillford.", "sample-park-condo")],
+    params: [slugParam("Project slug from the official project name, e.g. the-hillford.", "the-hillford")],
     response: "CondoResponse",
     cacheSeconds: CACHE.data,
-    example: "/api/v1/condos/sample-park-condo/",
+    example: "/api/v1/condos/the-hillford/",
     errors: [404],
   },
   {
