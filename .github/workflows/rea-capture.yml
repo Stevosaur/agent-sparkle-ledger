@@ -1,0 +1,58 @@
+name: REA capture (temporary)
+
+# Temporary teardown capture: runs REA (https://github.com/morluto/rea) over a site's public pages from GitHub's
+# runners (the coding session's network cannot reach the site). Output is encrypted to .github/rea/public.pem before
+# upload, so nothing captured is readable in this public repository. Removed once the teardown is done.
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - ".github/rea/**"
+      - ".github/workflows/rea-capture.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rea-capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install REA
+        run: npm install --global rea-agents@6.4.0 && rea --version && google-chrome --version
+      - name: Capture public pages
+        env:
+          BASE: https://haio.sg
+          OUT_DIR: rea-out
+          MAX_PAGES: "70"
+          PER_FAMILY: "2"
+          DELAY_MS: "2500"
+          SEEDS: "/,/valuation/,/affordability/,/mortgage-rates/,/property-analysis/,/insights/,/trendmaker/,/compare/,/compare-units/,/listings/?type=condo,/listings/?type=landed,/listings/?type=upcoming,/listings/?type=commercial,/listings/?type=industrial,/map/,/news/,/homes/,/homes/fit/,/services/,/my-property/,/profile/,/haio-plus/,/haio-research/,/haios-list/,/docs/,/spot/,/methodology/,/about/,/privacy/,/tos/,/condo/the-hillford/,/condo/peoples-pk-complex/,/hdb/blk-872a-tampines-st-86/,/landed/13-haig-ln/"
+          BUNDLE_PAGES: "/,/condo/the-hillford/,/hdb/blk-872a-tampines-st-86/,/valuation/"
+        run: |
+          export CHROME="$(command -v google-chrome)"
+          node .github/rea/capture.mjs
+          echo "pages captured: $(($(wc -l < rea-out/pages.tsv) - 1)) rows; files: $(find rea-out -type f | wc -l); size: $(du -sh rea-out | cut -f1)"
+      - name: Encrypt output
+        run: |
+          tar czf rea-out.tgz rea-out && rm -rf rea-out
+          openssl rand -out k.bin 32
+          openssl enc -aes-256-cbc -pbkdf2 -salt -pass file:k.bin -in rea-out.tgz -out rea-out.tgz.enc
+          openssl pkeyutl -encrypt -pubin -inkey .github/rea/public.pem -pkeyopt rsa_padding_mode:oaep -in k.bin -out k.bin.enc
+          rm -f rea-out.tgz k.bin
+          ls -la rea-out.tgz.enc k.bin.enc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rea-capture-${{ github.run_id }}
+          path: |
+            rea-out.tgz.enc
+            k.bin.enc
+          retention-days: 3
