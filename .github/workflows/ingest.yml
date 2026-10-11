@@ -1,0 +1,97 @@
+name: Ingest data
+
+# Rebuilds the committed data snapshot (data/) from the official sources and commits it to the branch
+# that triggered the run. Vercel redeploys on the resulting push; on the Hobby plan Vercel skips commits whose
+# author is not the account owner, so set the VERCEL_DEPLOY_HOOK_URL secret (a deploy hook for main) to deploy
+# refreshed data from main anyway.
+on:
+  schedule:
+    # URA publishes transactions on Tue & Fri evenings (SGT); HDB updates daily. 15:30 UTC = 23:30 SGT.
+    - cron: "30 15 * * 2,5"
+  workflow_dispatch:
+    inputs:
+      geocode_minutes:
+        description: "Time budget for OneMap geocoding of new HDB blocks (minutes)"
+        default: "240"
+      skip:
+        description: "Comma-separated sources to skip (hdb, mrt, geocode, schools, ura)"
+        default: ""
+  push:
+    branches-ignore: [main]
+    paths:
+      - "scripts/ingest/**"
+      - ".github/workflows/ingest.yml"
+
+concurrency:
+  group: ingest-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write # dispatch CI for the snapshot commit
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # always the branch head (so re-runs pick up the geocode cache committed by the previous run)
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Pipeline unit tests
+        run: npx vitest run scripts
+      - name: Ingest
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          URA_ACCESS_KEY: ${{ secrets.URA_ACCESS_KEY }}
+          ONEMAP_EMAIL: ${{ secrets.ONEMAP_EMAIL }}
+          ONEMAP_PASSWORD: ${{ secrets.ONEMAP_PASSWORD }}
+          MAS_API_KEY_ID: ${{ secrets.MAS_API_KEY_ID }}
+          DATAGOV_API_KEY: ${{ secrets.DATAGOV_API_KEY }}
+          # push-triggered runs (pipeline changes) use a shorter geocoding budget; scheduled runs continue the backlog
+          GEOCODE_MINUTES: ${{ github.event.inputs.geocode_minutes || (github.event_name == 'push' && '90') || '240' }}
+        run: npx tsx scripts/ingest/run.ts --out data ${{ github.event.inputs.skip && format('--skip {0}', github.event.inputs.skip) || '' }}
+      - name: Validate snapshot
+        run: npx tsx scripts/ingest/validate.ts data
+      - name: Commit snapshot
+        id: commit
+        run: |
+          git config user.name "plotline-data-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data ingest-cache
+          if git diff --cached --quiet; then
+            echo "No data changes."
+            exit 0
+          fi
+          COUNTS=$(node -e 'const m=require("./data/meta.json");console.log(`${m.counts.hdbTransactions} HDB, ${m.counts.privateTransactions} private, latest ${m.latestMonth.hdb}`)')
+          git commit -m "Data snapshot: ${COUNTS}"
+          for i in 1 2 3 4; do
+            if git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep $((i * 10))
+          done
+          exit 1
+      - name: Run CI on the snapshot commit
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ci.yml --ref "${GITHUB_REF_NAME}"
+      - name: Deploy to Vercel (deploy hook)
+        # scheduled runs carry no repository payload, so the default branch is named here
+        if: steps.commit.outputs.pushed == 'true' && github.ref_name == 'main'
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "${VERCEL_DEPLOY_HOOK_URL}" ]; then
+            echo "VERCEL_DEPLOY_HOOK_URL not set: relying on Vercel's Git integration."
+            exit 0
+          fi
+          curl -fsS -X POST "${VERCEL_DEPLOY_HOOK_URL}" > /dev/null && echo "Vercel deploy hook triggered."

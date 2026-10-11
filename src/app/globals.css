@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* brand: deep teal */
+  --color-brand-50: #effaf8;
+  --color-brand-100: #d7f2ed;
+  --color-brand-200: #b0e4da;
+  --color-brand-300: #7fcfc2;
+  --color-brand-400: #4bb3a5;
+  --color-brand-500: #2a978a;
+  --color-brand-600: #1d7a70;
+  --color-brand-700: #19625b;
+  --color-brand-800: #174f4a;
+  --color-brand-900: #15423e;
+  --color-brand-950: #062624;
+
+  /* plus tier accent */
+  --color-plus-50: #fff8eb;
+  --color-plus-100: #feecc7;
+  --color-plus-400: #f7b538;
+  --color-plus-500: #f19414;
+  --color-plus-600: #d56f0c;
+  --color-plus-700: #b14f0f;
+
+  --color-ink: #0f1d1b;
+  --color-muted: #5b6b68;
+  --color-line: #e3e8e7;
+  --color-surface: #ffffff;
+  --color-canvas: #f6f8f7;
+
+  --color-up: #157f3d;
+  --color-down: #c0392b;
+
+  --radius-card: 14px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1, "cv11" 1;
+}
+
+@layer base {
+  /* Grid items default to min-width:auto, so a wide table or chart inside one widens the whole page on phones.
+     Let grid children shrink; wide content then scrolls inside its own overflow container.
+     (Base layer: any explicit min-w-* / position utility still wins.) */
+  .grid > * {
+    min-width: 0;
+  }
+  /* Absolutely positioned descendants (e.g. sr-only labels in table cells) are only clipped by a scroll
+     container that is their containing block, otherwise they stretch the page sideways. */
+  .overflow-x-auto,
+  .overflow-auto,
+  .overflow-x-scroll {
+    position: relative;
+  }
+}
+
+/* numbers line up in tables and stats */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* leaflet needs explicit sizing; tiles must not inherit img max-width rules */
+.leaflet-container {
+  font: inherit;
+  z-index: 0;
+}
+
+@layer components {
+  .prose-plotline h2 {
+    @apply mt-8 mb-3 text-xl font-semibold text-ink;
+  }
+  .prose-plotline h3 {
+    @apply mt-6 mb-2 text-lg font-semibold text-ink;
+  }
+  .prose-plotline p {
+    @apply my-3 leading-7 text-ink/90;
+  }
+  .prose-plotline ul {
+    @apply my-3 list-disc pl-6 leading-7;
+  }
+  .prose-plotline ol {
+    @apply my-3 list-decimal pl-6 leading-7;
+  }
+  .prose-plotline a {
+    @apply text-brand-700 underline underline-offset-2;
+  }
+  .prose-plotline table {
+    @apply my-4 w-full text-sm;
+  }
+  .prose-plotline th {
+    @apply border-b border-line py-2 text-left font-medium text-muted;
+  }
+  .prose-plotline td {
+    @apply border-b border-line py-2;
+  }
+}

@@ -1,16 +1,17 @@
 import { defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
+import path from "node:path";
 
 export default defineConfig({
-  plugins: [react()],
-  test: {
-    environment: "jsdom",
-    globals: true,
-    setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
-  },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+      // "server-only" throws outside React Server Components; tests import server modules directly.
+      "server-only": path.resolve(__dirname, "tests/unit/server-only-stub.ts"),
+    },
+  },
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts", "scripts/**/*.test.ts", "tests/unit/**/*.test.ts"],
+    env: { DATA_DIR: path.resolve(__dirname, "tests/fixtures/data") },
   },
 });
