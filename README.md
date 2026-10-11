@@ -40,6 +40,11 @@ gated feature unlocked, with a banner). Add the keys and gating switches on auto
    | Alerts | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET` |
 
 4. Redeploy after changing variables.
+5. **Hobby plan: data refreshes.** Vercel's Hobby plan only builds commits authored by the account owner (and by
+   Claude Code / Cursor agents); other authors' commits show *Deployment has failed* within a second. The twice-weekly
+   data commits are authored by the GitHub Actions bot, so create a deploy hook (*Settings → Git → Deploy Hooks*,
+   branch `main`) and save its URL as the GitHub repository secret `VERCEL_DEPLOY_HOOK_URL`: the
+   **Ingest data** workflow calls it after every snapshot commit on `main`. (On Pro, add nothing.)
 
 ## Data pipeline
 
@@ -55,7 +60,8 @@ gated feature unlocked, with a banner). Add the keys and gating switches on auto
 
 Add the credentials as **GitHub repository secrets** (Settings → Secrets and variables → Actions) with
 the same names. The workflow commits the refreshed snapshot (`data/`) and geocode cache
-(`ingest-cache/`) back to the branch, which triggers a Vercel redeploy.
+(`ingest-cache/`) back to the branch, runs CI on that commit, and redeploys Vercel (Git integration, or the
+`VERCEL_DEPLOY_HOOK_URL` deploy hook on the Hobby plan — see *Deploy to Vercel*).
 
 Fail-safe: the run aborts without touching `data/` if HDB data fails validation; any optional source
 that fails keeps the previous snapshot and is reported in `data/meta.json` (shown on `/methodology/`).
