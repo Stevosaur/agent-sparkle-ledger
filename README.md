@@ -40,11 +40,13 @@ gated feature unlocked, with a banner). Add the keys and gating switches on auto
    | Alerts | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET` |
 
 4. Redeploy after changing variables.
-5. **Hobby plan: data refreshes.** Vercel's Hobby plan only builds commits authored by the account owner (and by
-   Claude Code / Cursor agents); other authors' commits show *Deployment has failed* within a second. The twice-weekly
-   data commits are authored by the GitHub Actions bot, so create a deploy hook (*Settings → Git → Deploy Hooks*,
-   branch `main`) and save its URL as the GitHub repository secret `VERCEL_DEPLOY_HOOK_URL`: the
-   **Ingest data** workflow calls it after every snapshot commit on `main`. (On Pro, add nothing.)
+5. **Data refreshes** deploy through Vercel's Git integration: every snapshot commit by the **Ingest data** workflow
+   triggers a production deployment of `main`. If Vercel ever refuses those commits (*Deployment has failed* within a
+   second — the Hobby plan only builds commits by the account owner, Claude Code / Cursor agents, and bots it
+   recognises), create a deploy hook (*Settings → Git → Deploy Hooks*, branch `main`) and save its URL as the GitHub
+   repository secret `VERCEL_DEPLOY_HOOK_URL`; the workflow then calls it after each snapshot commit.
+6. **Post-deploy check**: the **Live smoke test** workflow runs the browser smoke tests against the production
+   domain (the repository's website, or the `PRODUCTION_URL` repository variable) after every production deployment.
 
 ## Data pipeline
 
@@ -60,8 +62,8 @@ gated feature unlocked, with a banner). Add the keys and gating switches on auto
 
 Add the credentials as **GitHub repository secrets** (Settings → Secrets and variables → Actions) with
 the same names. The workflow commits the refreshed snapshot (`data/`) and geocode cache
-(`ingest-cache/`) back to the branch, runs CI on that commit, and redeploys Vercel (Git integration, or the
-`VERCEL_DEPLOY_HOOK_URL` deploy hook on the Hobby plan — see *Deploy to Vercel*).
+(`ingest-cache/`) back to the branch, runs CI on that commit, and Vercel redeploys (Git integration, or the optional
+`VERCEL_DEPLOY_HOOK_URL` deploy hook — see *Deploy to Vercel*).
 
 Fail-safe: the run aborts without touching `data/` if HDB data fails validation; any optional source
 that fails keeps the previous snapshot and is reported in `data/meta.json` (shown on `/methodology/`).

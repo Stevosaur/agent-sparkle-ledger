@@ -1,0 +1,45 @@
+name: Live smoke test
+
+# Browser smoke tests (tests/e2e/live.spec.ts, mobile 360px + desktop) against the production site after every
+# successful Vercel production deployment, and on demand. The site is the repository's website (Vercel sets it to the
+# production domain) unless the PRODUCTION_URL variable or the `url` input says otherwise.
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Site to test (default: the production domain)"
+        default: ""
+  push:
+    branches-ignore: [main]
+    paths:
+      - "tests/e2e/live.spec.ts"
+      - ".github/workflows/live-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    if: github.event_name != 'deployment_status' || (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Smoke tests against the live site
+        env:
+          E2E_LIVE: "1"
+          E2E_BASE_URL: ${{ inputs.url || vars.PRODUCTION_URL || github.event.repository.homepage }}
+        run: |
+          if [ -z "${E2E_BASE_URL}" ]; then
+            echo "No site to test: set the repository website or the PRODUCTION_URL variable." >&2
+            exit 1
+          fi
+          echo "Testing ${E2E_BASE_URL}"
+          npx playwright test

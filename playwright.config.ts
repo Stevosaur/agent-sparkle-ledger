@@ -7,9 +7,15 @@ const external = process.env.E2E_BASE_URL;
 const preinstalled = "/opt/pw-browsers/chromium";
 const executablePath = process.env.PW_EXEC ?? (fs.existsSync(preinstalled) ? preinstalled : undefined);
 
-/** Smoke tests run against the synthetic fixture snapshot (tests/fixtures/data). */
+/**
+ * Smoke tests run against the synthetic fixture snapshot (tests/fixtures/data). With E2E_LIVE=1 and E2E_BASE_URL set,
+ * live.spec.ts checks a real deployment instead.
+ */
+const live = Boolean(process.env.E2E_LIVE);
+
 export default defineConfig({
   testDir: "tests/e2e",
+  testIgnore: live ? "**/smoke.spec.ts" : "**/live.spec.ts",
   timeout: 120_000,
   expect: { timeout: 20_000 },
   fullyParallel: false,
