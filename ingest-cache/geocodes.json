@@ -5170,6 +5170,7 @@
 "HDB|419A|NORTHSHORE DR":{"status":"ok","lat":1.417711,"lng":103.901708,"postal":"821419","roadName":"NORTHSHORE DRIVE","query":"419A NORTHSHORE DRIVE","at":"2026-10-10T22:10:45.830Z"},
 "HDB|419B|NORTHSHORE DR":{"status":"ok","lat":1.418032,"lng":103.90216,"postal":"822419","roadName":"NORTHSHORE DRIVE","query":"419B NORTHSHORE DRIVE","at":"2026-10-10T23:04:06.348Z"},
 "HDB|419C|NORTHSHORE DR":{"status":"ok","lat":1.418301,"lng":103.902573,"postal":"823419","roadName":"NORTHSHORE DRIVE","query":"419C NORTHSHORE DRIVE","at":"2026-10-10T22:10:41.030Z"},
+"HDB|419D|NORTHSHORE DR":{"status":"ok","lat":1.418574,"lng":103.903058,"postal":"824419","roadName":"NORTHSHORE DRIVE","query":"419D NORTHSHORE DRIVE","at":"2026-11-03T21:16:59.993Z"},
 "HDB|41A|MARGARET DR":{"status":"ok","lat":1.296893,"lng":103.806822,"postal":"143041","roadName":"MARGARET DRIVE","query":"41A MARGARET DRIVE","at":"2026-10-10T22:10:58.640Z"},
 "HDB|42|BEDOK STH RD":{"status":"ok","lat":1.321478,"lng":103.940721,"postal":"460042","roadName":"BEDOK SOUTH ROAD","query":"42 BEDOK SOUTH ROAD","at":"2026-10-11T01:19:49.671Z"},
 "HDB|42|CAMBRIDGE RD":{"status":"ok","lat":1.316005,"lng":103.849792,"postal":"210042","roadName":"CAMBRIDGE ROAD","query":"42 CAMBRIDGE ROAD","at":"2026-10-10T22:18:31.529Z"},
