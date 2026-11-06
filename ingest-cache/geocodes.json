@@ -336,6 +336,7 @@
 "HDB|109A|CANBERRA WALK":{"status":"ok","lat":1.448021,"lng":103.830137,"postal":"751109","roadName":"CANBERRA WALK","query":"109A CANBERRA WALK","at":"2026-10-13T20:51:21.879Z"},
 "HDB|109A|DEPOT RD":{"status":"ok","lat":1.280958,"lng":103.80944,"postal":"101109","roadName":"DEPOT ROAD","query":"109A DEPOT ROAD","at":"2026-10-10T21:17:33.597Z"},
 "HDB|109A|EDGEDALE PLAINS":{"status":"ok","lat":1.394722,"lng":103.909874,"postal":"821109","roadName":"EDGEDALE PLAINS","query":"109A EDGEDALE PLAINS","at":"2026-10-10T22:53:21.320Z"},
+"HDB|109B|BIDADARI PK DR":{"status":"ok","lat":1.333407,"lng":103.87267,"postal":"342109","roadName":"BIDADARI PARK DRIVE","query":"109B BIDADARI PARK DRIVE","at":"2026-11-06T21:03:59.928Z"},
 "HDB|109B|CANBERRA WALK":{"status":"ok","lat":1.447838,"lng":103.829665,"postal":"752109","roadName":"CANBERRA WALK","query":"109B CANBERRA WALK","at":"2026-10-27T20:18:15.413Z"},
 "HDB|109B|DEPOT RD":{"status":"ok","lat":1.280999,"lng":103.809225,"postal":"102109","roadName":"DEPOT ROAD","query":"109B DEPOT ROAD","at":"2026-10-11T01:14:44.007Z"},
 "HDB|109B|EDGEDALE PLAINS":{"status":"ok","lat":1.394957,"lng":103.909634,"postal":"822109","roadName":"EDGEDALE PLAINS","query":"109B EDGEDALE PLAINS","at":"2026-10-10T23:27:31.568Z"},
